@@ -1,0 +1,67 @@
+Je construis tous les dashboards en parallèle — layout, login, et 8 rôles.
+
+Now the remaining dashboards — `resp-peda`, `etudiant`, `parent`, `candidat`:
+
+Toutes les pages sont créées. Vérifions que l'`api()` helper dans `erp.ts` envoie le bon token et que les routes sont bien enregistrées dans le router :
+
+Tout est cohérent. Faisons un build check rapide pour détecter des erreurs TypeScript :
+
+Zéro erreur TypeScript. Voici un récapitulatif de ce qui vient d'être créé :
+
+---
+
+## Pages ERP créées — 12 fichiers
+
+| Fichier | Route | Rôle cible |
+|---|---|---|
+| [`erp.tsx`](src/routes/erp.tsx) | `/erp` | Layout avec sidebar navy + gold, nav dynamique selon rôle |
+| [`erp.login.tsx`](src/routes/erp.login.tsx) | `/erp/login` | Page de connexion + 9 comptes démo cliquables |
+| [`erp.index.tsx`](src/routes/erp.index.tsx) | `/erp/` | Redirect automatique vers le bon dashboard |
+| [`erp.admin.tsx`](src/routes/erp.admin.tsx) | `/erp/admin` | Super Admin — stats, liste utilisateurs, actions rapides |
+| [`erp.chef-mention.tsx`](src/routes/erp.chef-mention.tsx) | `/erp/chef-mention` | Chef de Mention — cours, statuts, affectation enseignants |
+| [`erp.resp-peda.tsx`](src/routes/erp.resp-peda.tsx) | `/erp/resp-peda` | Responsable Pédagogique — matières, promotions, examens |
+| [`erp.secretaire.tsx`](src/routes/erp.secretaire.tsx) | `/erp/secretaire` | Secrétaire — candidatures avec workflow Examiner/Accepter/Refuser/Inscrire |
+| [`erp.finance.tsx`](src/routes/erp.finance.tsx) | `/erp/finance` | Comptabilité — KPIs, paiements, barre de progression, actions PDF |
+| [`erp.enseignant.tsx`](src/routes/erp.enseignant.tsx) | `/erp/enseignant` | Enseignant — ses cours, chapitres, devoirs, appel |
+| [`erp.etudiant.tsx`](src/routes/erp.etudiant.tsx) | `/erp/etudiant` | Étudiant — cours, notes, factures, planning |
+| [`erp.parent.tsx`](src/routes/erp.parent.tsx) | `/erp/parent` | Parent — profil enfant(s), notes par matière, paiements |
+| [`erp.candidat.tsx`](src/routes/erp.candidat.tsx) | `/erp/candidat` | Candidat — stepper dossier, upload pièces, soumission |
+
+**Accédez à `/erp/login`** pour tester — sélectionnez un compte démo et le bon dashboard s'ouvrira automatiquement.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Comptes de démonstration (mot de passe : Password123!)
+Email	Rôle	Données
+admin@ur.mg	Super Admin	Stats université complètes
+chef.info@ur.mg	Chef Mention Info	Mention Informatique
+chef.gestion@ur.mg	Chef Mention Gestion	Mention Gestion (nouveau)
+resp.peda@ur.mg	Resp. Pédagogique	Mention Informatique
+secretaire@ur.mg	Secrétaire	Campus-wide
+finance@ur.mg	Comptable	Campus-wide
+prof.andriamananjara@ur.mg	Enseignant	Dev Web + Algorithmique
+prof.rasoamahenina@ur.mg	Enseignant	Base de Données
+etudiant.rakoto@ur.mg	Étudiant L1 Info	Notes S1+S2, facture PAYÉE, présences
+etudiant.rabe@ur.mg	Étudiant L1 Info	Notes S1, facture EN ATTENTE
+etudiant.raharison@ur.mg	Étudiant L1 Gestion	Notes S1, facture EN RETARD (nouveau)
+parent.rakoto@gmail.com	Parent	Lié à Ny Aina RAKOTO
+parent.rabe@gmail.com	Parent	Lié à Fanja RABE (nouveau)
+candidat.demo@gmail.com	Candidat	Dossier soumis, frais payés

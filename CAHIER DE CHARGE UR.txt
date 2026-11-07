@@ -1,0 +1,562 @@
+Tu es une IA expert senior Frontend Engineer + UI/UX Designer niveau mondial (Stripe, Apple, Notion level).
+
+Tu dois générer un FRONTEND COMPLET pour une plateforme universitaire appelée :
+
+"UNIVERSITY REFERENCE"
+
+────────────────────────────
+🎯 CONTEXTE GLOBAL
+────────────────────────────
+
+La plateforme contient 2 systèmes totalement séparés :
+
+1. 🟦 ONLINE SYSTEM (type Coursera)
+2. 🟨 CLASSROOM SYSTEM (université physique digitalisée)
+
+Les deux systèmes sont indépendants :
+- dashboards séparés
+- UI séparée
+- navigation séparée
+- data séparée
+
+────────────────────────────
+⚙️ TECH STACK OBLIGATOIRE
+────────────────────────────
+
+- React.js ou Next.js (préféré Next.js)
+- TailwindCSS (design premium)
+- Framer Motion (animations)
+- Axios (API calls)
+- React Router / Next routing
+- Socket.io client (chat realtime)
+- Responsive mobile-first design
+
+────────────────────────────
+🎨 DESIGN SYSTEM (ULTRA PREMIUM UI)
+────────────────────────────
+
+Style obligatoire :
+- SaaS premium (Stripe / Notion / Linear style)
+- Apple-level minimalism
+- smooth animations
+- glassmorphism léger
+- cards modernes
+- gradients subtils
+- typography propre (Inter / SF Pro style)
+- dark mode + light mode
+
+UI must be:
+- clean
+- fast
+- modern
+- professional
+- scalable
+
+────────────────────────────
+🌐 1. UNIVERSITY LANDING PAGE (HOME PUBLIC)
+────────────────────────────
+
+Page publique principale :
+
+Sections :
+- Hero section (fort impact)
+- Description université
+- Statistiques (students, success rate, etc.)
+- Buttons:
+   → "Étudier en ligne"
+   → "Étudier en salle"
+- Programmes
+- Testimonials
+- Footer
+
+Navigation:
+- Home
+- About
+- Contact
+
+────────────────────────────
+🔀 2. CHOICE PAGE (IMPORTANT)
+────────────────────────────
+
+Page de sélection :
+
+Deux grands boutons UI :
+
+🟦 ONLINE SYSTEM
+🟨 CLASSROOM SYSTEM
+
+Navigation flow :
+
+HOME → CHOICE → SYSTEM SELECT
+
+────────────────────────────
+🟦 3. ONLINE SYSTEM UI (Coursera style)
+────────────────────────────
+
+Pages à générer :
+
+🏠 Online Home
+- liste des cours
+- filtres (niveau, catégorie)
+- cards modernes
+
+🔐 Auth pages
+- login
+- register
+- role selection (student / teacher)
+
+🎓 Student Dashboard
+- enrolled courses
+- progress bars
+- continue learning button
+- certificates section
+
+👨‍🏫 Teacher Dashboard
+- create course UI
+- upload videos
+- create quizzes
+- analytics charts
+
+📚 Course Page
+- modules list
+- video player UI
+- PDF viewer
+- quiz section
+
+💬 Chat UI (Socket.io)
+- course chat
+- private messages UI
+
+📊 Analytics UI
+- progress charts
+- completion rate
+
+────────────────────────────
+🟨 4. CLASSROOM SYSTEM UI (Université réelle digitalisée)
+────────────────────────────
+
+Pages :
+
+🔐 Login page
+- role-based login (student, teacher, admin, parent, etc.)
+
+🎓 Student Dashboard
+- timetable (emploi du temps)
+- today classes
+- attendance status
+- grades
+- announcements
+- chat class
+
+👨‍🏫 Teacher Dashboard
+- timetable management
+- attendance marking UI
+- upload course material
+- grading interface
+
+🏛️ Admin Dashboard
+- user management
+- timetable approval UI
+- statistics dashboard
+- finance overview
+
+👪 Parent Dashboard
+- child grades
+- attendance tracking
+- payment status
+- notifications
+
+💰 Finance UI
+- fees list
+- payment history
+- invoice display
+
+📅 Timetable System UI (IMPORTANT)
+- weekly calendar view
+- drag & drop schedule (optional)
+- status badges:
+  - draft
+  - pending
+  - approved
+  - published
+
+💬 Chat System
+- class chat
+- admin chat
+- notifications panel
+
+📢 Announcement System
+- feed style UI like social media
+- pinned messages
+
+────────────────────────────
+📱 RESPONSIVE DESIGN
+────────────────────────────
+
+Must work perfectly on:
+- mobile
+- tablet
+- desktop
+
+Mobile UI:
+- bottom navigation
+- collapsible sidebar
+
+────────────────────────────
+⚡ REALTIME FEATURES UI
+────────────────────────────
+
+- live chat updates
+- notifications badge
+- real-time timetable updates
+- presence indicators
+
+────────────────────────────
+📁 PROJECT STRUCTURE
+────────────────────────────
+
+/src
+  /pages
+    /home
+    /choice
+    /online
+    /classroom
+  /components
+    Navbar
+    Sidebar
+    Cards
+    Charts
+    Tables
+    ChatUI
+    TimetableUI
+  /layouts
+    OnlineLayout
+    ClassroomLayout
+    PublicLayout
+  /services
+    api.js
+    socket.js
+  /styles
+  /hooks
+
+────────────────────────────
+📡 API INTEGRATION
+────────────────────────────
+
+Frontend must connect to backend via:
+
+- REST API (Axios)
+- Socket.io (chat + notifications)
+
+Endpoints examples:
+- /api/auth/login
+- /api/online/courses
+- /api/classroom/timetable
+- /api/classroom/grades
+- /api/finance/payments
+
+────────────────────────────
+🔥 FINAL OUTPUT REQUIRED
+────────────────────────────
+
+Generate:
+
+1. Full React/Next.js frontend code
+2. UI components (premium design)
+3. Pages structure
+4. Routing system
+5. Dashboard layouts
+6. Chat UI (real-time)
+7. Timetable UI system
+8. Finance UI
+9. Authentication UI
+10. Responsive mobile UI
+
+────────────────────────────
+🎯 FINAL GOAL
+────────────────────────────
+
+A production-ready ultra premium university SaaS frontend that looks like:
+
+- Stripe dashboard quality
+- Notion simplicity
+- Coursera structure
+- Apple design feel
+
+Do not simplify. Build full production-level UI.   
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  
+Tu es une IA expert senior backend engineer (Node.js/NestJS/Express), architecte logiciel et designer de systèmes scalables.
+
+Tu dois générer un backend COMPLET pour une plateforme universitaire appelée :
+
+"UNIVERSITY REFERENCE"
+
+────────────────────────────
+🎯 CONTEXTE GLOBAL
+────────────────────────────
+
+Le système contient 2 sous-systèmes indépendants :
+
+1. 🟦 ONLINE SYSTEM (type Coursera)
+2. 🟨 CLASSROOM SYSTEM (université physique digitalisée)
+
+Ces deux systèmes sont totalement séparés :
+- bases de données séparées (ou schemas séparés)
+- dashboards séparés
+- utilisateurs séparés
+- logique métier séparée
+
+────────────────────────────
+🧠 STACK OBLIGATOIRE
+────────────────────────────
+
+Backend :
+- Node.js + Express (ou NestJS si tu préfères architecture propre)
+- PostgreSQL
+- Prisma ORM ou Sequelize
+- JWT authentication
+- Role-Based Access Control (RBAC)
+- WebSocket (Socket.io) pour chat & notifications
+
+────────────────────────────
+👥 RÔLES SYSTÈME
+────────────────────────────
+
+Online system :
+- student_online
+- teacher_online
+
+Classroom system :
+- student_classroom
+- teacher_classroom
+- admin
+- chef_de_mention
+- secretary
+- treasurer
+- pedagogical_manager
+- parent
+
+Chaque rôle a des permissions strictes.
+
+────────────────────────────
+🌐 MODULE 1 — ONLINE SYSTEM (Coursera-like)
+────────────────────────────
+
+Fonctionnalités backend :
+
+📚 Courses
+- create course (teacher)
+- update course
+- delete course
+- publish course
+- get course list
+
+📖 Course structure:
+- modules
+- lessons
+- videos (URL)
+- PDFs
+
+🧪 Exams & quizzes
+- create quiz
+- auto grading MCQ
+- submit answers
+- calculate score
+
+🎓 Student
+- enroll course
+- track progress %
+- get certificates
+
+👨‍🏫 Teacher
+- manage courses
+- view analytics
+
+💬 Chat (Socket.io)
+- course chat room
+- private messages
+
+🔔 Notifications
+- course published
+- exam available
+- results ready
+
+────────────────────────────
+🏫 MODULE 2 — CLASSROOM SYSTEM (Université physique)
+────────────────────────────
+
+📅 Timetable system (IMPORTANT)
+- teacher creates schedule (draft)
+- admin validates schedule
+- publish timetable to students
+- notify all users
+
+🧑‍🎓 Student classroom
+- view timetable
+- attendance tracking
+- view grades
+- view announcements
+- chat class
+
+👨‍🏫 Teacher classroom
+- create timetable
+- mark attendance
+- upload course material
+- assign grades
+
+🏛️ Admin system
+- manage users
+- manage departments
+- approve timetables
+- generate reports
+
+💰 Finance module
+- student fees management
+- payment tracking
+- invoices
+- payment status (paid/unpaid)
+
+👪 Parent module
+- view student grades
+- view attendance
+- view fees status
+- receive notifications
+
+📢 Announcement system
+- admin announcements
+- class announcements
+
+────────────────────────────
+🔐 AUTH SYSTEM
+────────────────────────────
+
+- JWT authentication
+- refresh tokens
+- password hashing (bcrypt)
+- role-based middleware
+
+Routes protection:
+- protect by role
+- protect by system (online vs classroom)
+
+────────────────────────────
+📡 REALTIME SYSTEM (Socket.io)
+────────────────────────────
+
+- chat system (class + private)
+- notifications system
+- live updates (timetable, announcements)
+- presence updates
+
+────────────────────────────
+🗄️ DATABASE DESIGN (MANDATORY)
+────────────────────────────
+
+Create full PostgreSQL schema including:
+
+- users
+- roles
+- online_courses
+- online_modules
+- online_lessons
+- online_quizzes
+- online_answers
+- classroom_classes
+- classroom_timetable
+- attendance
+- grades
+- payments
+- announcements
+- chats
+- messages
+- notifications
+
+────────────────────────────
+📁 PROJECT STRUCTURE (MANDATORY)
+────────────────────────────
+
+/src
+  /modules
+    /auth
+    /online
+    /classroom
+    /users
+    /finance
+    /timetable
+    /chat
+    /notifications
+  /controllers
+  /services
+  /routes
+  /middlewares
+  /config
+  /database
+  server.js (or main.ts)
+
+────────────────────────────
+⚙️ API DESIGN (EXAMPLES)
+────────────────────────────
+
+AUTH:
+POST /api/auth/login
+POST /api/auth/register
+
+ONLINE:
+POST /api/online/courses
+GET /api/online/courses
+POST /api/online/quizzes/submit
+
+CLASSROOM:
+POST /api/classroom/timetable/create
+POST /api/classroom/timetable/approve
+GET /api/classroom/timetable
+POST /api/classroom/attendance
+
+FINANCE:
+POST /api/finance/payment
+GET /api/finance/student/:id
+
+CHAT:
+WS /socket.io
+- join_room
+- send_message
+- notifications
+
+────────────────────────────
+🎨 IMPORTANT RULES
+────────────────────────────
+
+- Code must be production-ready
+- Clean architecture
+- Scalable structure
+- No pseudo code (real working code)
+- Proper validation
+- Error handling
+- Security best practices
+- Modular design
+
+────────────────────────────
+📦 OUTPUT REQUIRED
+────────────────────────────
+
+Generate:
+1. Full backend code Node.js
+2. Database schema (SQL or Prisma)
+3. API routes list
+4. Auth system
+5. Role system
+6. Chat system (Socket.io)
+7. Timetable workflow system
+8. Finance module logic
+
+────────────────────────────
+🔥 FINAL GOAL
+────────────────────────────
+
+A production-ready backend for a global-scale university SaaS platform.
+
+Do not simplify. Build it like a real enterprise system used by thousands of students.
+
