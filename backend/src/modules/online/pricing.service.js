@@ -23,7 +23,7 @@ export async function listSellableCourses({ q } = {}) {
   return prisma.onlineCourse.findMany({
     where: {
       courseKind: { in: ['CERTIFYING', 'BOTH'] },
-      ...(q && { title: { contains: q, mode: 'insensitive' } }),
+      ...(q && { title: { contains: q } }),
     },
     select: {
       id: true, title: true, price: true, status: true, courseKind: true, thumbnail: true,

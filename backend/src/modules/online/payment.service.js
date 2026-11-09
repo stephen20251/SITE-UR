@@ -98,10 +98,10 @@ export async function listPayments({ page = 1, limit = 20, status, courseId, q }
   if (courseId) where.courseId = courseId;
   if (q) {
     where.OR = [
-      { reference: { contains: q, mode: 'insensitive' } },
-      { transactionRef: { contains: q, mode: 'insensitive' } },
-      { senderNumber: { contains: q, mode: 'insensitive' } },
-      { student: { email: { contains: q, mode: 'insensitive' } } },
+      { reference: { contains: q } },
+      { transactionRef: { contains: q } },
+      { senderNumber: { contains: q } },
+      { student: { email: { contains: q } } },
     ];
   }
 

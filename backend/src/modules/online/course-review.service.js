@@ -58,7 +58,7 @@ const VALID_TRANSITIONS = {
 const COURSE_SELECT = { id: true, title: true, status: true, teacherId: true, mentionId: true, publishedAt: true };
 
 export async function transitionCourseStatus(courseId, userId, targetStatus, note) {
-  const course = await prisma.onlineCourse.findUnique({ where: { id: courseId }, select: COURSE_SELECT });
+  const course = await prisma.onlineCourse.findUnique({ where: { id: courseId }, select: { ...COURSE_SELECT, statusHistory: true } });
   if (!course) throw new HttpError(404, 'Course not found');
   const isOwner = course.teacherId === userId;
   const reviewer = await canReviewCourse(userId, course);
@@ -92,7 +92,8 @@ export async function transitionCourseStatus(courseId, userId, targetStatus, not
       status: targetStatus,
       ...(targetStatus === 'PUBLISHED' && { publishedAt: course.publishedAt ?? new Date() }),
       reviewNote: note ?? null,
-      statusHistory: { push: history },
+      // Historique en liste JSON (MySQL) : on ajoute les nouvelles étapes à la suite.
+      statusHistory: [...(Array.isArray(course.statusHistory) ? course.statusHistory : []), ...history],
     },
     select: { id: true, status: true, publishedAt: true, statusHistory: true, reviewNote: true },
   });

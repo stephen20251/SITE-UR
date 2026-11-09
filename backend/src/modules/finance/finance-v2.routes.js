@@ -403,9 +403,9 @@ r.get('/accounts', asyncHandler(async (req, res) => {
   if (groupId)      where.groupId      = groupId;
   if (search) {
     where.OR = [
-      { matricule:    { contains: search, mode: 'insensitive' } },
-      { user: { firstName: { contains: search, mode: 'insensitive' } } },
-      { user: { lastName:  { contains: search, mode: 'insensitive' } } },
+      { matricule:    { contains: search } },
+      { user: { firstName: { contains: search } } },
+      { user: { lastName:  { contains: search } } },
     ];
   }
 
@@ -643,10 +643,10 @@ r.get('/payments', asyncHandler(async (req, res) => {
 
   if (search) {
     itemWhere.OR = [
-      { label: { contains: search, mode: 'insensitive' } },
-      { account: { student: { matricule: { contains: search, mode: 'insensitive' } } } },
-      { account: { student: { user: { firstName: { contains: search, mode: 'insensitive' } } } } },
-      { account: { student: { user: { lastName: { contains: search, mode: 'insensitive' } } } } },
+      { label: { contains: search } },
+      { account: { student: { matricule: { contains: search } } } },
+      { account: { student: { user: { firstName: { contains: search } } } } },
+      { account: { student: { user: { lastName: { contains: search } } } } },
     ];
   }
 
@@ -972,9 +972,9 @@ r.get('/reports/by-student', asyncHandler(async (req, res) => {
   if (mentionId) studentWhere.mentionId = mentionId;
   if (search) {
     studentWhere.OR = [
-      { matricule: { contains: search, mode: 'insensitive' } },
-      { user: { firstName: { contains: search, mode: 'insensitive' } } },
-      { user: { lastName: { contains: search, mode: 'insensitive' } } },
+      { matricule: { contains: search } },
+      { user: { firstName: { contains: search } } },
+      { user: { lastName: { contains: search } } },
     ];
   }
 

@@ -130,7 +130,7 @@ r.get('/public/archives', asyncHandler(async (req, res) => {
   const and = [];
   if (year) and.push({ publishedAt: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) } });
   if (CATEGORIES.includes(req.query.category)) and.push({ category: req.query.category });
-  if (q) and.push({ OR: [{ title: { contains: q, mode: 'insensitive' } }, { excerpt: { contains: q, mode: 'insensitive' } }] });
+  if (q) and.push({ OR: [{ title: { contains: q } }, { excerpt: { contains: q } }] });
   const where = { ...archivedWhere(now), ...(and.length && { AND: and }) };
   const [items, total, dates] = await Promise.all([
     prisma.newsArticle.findMany({ where, orderBy: { publishedAt: 'desc' }, select: SUMMARY, skip: (page - 1) * limit, take: limit }),

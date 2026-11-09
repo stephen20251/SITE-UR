@@ -215,22 +215,27 @@ async function audienceOf(user) {
 // Une annonce concerne l'utilisateur si elle lui est adressée nominativement, ou si
 // TOUS les critères de ciblage renseignés (rôles, mention, promotion) lui correspondent.
 // Une annonce sans aucun ciblage n'est visible que par l'administration.
+// Les rôles ciblés sont une liste JSON (MySQL) : ce critère est vérifié ici, en JavaScript.
 async function audienceWhere(user) {
   const a = await audienceOf(user);
-  return {
-    OR: [
-      { targetUserId: user.sub },
-      {
-        targetUserId: null,
-        AND: [
-          { OR: [{ targetAll: true }, { targetRoles: { isEmpty: false } }, { mentionId: { not: null } }, { promotionId: { not: null } }] },
-          { OR: [{ targetRoles: { isEmpty: true } }, { targetRoles: { has: a.systemRole } }] },
-          { OR: [{ mentionId: null }, { mentionId: { in: a.mentionIds } }] },
-          { OR: [{ promotionId: null }, { promotionId: { in: a.promotionIds } }] },
-        ],
-      },
-    ],
-  };
+  const targeted = await prisma.announcement.findMany({
+    where: {
+      targetUserId: null,
+      AND: [
+        { OR: [{ mentionId: null }, { mentionId: { in: a.mentionIds } }] },
+        { OR: [{ promotionId: null }, { promotionId: { in: a.promotionIds } }] },
+      ],
+    },
+    select: { id: true, targetAll: true, targetRoles: true, mentionId: true, promotionId: true },
+  });
+  const ids = targeted
+    .filter((ann) => {
+      const roles = Array.isArray(ann.targetRoles) ? ann.targetRoles : [];
+      const hasTarget = ann.targetAll || roles.length > 0 || ann.mentionId || ann.promotionId;
+      return hasTarget && (roles.length === 0 || roles.includes(a.systemRole));
+    })
+    .map((ann) => ann.id);
+  return { OR: [{ targetUserId: user.sub }, { id: { in: ids } }] };
 }
 
 export async function list(user, { status, category, page = 1, limit = 20 } = {}) {

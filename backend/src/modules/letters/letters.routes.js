@@ -26,8 +26,8 @@ r.get('/teachers', asyncHandler(async (req, res) => {
   const teachers = await prisma.teacherProfile.findMany({
     where: q ? {
       user: { OR: [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName:  { contains: q, mode: 'insensitive' } },
+        { firstName: { contains: q } },
+        { lastName:  { contains: q } },
       ]},
     } : {},
     include: { user: { select: { id: true, firstName: true, lastName: true, email: true } }, mention: { select: { name: true } } },
@@ -48,8 +48,8 @@ r.get('/staff', asyncHandler(async (req, res) => {
   const staff = await prisma.staffProfile.findMany({
     where: q ? {
       user: { OR: [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName:  { contains: q, mode: 'insensitive' } },
+        { firstName: { contains: q } },
+        { lastName:  { contains: q } },
       ]},
     } : {},
     include: {

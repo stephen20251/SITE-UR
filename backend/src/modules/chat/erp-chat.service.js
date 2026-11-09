@@ -208,7 +208,7 @@ export async function searchMessages(userId, roomId, q) {
   await assertMember(roomId, userId);
   if (!q || q.trim().length < 2) return [];
   return prisma.message.findMany({
-    where: { roomId, body: { contains: q, mode: 'insensitive' } },
+    where: { roomId, body: { contains: q } },
     include: { sender: { select: USER_CARD } },
     orderBy: { createdAt: 'desc' },
     take: 20,
@@ -241,10 +241,10 @@ export async function listErpContacts(userId, q = '') {
     isActive: true,
     ...(q ? {
       OR: [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName:  { contains: q, mode: 'insensitive' } },
-        { email:     { contains: q, mode: 'insensitive' } },
-        { studentProfile: { matricule: { contains: q, mode: 'insensitive' } } },
+        { firstName: { contains: q } },
+        { lastName:  { contains: q } },
+        { email:     { contains: q } },
+        { studentProfile: { matricule: { contains: q } } },
       ],
     } : {}),
   };

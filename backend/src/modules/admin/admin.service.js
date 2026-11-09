@@ -23,9 +23,9 @@ export const listUsers = async (req, res) => {
   const where = {}
   if (search) {
     where.OR = [
-      { email: { contains: search, mode: 'insensitive' } },
-      { firstName: { contains: search, mode: 'insensitive' } },
-      { lastName: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search } },
+      { firstName: { contains: search } },
+      { lastName: { contains: search } },
     ]
   }
   if (systemRole) where.systemRole = systemRole

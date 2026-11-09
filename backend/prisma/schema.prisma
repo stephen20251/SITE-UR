@@ -8,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -182,9 +182,9 @@ enum QuizQuestionType {
 model Permission {
   id          String   @id @default(uuid())
   code        String   @unique
-  label       String
-  description String?
-  module      String
+  label       String   @db.Text
+  description String?  @db.Text
+  module      String   @db.Text
   createdAt   DateTime @default(now())
 
   rolePermissions RolePermission[]
@@ -193,9 +193,9 @@ model Permission {
 model Role {
   id          String   @id @default(uuid())
   name        String   @unique
-  description String?
+  description String?  @db.Text
   isSystem    Boolean  @default(false)
-  color       String?
+  color       String?  @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -238,14 +238,14 @@ model UserRole {
 
 model Campus {
   id        String   @id @default(uuid())
-  name      String
+  name      String   @db.Text
   code      String   @unique
-  address   String?
-  city      String?
+  address   String?  @db.Text
+  city      String?  @db.Text
   country   String   @default("Madagascar")
-  phone     String?
-  email     String?
-  logoUrl   String?
+  phone     String?  @db.Text
+  email     String?  @db.Text
+  logoUrl   String?  @db.Text
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -260,10 +260,10 @@ model Campus {
 model Faculty {
   id        String   @id @default(uuid())
   campusId  String
-  name      String
+  name      String   @db.Text
   code      String   @unique
-  deanName  String?
-  logoUrl   String?
+  deanName  String?  @db.Text
+  logoUrl   String?  @db.Text
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -276,9 +276,9 @@ model Faculty {
 model Department {
   id        String   @id @default(uuid())
   facultyId String
-  name      String
+  name      String   @db.Text
   code      String   @unique
-  headName  String?
+  headName  String?  @db.Text
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -293,11 +293,11 @@ model Department {
 model Mention {
   id           String   @id @default(uuid())
   departmentId String
-  name         String
+  name         String   @db.Text
   code         String   @unique
-  level        String?
+  level        String?  @db.Text
   duration     Int?
-  description  String?
+  description  String?  @db.Text
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -321,9 +321,9 @@ model Mention {
 model Parcours {
   id          String   @id @default(uuid())
   mentionId   String
-  name        String
+  name        String   @db.Text
   code        String   @unique
-  description String?
+  description String?  @db.Text
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
@@ -338,7 +338,7 @@ model Parcours {
 model AcademicYear {
   id        String   @id @default(uuid())
   campusId  String
-  label     String
+  label     String   @db.Text
   startDate DateTime
   endDate   DateTime
   isCurrent Boolean  @default(false)
@@ -354,7 +354,7 @@ model AcademicYear {
 model Semester {
   id             String   @id @default(uuid())
   academicYearId String
-  name           String
+  name           String   @db.Text
   number         Int
   startDate      DateTime
   endDate        DateTime
@@ -373,9 +373,9 @@ model Semester {
 model TeachingUnit {
   id         String   @id @default(uuid())
   semesterId String
-  mentionId  String
-  code       String
-  name       String
+  mentionId  String   @db.Text
+  code       String   @db.Text
+  name       String   @db.Text
   credits    Int      @default(3)
   createdAt  DateTime @default(now())
 
@@ -388,10 +388,10 @@ model Subject {
   mentionId      String
   teachingUnitId String?
   code           String   @unique
-  name           String
+  name           String   @db.Text
   credits        Int      @default(3)
   weeklyHours    Float    @default(2)
-  description    String?
+  description    String?  @db.Text
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -416,7 +416,7 @@ model SubjectTeacher {
   groupId    String?
   type       String   @default("CM") // CM | TD | TP
   assignedAt DateTime @default(now())
-  assignedBy String?
+  assignedBy String?  @db.Text
 
   subject Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
@@ -434,8 +434,8 @@ model Promotion {
   mentionId      String
   parcoursId     String?
   academicYearId String
-  name           String
-  level          String
+  name           String   @db.Text
+  level          String   @db.Text
   maxCapacity    Int      @default(50)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -458,7 +458,7 @@ model Promotion {
 model Group {
   id          String   @id @default(uuid())
   promotionId String
-  name        String
+  name        String   @db.Text
   type        String   @default("TD")
   maxCapacity Int      @default(30)
   createdAt   DateTime @default(now())
@@ -477,12 +477,12 @@ model Group {
 model Room {
   id        String   @id @default(uuid())
   campusId  String
-  name      String
+  name      String   @db.Text
   code      String   @unique
   type      RoomType @default(CLASSROOM)
   capacity  Int      @default(30)
-  building  String?
-  floor     String?
+  building  String?  @db.Text
+  floor     String?  @db.Text
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
@@ -499,12 +499,12 @@ model Room {
 model User {
   id            String     @id @default(uuid())
   email         String     @unique
-  passwordHash  String
-  firstName     String
-  lastName      String
-  phone         String?
-  avatarUrl     String?
-  signatureUrl  String?
+  passwordHash  String     @db.Text
+  firstName     String     @db.Text
+  lastName      String     @db.Text
+  phone         String?    @db.Text
+  avatarUrl     String?    @db.Text
+  signatureUrl  String?    @db.Text
   systemRole    SystemRole @default(STUDENT)
   isActive      Boolean    @default(true)
   emailVerified Boolean    @default(false)
@@ -566,7 +566,7 @@ model StudentProfile {
   status         EnrollmentStatus @default(ACTIVE)
   studyMode      StudyMode        @default(PRESENTIEL)
   scholarship    Boolean          @default(false)
-  notes          String?
+  notes          String?          @db.Text
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -592,24 +592,24 @@ model StudentProfile {
 }
 
 model TeacherProfile {
-  id             String   @id @default(uuid())
-  userId         String   @unique
-  employeeId     String?  @unique
-  specialization String?
-  bio            String?
-  office         String?
+  id              String         @id @default(uuid())
+  userId          String         @unique
+  employeeId      String?        @unique
+  specialization  String?        @db.Text
+  bio             String?        @db.Text
+  office          String?        @db.Text
   // Dossier académique visible par les étudiants inscrits et les parents
   academicTitle   AcademicTitle?
-  highestDegree   String?
+  highestDegree   String?        @db.Text
   yearsExperience Int?
-  cvPath          String? // nom du fichier dans private-uploads/teacher-cv (jamais public)
-  cvFileName      String?
+  cvPath          String?        @db.Text // nom du fichier dans private-uploads/teacher-cv (jamais public)
+  cvFileName      String?        @db.Text
   cvUpdatedAt     DateTime?
   // Direct organisational anchor — resolved from CourseTeacher when null
-  departmentId   String?
-  mentionId      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  departmentId    String?
+  mentionId       String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   department       Department?      @relation(fields: [departmentId], references: [id])
@@ -626,7 +626,7 @@ model StaffProfile {
   userId       String   @unique
   employeeId   String?  @unique
   departmentId String?
-  office       String?
+  office       String?  @db.Text
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -637,8 +637,8 @@ model StaffProfile {
 model ParentProfile {
   id           String   @id @default(uuid())
   userId       String   @unique
-  occupation   String?
-  relationship String?
+  occupation   String?  @db.Text
+  relationship String?  @db.Text
   createdAt    DateTime @default(now())
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -665,20 +665,20 @@ model Candidate {
   id                     String          @id @default(uuid())
   userId                 String          @unique
   mentionId              String?
-  level                  String?
+  level                  String?         @db.Text
   status                 CandidateStatus @default(DRAFT)
   submittedAt            DateTime?
   reviewedAt             DateTime?
-  reviewedBy             String?
-  rejectionReason        String?
+  reviewedBy             String?         @db.Text
+  rejectionReason        String?         @db.Text
   registrationFee        Float           @default(0)
   feeStatus              PaymentStatus   @default(PENDING)
-  notes                  String?
+  notes                  String?         @db.Text
   // Pré-inscription : questionnaire de motivation
   motivation             Json?
   // Inscription (après acceptation) : fiche d'inscription, référence du droit d'inscription
   inscriptionForm        Json?
-  paymentReference       String?
+  paymentReference       String?         @db.Text
   fromOtherSchool        Boolean         @default(false)
   inscriptionSubmittedAt DateTime?
   createdAt              DateTime        @default(now())
@@ -692,14 +692,14 @@ model Candidate {
 model CandidateDocument {
   id           String   @id @default(uuid())
   candidateId  String
-  type         String
-  name         String
-  url          String
-  mimeType     String?
+  type         String   @db.Text
+  name         String   @db.Text
+  url          String   @db.Text
+  mimeType     String?  @db.Text
   stage        String   @default("PRE_INSCRIPTION") // PRE_INSCRIPTION | INSCRIPTION
   verified     Boolean  @default(false)
   reviewStatus String   @default("PENDING") // PENDING | VERIFIED | REJECTED
-  reviewNote   String?
+  reviewNote   String?  @db.Text
   uploadedAt   DateTime @default(now())
 
   candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
@@ -713,12 +713,12 @@ model Course {
   id           String       @id @default(uuid())
   subjectId    String
   promotionId  String
-  title        String
-  description  String?
+  title        String       @db.Text
+  description  String?      @db.Text
   status       CourseStatus @default(DRAFT)
-  thumbnailUrl String?
-  createdBy    String
-  approvedBy   String?
+  thumbnailUrl String?      @db.Text
+  createdBy    String       @db.Text
+  approvedBy   String?      @db.Text
   approvedAt   DateTime?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -739,7 +739,7 @@ model CourseTeacher {
   teacherId  String
   isMain     Boolean  @default(false)
   assignedAt DateTime @default(now())
-  assignedBy String?
+  assignedBy String?  @db.Text
 
   course  Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
   teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
@@ -750,8 +750,8 @@ model CourseTeacher {
 model Chapter {
   id          String   @id @default(uuid())
   courseId    String
-  title       String
-  description String?
+  title       String   @db.Text
+  description String?  @db.Text
   order       Int      @default(0)
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -765,9 +765,9 @@ model Chapter {
 model Resource {
   id          String       @id @default(uuid())
   chapterId   String
-  title       String
+  title       String       @db.Text
   type        ResourceType @default(DOCUMENT)
-  url         String
+  url         String       @db.Text
   size        Int?
   duration    Int?
   order       Int          @default(0)
@@ -800,18 +800,18 @@ model TimetableEntry {
   promotionId String?
   groupId     String?
   semesterId  String
-  courseId    String?
+  courseId    String?   @db.Text
   subjectId   String?
   roomId      String?
   teacherId   String?
   // Legacy denormalised strings — kept for display fallback only
-  teacherName String?
-  subjectName String
+  teacherName String?   @db.Text
+  subjectName String    @db.Text
   day         DayOfWeek
-  startTime   String
-  endTime     String
+  startTime   String    @db.Text
+  endTime     String    @db.Text
   type        String    @default("CM")
-  color       String?
+  color       String?   @db.Text
   createdAt   DateTime  @default(now())
 
   promotion Promotion?      @relation(fields: [promotionId], references: [id])
@@ -834,8 +834,8 @@ model Attendance {
   subjectId  String?
   semesterId String?
   date       DateTime
-  status     String
-  comment    String?
+  status     String   @db.Text
+  comment    String?  @db.Text
   createdAt  DateTime @default(now())
 
   student  StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -844,8 +844,8 @@ model Attendance {
   subject  Subject?        @relation(fields: [subjectId], references: [id])
   semester Semester?       @relation(fields: [semesterId], references: [id])
 
-  scheduleSlotId String? // créneau de l'emploi du temps concerné (appel par séance)
-  recordedById   String? // secrétaire / responsable présence qui a fait l'appel
+  scheduleSlotId String? @db.Text // créneau de l'emploi du temps concerné (appel par séance)
+  recordedById   String? @db.Text // secrétaire / responsable présence qui a fait l'appel
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -862,9 +862,9 @@ model Grade {
   value       Float
   maxValue    Float     @default(20)
   coefficient Float     @default(1)
-  comment     String?
+  comment     String?   @db.Text
   isValidated Boolean   @default(false)
-  validatedBy String?
+  validatedBy String?   @db.Text
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -882,8 +882,8 @@ model Quiz {
   id           String   @id @default(uuid())
   chapterId    String? // ERP: chapter-based quiz
   courseId     String? // Online: course-based quiz
-  title        String
-  description  String?
+  title        String   @db.Text
+  description  String?  @db.Text
   duration     Int      @default(30)
   timeLimit    Int? // Online: minutes (alias of duration)
   maxAttempts  Int      @default(3)
@@ -906,9 +906,9 @@ model Quiz {
 model QuizQuestion {
   id          String           @id @default(uuid())
   quizId      String
-  text        String
+  text        String           @db.Text
   type        QuizQuestionType @default(MCQ_SINGLE)
-  explanation String?
+  explanation String?          @db.Text
   points      Float            @default(1)
   order       Int              @default(0)
 
@@ -919,7 +919,7 @@ model QuizQuestion {
 model QuizOption {
   id         String  @id @default(uuid())
   questionId String
-  text       String
+  text       String  @db.Text
   isCorrect  Boolean @default(false)
   order      Int     @default(0)
 
@@ -948,12 +948,12 @@ model QuizAttempt {
 model Assignment {
   id          String           @id @default(uuid())
   courseId    String
-  title       String
-  description String?
+  title       String           @db.Text
+  description String?          @db.Text
   dueDate     DateTime
   maxScore    Float            @default(20)
   status      AssignmentStatus @default(DRAFT)
-  fileUrl     String?
+  fileUrl     String?          @db.Text
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -965,11 +965,11 @@ model Submission {
   id           String           @id @default(uuid())
   assignmentId String
   studentId    String
-  fileUrl      String?
-  content      String?
+  fileUrl      String?          @db.Text
+  content      String?          @db.Text
   status       SubmissionStatus @default(SUBMITTED)
   score        Float?
-  feedback     String?
+  feedback     String?          @db.Text
   submittedAt  DateTime         @default(now())
   gradedAt     DateTime?
 
@@ -990,8 +990,8 @@ model Exam {
   roomId      String?
   subjectId   String?
   // Legacy denormalised string — kept for display fallback
-  subjectName String
-  title       String
+  subjectName String   @db.Text
+  title       String   @db.Text
   date        DateTime
   duration    Int
   maxScore    Float    @default(20)
@@ -1012,7 +1012,7 @@ model ExamResult {
   examId    String
   studentId String
   score     Float?
-  comment   String?
+  comment   String?  @db.Text
   absented  Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -1030,12 +1030,12 @@ model FeeStructure {
   id             String    @id @default(uuid())
   promotionId    String?
   academicYearId String
-  name           String
+  name           String    @db.Text
   amount         Float
   currency       String    @default("MGA")
   dueDate        DateTime?
   isOptional     Boolean   @default(false)
-  description    String?
+  description    String?   @db.Text
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -1049,12 +1049,12 @@ model Invoice {
   studentId      String
   feeStructureId String?
   invoiceNumber  String        @unique
-  title          String
+  title          String        @db.Text
   amount         Float
   currency       String        @default("MGA")
   dueDate        DateTime
   status         PaymentStatus @default(PENDING)
-  notes          String?
+  notes          String?       @db.Text
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -1070,11 +1070,11 @@ model Payment {
   amount        Float
   currency      String        @default("MGA")
   method        String        @default("CASH")
-  reference     String?
+  reference     String?       @db.Text
   receiptNumber String?       @unique
   status        PaymentStatus @default(PAID)
-  notes         String?
-  recordedBy    String?
+  notes         String?       @db.Text
+  recordedBy    String?       @db.Text
   paidAt        DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -1090,11 +1090,11 @@ model Payment {
 model Certificate {
   id         String    @id @default(uuid())
   studentId  String
-  type       String
-  title      String
-  fileUrl    String?
+  type       String    @db.Text
+  title      String    @db.Text
+  fileUrl    String?   @db.Text
   issuedAt   DateTime  @default(now())
-  issuedBy   String?
+  issuedBy   String?   @db.Text
   validUntil DateTime?
 
   student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -1105,28 +1105,28 @@ model Certificate {
 // ─────────────────────────────────────────────────────────────
 
 model Announcement {
-  id           String                @id @default(uuid())
+  id           String               @id @default(uuid())
   authorId     String
-  title        String
-  content      String
-  category     AnnouncementCategory  @default(GENERAL)
-  priority     AnnouncementPriority  @default(NORMAL)
-  status       AnnouncementStatus    @default(DRAFT)
-  channels     AnnouncementChannel[]
-  isPinned     Boolean               @default(false)
-  publishAt    DateTime              @default(now())
+  title        String               @db.Text
+  content      String               @db.Text
+  category     AnnouncementCategory @default(GENERAL)
+  priority     AnnouncementPriority @default(NORMAL)
+  status       AnnouncementStatus   @default(DRAFT)
+  channels     Json                 @default("[]")
+  isPinned     Boolean              @default(false)
+  publishAt    DateTime             @default(now())
   expiresAt    DateTime?
   // Targeting
-  targetAll    Boolean               @default(false)
-  targetRoles  SystemRole[]
+  targetAll    Boolean              @default(false)
+  targetRoles  Json                 @default("[]")
   mentionId    String?
   promotionId  String?
-  targetUserId String?
+  targetUserId String?              @db.Text
   // Legacy / course-specific
   courseId     String?
   campusId     String?
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
 
   author      User                     @relation("AnnouncementAuthor", fields: [authorId], references: [id])
   mention     Mention?                 @relation(fields: [mentionId], references: [id])
@@ -1156,7 +1156,7 @@ model AnnouncementComment {
   id             String   @id @default(uuid())
   announcementId String
   authorId       String
-  content        String
+  content        String   @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -1167,9 +1167,9 @@ model AnnouncementComment {
 model AnnouncementAttachment {
   id             String   @id @default(uuid())
   announcementId String
-  name           String
-  url            String
-  mimeType       String
+  name           String   @db.Text
+  url            String   @db.Text
+  mimeType       String   @db.Text
   sizeBytes      Int?
   createdAt      DateTime @default(now())
 
@@ -1184,7 +1184,7 @@ model SchedulePeriod {
   id                   String               @id @default(uuid())
   mentionId            String
   semesterId           String
-  name                 String
+  name                 String               @db.Text
   status               SchedulePeriodStatus @default(PREPARING)
   createdById          String
   availabilityDeadline DateTime?
@@ -1211,9 +1211,9 @@ model TeacherAvailability {
   teacherUserId    String
   day              DayOfWeek
   startTime        String
-  endTime          String
+  endTime          String    @db.Text
   isAvailable      Boolean   @default(true)
-  note             String?
+  note             String?   @db.Text
   submittedAt      DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -1229,8 +1229,8 @@ model TeacherPreference {
   teacherUserId    String
   courseId         String
   preferredDay     DayOfWeek?
-  preferredStart   String?
-  note             String?
+  preferredStart   String?    @db.Text
+  note             String?    @db.Text
   createdAt        DateTime   @default(now())
 
   schedulePeriod SchedulePeriod @relation(fields: [schedulePeriodId], references: [id], onDelete: Cascade)
@@ -1248,10 +1248,10 @@ model ScheduleSlot {
   roomId           String?
   promotionId      String
   groupId          String?
-  subjectName      String
+  subjectName      String    @db.Text
   day              DayOfWeek
-  startTime        String
-  endTime          String
+  startTime        String    @db.Text
+  endTime          String    @db.Text
   type             String    @default("CM")
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -1272,7 +1272,7 @@ model ScheduleTeacherConfirmation {
   schedulePeriodId String
   teacherUserId    String
   status           String    @default("PENDING") // PENDING | ACCEPTED | CONTESTED
-  comment          String?
+  comment          String?   @db.Text
   sentAt           DateTime  @default(now())
   respondedAt      DateTime?
 
@@ -1286,7 +1286,7 @@ model ScheduleValidation {
   schedulePeriodId String   @unique
   validatedById    String
   validatedAt      DateTime @default(now())
-  notes            String?
+  notes            String?  @db.Text
 
   schedulePeriod SchedulePeriod @relation(fields: [schedulePeriodId], references: [id], onDelete: Cascade)
   validatedBy    User           @relation("ScheduleValidator", fields: [validatedById], references: [id])
@@ -1296,9 +1296,9 @@ model Notification {
   id        String           @id @default(uuid())
   userId    String
   type      NotificationType @default(INFO)
-  title     String
-  body      String
-  link      String?
+  title     String           @db.Text
+  body      String           @db.Text
+  link      String?          @db.Text
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
 
@@ -1311,10 +1311,10 @@ model Notification {
 
 model ChatRoom {
   id        String   @id @default(uuid())
-  name      String?
+  name      String?  @db.Text
   isGroup   Boolean  @default(false)
   isPrivate Boolean  @default(false)
-  courseId  String?
+  courseId  String?  @db.Text
   system    String   @default("ERP") // ERP | ONLINE
   type      String   @default("GROUP") // PRIVATE | CLASS | ADMIN | BROADCAST | COURSE
   createdAt DateTime @default(now())
@@ -1341,10 +1341,10 @@ model Message {
   id        String   @id @default(uuid())
   roomId    String
   senderId  String
-  body      String
-  fileUrl   String?
-  fileType  String?
-  fileName  String?
+  body      String   @db.Text
+  fileUrl   String?  @db.Text
+  fileType  String?  @db.Text
+  fileName  String?  @db.Text
   isPinned  Boolean  @default(false)
   isSystem  Boolean  @default(false)
   isRead    Boolean  @default(false)
@@ -1371,28 +1371,28 @@ model RefreshToken {
 model OnlineCourse {
   id              String    @id @default(uuid())
   teacherId       String
-  title           String
-  subtitle        String?
+  title           String    @db.Text
+  subtitle        String?   @db.Text
   slug            String    @unique
-  description     String?
-  thumbnail       String?
-  previewVideoUrl String?
+  description     String?   @db.Text
+  thumbnail       String?   @db.Text
+  previewVideoUrl String?   @db.Text
   status          String    @default("DRAFT") // DRAFT|REVIEW|APPROVED|PUBLISHED|ARCHIVED
   publishedAt     DateTime?
   categoryId      String?
-  tags            String[]
-  level           String?
+  tags            Json      @default("[]")
+  level           String?   @db.Text
   language        String?   @default("fr")
   isFeatured      Boolean   @default(false)
   price           Float?    @default(0)
   hasCertificate  Boolean   @default(true)
   estimatedHours  Float?
-  objectives      String[]
-  skills          String[]
-  audience        String?
-  prerequisites   String?
-  statusHistory   Json[]    @default([]) // [{status, changedAt, changedBy, note}]
-  reviewNote      String?
+  objectives      Json      @default("[]")
+  skills          Json      @default("[]")
+  audience        String?   @db.Text
+  prerequisites   String?   @db.Text
+  statusHistory   Json      @default("[]") // [{status, changedAt, changedBy, note}]
+  reviewNote      String?   @db.Text
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -1420,11 +1420,11 @@ model OnlineCourse {
   // ── Cursus universitaire ──
   courseKind       String             @default("CERTIFYING") // UNIVERSITY | CERTIFYING | BOTH
   credentialType   String             @default("CERTIFICATE") // CERTIFICATE | ATTESTATION (cours certifiants)
-  mentionId        String?
-  cursusLevel      String? // L1 | L2 | L3 | M1 | M2
+  mentionId        String?            @db.Text
+  cursusLevel      String?            @db.Text // L1 | L2 | L3 | M1 | M2
   cursusMonth      Int? // 1..8 — S1 = mois 1-4, S2 = mois 5-8
-  subjectId        String?
-  relatedCourseIds String[]           @default([]) // cours liés, à terminer avant celui-ci
+  subjectId        String?            @db.Text
+  relatedCourseIds Json               @default("[]") // cours liés, à terminer avant celui-ci
   totalHours       Float? // volume horaire prévu
   curriculumEntry  CurriculumEntry?   @relation("CurriculumCourse")
   syllabusItems    SyllabusItem[]
@@ -1435,9 +1435,9 @@ model OnlineCourse {
 model CourseAnnouncement {
   id        String   @id @default(uuid())
   courseId  String
-  authorId  String
-  title     String
-  body      String
+  authorId  String   @db.Text
+  title     String   @db.Text
+  body      String   @db.Text
   isPinned  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1450,8 +1450,8 @@ model CourseAnnouncement {
 model OnlineModule {
   id                   String   @id @default(uuid())
   courseId             String
-  title                String
-  description          String?
+  title                String   @db.Text
+  description          String?  @db.Text
   order                Int      @default(0)
   isHidden             Boolean  @default(false)
   dripDays             Int? // unlock N days after enrollment; null = immediate
@@ -1471,10 +1471,10 @@ model OnlineModule {
 model OnlineLesson {
   id            String   @id @default(uuid())
   moduleId      String
-  title         String
+  title         String   @db.Text
   type          String   @default("VIDEO") // VIDEO | PDF | TEXT | AUDIO | DOCUMENT
-  contentUrl    String?
-  body          String?
+  contentUrl    String?  @db.Text
+  body          String?  @db.Text
   duration      Int? // seconds
   order         Int      @default(0)
   isHidden      Boolean  @default(false)
@@ -1496,9 +1496,9 @@ model OnlineLesson {
 model LessonFile {
   id            String   @id @default(uuid())
   lessonId      String
-  name          String
-  url           String
-  mimeType      String
+  name          String   @db.Text
+  url           String   @db.Text
+  mimeType      String   @db.Text
   size          Int      @default(0)
   order         Int      @default(0)
   allowDownload Boolean  @default(true)
@@ -1511,7 +1511,7 @@ model CourseVersion {
   id         String   @id @default(uuid())
   courseId   String
   versionNum Int
-  label      String?
+  label      String?  @db.Text
   snapshot   Json
   createdBy  String
   createdAt  DateTime @default(now())
@@ -1526,7 +1526,7 @@ model CourseComment {
   id          String   @id @default(uuid())
   courseId    String
   authorId    String
-  content     String
+  content     String   @db.Text
   isAdminNote Boolean  @default(false)
   parentId    String?
   resolved    Boolean  @default(false)
@@ -1548,8 +1548,8 @@ model CourseReview {
   courseId  String
   studentId String
   rating    Int // 1..5
-  comment   String?
-  reply     String? // teacher reply
+  comment   String?   @db.Text
+  reply     String?   @db.Text // teacher reply
   repliedAt DateTime?
   isHidden  Boolean   @default(false) // moderation
   createdAt DateTime  @default(now())
@@ -1567,10 +1567,10 @@ model CourseQuestion {
   courseId  String
   lessonId  String?
   authorId  String
-  title     String
-  body      String
+  title     String   @db.Text
+  body      String   @db.Text
   resolved  Boolean  @default(false)
-  upvotes   String[] @default([]) // user ids who upvoted
+  upvotes   Json     @default("[]") // user ids who upvoted
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1586,10 +1586,10 @@ model CourseAnswer {
   id           String   @id @default(uuid())
   questionId   String
   authorId     String
-  body         String
+  body         String   @db.Text
   isInstructor Boolean  @default(false)
   isAccepted   Boolean  @default(false)
-  upvotes      String[] @default([])
+  upvotes      Json     @default("[]")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -1604,7 +1604,7 @@ model LessonNote {
   studentId  String
   courseId   String
   lessonId   String
-  body       String
+  body       String   @db.Text
   timestamp  Int? // seconds into video; null = general note
   isBookmark Boolean  @default(false)
   createdAt  DateTime @default(now())
@@ -1624,9 +1624,9 @@ model Enrollment {
   courseId            String
   progress            Float     @default(0)
   completedAt         DateTime?
-  lastVisitedLessonId String?
+  lastVisitedLessonId String?   @db.Text
   lastVisitedAt       DateTime?
-  lastOpenedModuleId  String?
+  lastOpenedModuleId  String?   @db.Text
   viaSubscription     Boolean   @default(false) // access granted by an active subscription, not a purchase
   lastReminderAt      DateTime? // last "come back" email — avoids spamming
   createdAt           DateTime  @default(now())
@@ -1675,7 +1675,7 @@ model OnlineCertificate {
 model OnlineQuizAttempt {
   id          String   @id @default(uuid())
   quizId      String
-  studentId   String // User.id of STUDENT_ONLINE
+  studentId   String   @db.Text // User.id of STUDENT_ONLINE
   score       Float?
   maxScore    Float?
   passed      Boolean?
@@ -1690,8 +1690,8 @@ model LearningActivity {
   studentId String // User.id of STUDENT_ONLINE
   courseId  String?
   lessonId  String?
-  quizId    String?
-  action    String // lesson_open | video_complete | pdf_open | quiz_start | quiz_complete | assignment_submit | certificate_earned
+  quizId    String?  @db.Text
+  action    String   @db.Text // lesson_open | video_complete | pdf_open | quiz_start | quiz_complete | assignment_submit | certificate_earned
   meta      Json?
   createdAt DateTime @default(now())
 
@@ -1701,18 +1701,18 @@ model LearningActivity {
 }
 
 model LiveSession {
-  id          String   @id @default(uuid())
-  courseId    String
-  teacherId   String
-  title       String
-  description String?
-  scheduledAt DateTime
-  durationMin Int      @default(60)
-  link        String?
-  status      String   @default("SCHEDULED") // SCHEDULED | LIVE | DONE | CANCELLED
-  recordingUrl String? // enregistrement autorisé par l'enseignant (lien http/https)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(uuid())
+  courseId     String
+  teacherId    String
+  title        String   @db.Text
+  description  String?  @db.Text
+  scheduledAt  DateTime
+  durationMin  Int      @default(60)
+  link         String?  @db.Text
+  status       String   @default("SCHEDULED") // SCHEDULED | LIVE | DONE | CANCELLED
+  recordingUrl String?  @db.Text // enregistrement autorisé par l'enseignant (lien http/https)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   course   OnlineCourse       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   teacher  User               @relation("LiveSessionTeacher", fields: [teacherId], references: [id])
@@ -1733,11 +1733,11 @@ model OnlineAssignment {
   id          String   @id @default(uuid())
   courseId    String
   moduleId    String?
-  title       String
-  description String?
+  title       String   @db.Text
+  description String?  @db.Text
   dueDate     DateTime
   maxScore    Float    @default(20)
-  fileUrl     String?
+  fileUrl     String?  @db.Text
   attachments Json     @default("[]") // fichiers d'exercices joints [{ name, url, mimeType, size }]
   status      String   @default("OPEN") // OPEN | CLOSED
   peerReview  Boolean  @default(false) // submissions are graded by fellow students
@@ -1753,11 +1753,11 @@ model OnlineSubmission {
   id           String    @id @default(uuid())
   assignmentId String
   studentId    String // User.id of STUDENT_ONLINE
-  fileUrl      String?
-  content      String?
+  fileUrl      String?   @db.Text
+  content      String?   @db.Text
   status       String    @default("SUBMITTED") // SUBMITTED | GRADED
   score        Float?
-  feedback     String?
+  feedback     String?   @db.Text
   submittedAt  DateTime  @default(now())
   gradedAt     DateTime?
 
@@ -1772,7 +1772,7 @@ model PeerReview {
   submissionId String
   reviewerId   String // User.id of a fellow student who also submitted
   score        Float
-  comment      String?
+  comment      String?  @db.Text
   createdAt    DateTime @default(now())
 
   submission OnlineSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
@@ -1783,9 +1783,9 @@ model PeerReview {
 
 model LearningPath {
   id          String   @id @default(uuid())
-  title       String
-  description String?
-  thumbnail   String?
+  title       String   @db.Text
+  description String?  @db.Text
+  thumbnail   String?  @db.Text
   createdBy   String
   status      String   @default("DRAFT") // DRAFT | PUBLISHED
   createdAt   DateTime @default(now())
@@ -1814,13 +1814,13 @@ model LearningPathStep {
 model GeneratedDocument {
   id            String   @id @default(uuid())
   number        String   @unique // e.g. CERT-2026-000001
-  templateId    String // references template key
-  templateName  String
-  category      String // ETUDIANT | ENSEIGNANT | PERSONNEL | FINANCE
+  templateId    String   @db.Text // references template key
+  templateName  String   @db.Text
+  category      String   @db.Text // ETUDIANT | ENSEIGNANT | PERSONNEL | FINANCE
   moduleType    String   @default("DOCUMENT") // DOCUMENT | LETTER | CARD
-  recipientType String // STUDENT | TEACHER | STAFF | PARENT
-  recipientId   String // profileId (studentProfileId etc.)
-  recipientName String
+  recipientType String   @db.Text // STUDENT | TEACHER | STAFF | PARENT
+  recipientId   String   @db.Text // profileId (studentProfileId etc.)
+  recipientName String   @db.Text
   content       String   @db.Text // generated HTML
   inputs        String   @db.Text // JSON of inputs used
   generatedBy   String // userId
@@ -1836,31 +1836,31 @@ model SchoolBranding {
   // Identity
   name              String   @default("Université de Référence")
   shortName         String   @default("UR")
-  sigle             String?
-  establishmentType String?
-  address           String?
-  city              String?
-  country           String?
-  phone             String?
-  email             String?
-  website           String?
+  sigle             String?  @db.Text
+  establishmentType String?  @db.Text
+  address           String?  @db.Text
+  city              String?  @db.Text
+  country           String?  @db.Text
+  phone             String?  @db.Text
+  email             String?  @db.Text
+  website           String?  @db.Text
   yearCreated       Int?
   // Responsible
-  rectorName        String?
-  rectorTitle       String?
-  rectorSignUrl     String?
+  rectorName        String?  @db.Text
+  rectorTitle       String?  @db.Text
+  rectorSignUrl     String?  @db.Text
   // Visual
   primaryColor      String   @default("#1a365d")
   secondaryColor    String   @default("#ffffff")
   accentColor       String   @default("#FFD166")
   fontFamily        String   @default("Arial, sans-serif")
-  logoUrl           String?
-  secondaryLogoUrl  String?
-  backgroundUrl     String?
-  watermarkUrl      String?
-  stampUrl          String?
-  signatureUrl      String?
-  iconUrl           String?
+  logoUrl           String?  @db.Text
+  secondaryLogoUrl  String?  @db.Text
+  backgroundUrl     String?  @db.Text
+  watermarkUrl      String?  @db.Text
+  stampUrl          String?  @db.Text
+  signatureUrl      String?  @db.Text
+  iconUrl           String?  @db.Text
   // Documents
   documentPrefix    String   @default("UR")
   qrCodeEnabled     Boolean  @default(true)
@@ -1884,9 +1884,9 @@ enum DesignerDocType {
 
 model DocumentTemplate {
   id           String          @id @default(uuid())
-  name         String
+  name         String          @db.Text
   type         DesignerDocType @default(STUDENT_CARD)
-  description  String?
+  description  String?         @db.Text
   canvasData   Json            @default("[]")
   canvasWidth  Int             @default(638)
   canvasHeight Int             @default(408)
@@ -1923,9 +1923,9 @@ enum FinanceFeeFrequency {
 // Configurable fee types (no hardcoded fees)
 model FinanceFeeType {
   id        String   @id @default(uuid())
-  name      String
+  name      String   @db.Text
   code      String   @unique
-  category  String?
+  category  String?  @db.Text
   mandatory Boolean  @default(true)
   active    Boolean  @default(true)
   order     Int      @default(0)
@@ -1938,7 +1938,7 @@ model FinanceFeeType {
 // Tariff grid: per year + mention + promotion
 model FinanceFeeGrid {
   id             String   @id @default(uuid())
-  name           String
+  name           String   @db.Text
   academicYearId String
   mentionId      String?
   promotionId    String?
@@ -1983,20 +1983,20 @@ model FinanceAccountItem {
   id              String            @id @default(uuid())
   accountId       String
   feeTypeId       String
-  gridItemId      String?
-  label           String
+  gridItemId      String?           @db.Text
+  label           String            @db.Text
   amount          Float
   currency        String            @default("MGA")
   amountPaid      Float             @default(0)
   dueDate         DateTime?
   status          FinanceItemStatus @default(UNPAID)
   receiptNumber   String?           @unique
-  validatedById   String?
+  validatedById   String?           @db.Text
   validatedAt     DateTime?
   receiptIssuedAt DateTime?
-  refusedReason   String?
-  notes           String?
-  academicYearId  String?
+  refusedReason   String?           @db.Text
+  notes           String?           @db.Text
+  academicYearId  String?           @db.Text
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -2012,9 +2012,9 @@ model FinanceTransaction {
   amount        Float
   currency      String   @default("MGA")
   method        String   @default("CASH")
-  reference     String?
-  notes         String?
-  recordedById  String?
+  reference     String?  @db.Text
+  notes         String?  @db.Text
+  recordedById  String?  @db.Text
   paidAt        DateTime @default(now())
   createdAt     DateTime @default(now())
 
@@ -2024,9 +2024,9 @@ model FinanceTransaction {
 // Configurable payment methods
 model FinancePaymentMethod {
   id          String  @id @default(uuid())
-  name        String
+  name        String  @db.Text
   code        String  @unique
-  description String?
+  description String? @db.Text
   active      Boolean @default(true)
   order       Int     @default(0)
 }
@@ -2034,7 +2034,7 @@ model FinancePaymentMethod {
 // Penalty rules
 model FinancePenalty {
   id          String  @id @default(uuid())
-  name        String
+  name        String  @db.Text
   code        String  @unique
   amount      Float?
   percent     Float?
@@ -2045,34 +2045,34 @@ model FinancePenalty {
 // Discount / remise rules
 model FinanceDiscount {
   id          String  @id @default(uuid())
-  name        String
+  name        String  @db.Text
   code        String  @unique
   amount      Float?
   percent     Float?
-  description String?
+  description String? @db.Text
   active      Boolean @default(true)
 }
 
 // Scholarship definitions
 model FinanceScholarship {
   id            String  @id @default(uuid())
-  name          String
+  name          String  @db.Text
   code          String  @unique
   coverageType  String  @default("PERCENT")
   coverageValue Float
-  description   String?
+  description   String? @db.Text
   active        Boolean @default(true)
 }
 
 // Audit log for all finance actions
 model FinanceAuditLog {
   id          String   @id @default(uuid())
-  action      String
-  entityType  String
-  entityId    String
-  userId      String?
-  description String?
-  ipAddress   String?
+  action      String   @db.Text
+  entityType  String   @db.Text
+  entityId    String   @db.Text
+  userId      String?  @db.Text
+  description String?  @db.Text
+  ipAddress   String?  @db.Text
   createdAt   DateTime @default(now())
 }
 
@@ -2107,7 +2107,7 @@ enum HrLeaveStatus {
 // HR Departments (separate from academic Department)
 model HrDepartment {
   id        String   @id @default(uuid())
-  name      String
+  name      String   @db.Text
   code      String?  @unique
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -2119,7 +2119,7 @@ model HrDepartment {
 // Job positions
 model HrPosition {
   id           String   @id @default(uuid())
-  title        String
+  title        String   @db.Text
   code         String?  @unique
   departmentId String?
   payCalcMode  String   @default("FIXED") // FIXED | HOURLY
@@ -2139,7 +2139,7 @@ model HrHourlyRateSettings {
   rateTP    Float    @default(0) // Travaux Pratiques MGA/h
   rateHS    Float    @default(0) // Heures supplémentaires MGA/h
   updatedAt DateTime @updatedAt
-  updatedBy String?
+  updatedBy String?  @db.Text
 }
 
 // All university staff
@@ -2147,10 +2147,10 @@ model HrEmployee {
   id             String         @id @default(uuid())
   userId         String?        @unique
   employeeNumber String         @unique
-  firstName      String
-  lastName       String
-  email          String?
-  phone          String?
+  firstName      String         @db.Text
+  lastName       String         @db.Text
+  email          String?        @db.Text
+  phone          String?        @db.Text
   birthDate      DateTime?
   positionId     String?
   departmentId   String?
@@ -2159,9 +2159,9 @@ model HrEmployee {
   endDate        DateTime?
   baseSalary     Float?
   currency       String         @default("MGA")
-  bankAccount    String?
+  bankAccount    String?        @db.Text
   active         Boolean        @default(true)
-  avatarUrl      String?
+  avatarUrl      String?        @db.Text
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -2183,8 +2183,8 @@ model HrContract {
   endDate     DateTime?
   baseSalary  Float?
   currency    String         @default("MGA")
-  documentUrl String?
-  notes       String?
+  documentUrl String?        @db.Text
+  notes       String?        @db.Text
   createdAt   DateTime       @default(now())
 
   employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
@@ -2206,9 +2206,9 @@ model HrSalaryGrid {
 model HrSalaryComponent {
   id        String  @id @default(uuid())
   gridId    String
-  type      String // GAIN | DEDUCTION
-  label     String
-  code      String
+  type      String  @db.Text // GAIN | DEDUCTION
+  label     String  @db.Text
+  code      String  @db.Text
   amount    Float   @default(0)
   isPercent Boolean @default(false)
   order     Int     @default(0)
@@ -2223,7 +2223,7 @@ model HrPayrollPeriod {
   month     Int
   year      Int
   status    HrPayrollStatus @default(DRAFT)
-  notes     String?
+  notes     String?         @db.Text
   closedAt  DateTime?
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
@@ -2244,10 +2244,10 @@ model HrPayslip {
   netSalary     Float
   items         Json            @default("[]")
   status        HrPayrollStatus @default(DRAFT)
-  validatedById String?
+  validatedById String?         @db.Text
   validatedAt   DateTime?
   paidAt        DateTime?
-  fileUrl       String?
+  fileUrl       String?         @db.Text
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -2260,7 +2260,7 @@ model HrPayslip {
 // Leave types
 model HrLeaveType {
   id          String  @id @default(uuid())
-  name        String
+  name        String  @db.Text
   code        String  @unique
   daysPerYear Int?
   paid        Boolean @default(true)
@@ -2271,13 +2271,13 @@ model HrLeaveType {
 model HrLeave {
   id           String        @id @default(uuid())
   employeeId   String
-  leaveTypeId  String?
+  leaveTypeId  String?       @db.Text
   startDate    DateTime
   endDate      DateTime
   days         Int
-  reason       String?
+  reason       String?       @db.Text
   status       HrLeaveStatus @default(PENDING)
-  approvedById String?
+  approvedById String?       @db.Text
   approvedAt   DateTime?
   createdAt    DateTime      @default(now())
 
@@ -2290,9 +2290,9 @@ model HrLeave {
 
 model FinanceFeeCategory {
   id        String   @id @default(uuid())
-  name      String
+  name      String   @db.Text
   code      String   @unique
-  color     String?
+  color     String?  @db.Text
   active    Boolean  @default(true)
   order     Int      @default(0)
   createdAt DateTime @default(now())
@@ -2300,9 +2300,9 @@ model FinanceFeeCategory {
 
 model FinanceCurrency {
   id        String   @id @default(uuid())
-  name      String
+  name      String   @db.Text
   code      String   @unique
-  symbol    String
+  symbol    String   @db.Text
   isDefault Boolean  @default(false)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -2310,7 +2310,7 @@ model FinanceCurrency {
 
 model FinanceAccountingAccount {
   id        String   @id @default(uuid())
-  name      String
+  name      String   @db.Text
   code      String   @unique
   type      String   @default("REVENUE")
   active    Boolean  @default(true)
@@ -2319,16 +2319,16 @@ model FinanceAccountingAccount {
 
 model FinanceCashRegister {
   id          String   @id @default(uuid())
-  name        String
+  name        String   @db.Text
   code        String   @unique
-  description String?
+  description String?  @db.Text
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
 }
 
 model FinanceFiscalYear {
   id        String   @id @default(uuid())
-  label     String
+  label     String   @db.Text
   startDate DateTime
   endDate   DateTime
   isClosed  Boolean  @default(false)
@@ -2341,19 +2341,19 @@ model FinanceFiscalYear {
 
 model LmsSetting {
   key       String   @id
-  value     String
+  value     String   @db.Text
   updatedAt DateTime @updatedAt
 }
 
 model NavMenu {
   id        String    @id @default(uuid())
-  label     String
-  url       String?
-  icon      String?
+  label     String    @db.Text
+  url       String?   @db.Text
+  icon      String?   @db.Text
   order     Int       @default(0)
   isActive  Boolean   @default(true)
   openInTab Boolean   @default(false)
-  roles     String[]
+  roles     Json      @default("[]")
   parentId  String?
   parent    NavMenu?  @relation("NavSubs", fields: [parentId], references: [id], onDelete: Cascade)
   children  NavMenu[] @relation("NavSubs")
@@ -2363,8 +2363,8 @@ model NavMenu {
 
 model HomeSection {
   id        String   @id @default(uuid())
-  type      String
-  title     String?
+  type      String   @db.Text
+  title     String?  @db.Text
   isActive  Boolean  @default(true)
   order     Int      @default(0)
   config    Json?
@@ -2375,8 +2375,8 @@ model HomeSection {
 // des cours achetés un par un. Prix gérés par le Super Admin.
 model CoursePack {
   id          String   @id @default(uuid())
-  title       String
-  description String?
+  title       String   @db.Text
+  description String?  @db.Text
   price       Float
   currency    String   @default("MGA")
   isActive    Boolean  @default(true)
@@ -2404,27 +2404,27 @@ model CoursePayment {
   courseId          String
   amount            Float
   currency          String    @default("MGA")
-  method            String // MVOLA | ORANGE_MONEY | AIRTEL_MONEY | CARD
-  senderNumber      String
-  transactionRef    String
-  screenshotUrl     String?
-  remark            String?
+  method            String    @db.Text // MVOLA | ORANGE_MONEY | AIRTEL_MONEY | CARD
+  senderNumber      String    @db.Text
+  transactionRef    String    @db.Text
+  screenshotUrl     String?   @db.Text
+  remark            String?   @db.Text
   reference         String    @unique
   status            String    @default("PENDING") // PENDING | VALIDATED | REFUSED | REFUND_REQUESTED | REFUNDED
   validatedAt       DateTime?
-  validatedBy       String?
+  validatedBy       String?   @db.Text
   refusedAt         DateTime?
-  refusedReason     String?
+  refusedReason     String?   @db.Text
   // Discount applied at checkout via a coupon (amount is the net paid).
-  couponCode        String?
+  couponCode        String?   @db.Text
   discountAmount    Float?    @default(0)
   // Achat groupé : les paiements d'un même pack partagent packId + transactionRef
-  packId            String?
+  packId            String?   @db.Text
   // Refund workflow.
   refundRequestedAt DateTime?
-  refundReason      String?
+  refundReason      String?   @db.Text
   refundedAt        DateTime?
-  refundedBy        String?
+  refundedBy        String?   @db.Text
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -2459,7 +2459,7 @@ model Coupon {
   redeemedCount  Int       @default(0)
   expiresAt      DateTime?
   isActive       Boolean   @default(true)
-  createdBy      String
+  createdBy      String    @db.Text
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -2489,12 +2489,12 @@ model CouponRedemption {
 
 model SubscriptionPlan {
   id           String   @id @default(uuid())
-  name         String
-  description  String?
+  name         String   @db.Text
+  description  String?  @db.Text
   price        Float
   currency     String   @default("MGA")
   durationDays Int // 30 = monthly, 365 = yearly
-  features     String[] @default([]) // selling points shown on the plan card (admin-defined)
+  features     Json     @default("[]") // selling points shown on the plan card (admin-defined)
   scope        String   @default("ALL") // ALL = every published course
   isActive     Boolean  @default(true)
   isFeatured   Boolean  @default(false)
@@ -2512,16 +2512,16 @@ model Subscription {
   startedAt      DateTime?
   expiresAt      DateTime?
   // Manual Mobile-Money payment (same pattern as CoursePayment).
-  method         String
-  senderNumber   String
-  transactionRef String
-  screenshotUrl  String?
+  method         String    @db.Text
+  senderNumber   String    @db.Text
+  transactionRef String    @db.Text
+  screenshotUrl  String?   @db.Text
   amount         Float
   reference      String    @unique
   validatedAt    DateTime?
-  validatedBy    String?
+  validatedBy    String?   @db.Text
   refusedAt      DateTime?
-  refusedReason  String?
+  refusedReason  String?   @db.Text
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -2534,11 +2534,11 @@ model Subscription {
 
 model OnlineCategory {
   id          String           @id @default(uuid())
-  name        String
+  name        String           @db.Text
   slug        String           @unique
-  description String?
-  icon        String?
-  color       String?
+  description String?          @db.Text
+  icon        String?          @db.Text
+  color       String?          @db.Text
   parentId    String?
   parent      OnlineCategory?  @relation("CatSubs", fields: [parentId], references: [id])
   children    OnlineCategory[] @relation("CatSubs")
@@ -2549,12 +2549,12 @@ model OnlineCategory {
 
 model MediaFile {
   id           String   @id @default(uuid())
-  name         String
-  originalName String?
-  url          String
-  type         String
+  name         String   @db.Text
+  originalName String?  @db.Text
+  url          String   @db.Text
+  type         String   @db.Text
   size         Int?
-  mimeType     String?
+  mimeType     String?  @db.Text
   uploadedBy   String
   uploader     User     @relation("MediaUploader", fields: [uploadedBy], references: [id])
   createdAt    DateTime @default(now())
@@ -2562,10 +2562,10 @@ model MediaFile {
 
 model Testimonial {
   id        String   @id @default(uuid())
-  name      String
-  role      String?
-  avatar    String?
-  content   String
+  name      String   @db.Text
+  role      String?  @db.Text
+  avatar    String?  @db.Text
+  content   String   @db.Text
   rating    Int      @default(5)
   isActive  Boolean  @default(true)
   order     Int      @default(0)
@@ -2574,8 +2574,8 @@ model Testimonial {
 
 model FaqItem {
   id        String   @id @default(uuid())
-  question  String
-  answer    String
+  question  String   @db.Text
+  answer    String   @db.Text
   order     Int      @default(0)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -2593,13 +2593,13 @@ model CurriculumEntry {
   level        String // L1 | L2 | L3 | M1 | M2
   month        Int // 1..8 — S1 = mois 1-4, S2 = mois 5-8
   subjectId    String?
-  title        String
-  description  String?
+  title        String   @db.Text
+  description  String?  @db.Text
   teacherId    String? // User.id de l'enseignant attribué
   courseId     String?  @unique // OnlineCourse construit par l'enseignant
   plannedHours Float    @default(30)
   order        Int      @default(0)
-  createdById  String
+  createdById  String   @db.Text
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -2630,22 +2630,22 @@ model TuitionSetting {
 model TuitionPayment {
   id             String    @id @default(uuid())
   studentId      String // StudentProfile.id
-  mentionId      String?
+  mentionId      String?   @db.Text
   level          String
   month          Int // 1..8
   amount         Float
   currency       String    @default("MGA")
-  method         String // MVOLA | ORANGE_MONEY | AIRTEL_MONEY | CASH
+  method         String    @db.Text // MVOLA | ORANGE_MONEY | AIRTEL_MONEY | CASH
   source         String    @default("STUDENT") // STUDENT (déclaré) | CASHIER (guichet)
-  senderNumber   String?
-  transactionRef String?
-  screenshotUrl  String?
-  note           String?
+  senderNumber   String?   @db.Text
+  transactionRef String?   @db.Text
+  screenshotUrl  String?   @db.Text
+  note           String?   @db.Text
   status         String    @default("PENDING") // PENDING | VALIDATED | REFUSED
-  recordedById   String?
-  validatedById  String?
+  recordedById   String?   @db.Text
+  validatedById  String?   @db.Text
   validatedAt    DateTime?
-  refusedReason  String?
+  refusedReason  String?   @db.Text
   receiptNumber  String?   @unique
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -2660,12 +2660,12 @@ model TuitionPayment {
 model LevelPassage {
   id              String   @id @default(uuid())
   studentId       String
-  fromLevel       String
-  toLevel         String
-  fromPromotionId String?
-  toPromotionId   String?
-  decidedById     String
-  note            String?
+  fromLevel       String   @db.Text
+  toLevel         String   @db.Text
+  fromPromotionId String?  @db.Text
+  toPromotionId   String?  @db.Text
+  decidedById     String   @db.Text
+  note            String?  @db.Text
   createdAt       DateTime @default(now())
 
   student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -2675,13 +2675,13 @@ model LevelPassage {
 model SyllabusItem {
   id           String    @id @default(uuid())
   courseId     String
-  title        String
-  description  String?
+  title        String    @db.Text
+  description  String?   @db.Text
   plannedHours Float     @default(2)
   order        Int       @default(0)
   isDone       Boolean   @default(false)
   doneAt       DateTime?
-  doneById     String?
+  doneById     String?   @db.Text
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -2698,8 +2698,8 @@ model CourseSessionLog {
   courseId    String?
   date        DateTime @db.Date
   hours       Float
-  note        String?
-  checkedById String
+  note        String?  @db.Text
+  checkedById String   @db.Text
   checkedAt   DateTime @default(now())
 
   slot   ScheduleSlot  @relation(fields: [slotId], references: [id], onDelete: Cascade)
@@ -2720,7 +2720,7 @@ model TeacherEarning {
   universityShare Float
   currency        String   @default("MGA")
   status          String   @default("PENDING") // PENDING | IN_PAYSLIP | PAID | CANCELLED
-  payslipId       String?
+  payslipId       String?  @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -2734,14 +2734,14 @@ model TeacherEarning {
 // Gérés par le Super administrateur et le Secrétariat (permission MANAGE_EVENTS).
 model UniversityEvent {
   id          String    @id @default(uuid())
-  title       String
-  description String?
-  location    String?
+  title       String    @db.Text
+  description String?   @db.Text
+  location    String?   @db.Text
   startAt     DateTime
   endAt       DateTime?
-  imageUrl    String?
+  imageUrl    String?   @db.Text
   isPublished Boolean   @default(true)
-  createdById String?
+  createdById String?   @db.Text
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -2763,20 +2763,20 @@ enum NewsCategory {
 model NewsArticle {
   id          String       @id @default(uuid())
   slug        String       @unique
-  title       String
-  excerpt     String?
-  body        String
-  imageUrl    String?
+  title       String       @db.Text
+  excerpt     String?      @db.Text
+  body        String       @db.Text
+  imageUrl    String?      @db.Text
   category    NewsCategory @default(ACTUALITE)
-  authors     String? // auteurs d'une publication, intervenants d'une conférence…
-  location    String?
+  authors     String?      @db.Text // auteurs d'une publication, intervenants d'une conférence…
+  location    String?      @db.Text
   eventAt     DateTime? // date d'une conférence ou d'une soutenance
-  linkUrl     String? // lien externe (article scientifique, document officiel)
+  linkUrl     String?      @db.Text // lien externe (article scientifique, document officiel)
   isFeatured  Boolean      @default(false) // grande actualité « à la une »
   isPublished Boolean      @default(false)
   isArchived  Boolean      @default(false)
   publishedAt DateTime?
-  createdById String?
+  createdById String?      @db.Text
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 

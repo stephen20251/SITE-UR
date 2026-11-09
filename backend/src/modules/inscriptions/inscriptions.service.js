@@ -48,18 +48,18 @@ export async function listStudents({ academicYearId, mentionId, promotionId, gro
   if (q) {
     where.user = {
       OR: [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName:  { contains: q, mode: 'insensitive' } },
-        { email:     { contains: q, mode: 'insensitive' } },
+        { firstName: { contains: q } },
+        { lastName:  { contains: q } },
+        { email:     { contains: q } },
       ],
     };
     if (academicYearId) where.promotion = { academicYearId };
     where.OR = [
-      { matricule: { contains: q, mode: 'insensitive' } },
+      { matricule: { contains: q } },
       { user: { OR: [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName:  { contains: q, mode: 'insensitive' } },
-        { email:     { contains: q, mode: 'insensitive' } },
+        { firstName: { contains: q } },
+        { lastName:  { contains: q } },
+        { email:     { contains: q } },
       ]}},
     ];
   }
@@ -210,9 +210,9 @@ export async function listUnenrolledUsers({ q = '' } = {}) {
   };
   if (q) {
     where.OR = [
-      { firstName: { contains: q, mode: 'insensitive' } },
-      { lastName:  { contains: q, mode: 'insensitive' } },
-      { email:     { contains: q, mode: 'insensitive' } },
+      { firstName: { contains: q } },
+      { lastName:  { contains: q } },
+      { email:     { contains: q } },
     ];
   }
 

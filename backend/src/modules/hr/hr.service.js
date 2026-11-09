@@ -86,12 +86,12 @@ export async function listEmployees({ search, departmentId, positionId, contract
   const where = {
     ...(search && {
       OR: [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { employeeNumber: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { user: { firstName: { contains: search, mode: 'insensitive' } } },
-        { user: { lastName:  { contains: search, mode: 'insensitive' } } },
+        { firstName: { contains: search } },
+        { lastName: { contains: search } },
+        { employeeNumber: { contains: search } },
+        { email: { contains: search } },
+        { user: { firstName: { contains: search } } },
+        { user: { lastName:  { contains: search } } },
       ],
     }),
     ...(departmentId && { departmentId }),

@@ -23,9 +23,9 @@ router.get('/', requireRole('ADMIN'), validate({ query: listQuery }), asyncHandl
     ...(system && { system }),
     ...(q && {
       OR: [
-        { email:     { contains: q, mode: 'insensitive' } },
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName:  { contains: q, mode: 'insensitive' } },
+        { email:     { contains: q } },
+        { firstName: { contains: q } },
+        { lastName:  { contains: q } },
       ],
     }),
   };

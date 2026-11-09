@@ -10,7 +10,7 @@ access and real-time features.
 ![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)
 ![Express](https://img.shields.io/badge/Express-Node.js-339933?logo=node.js&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![MariaDB](https://img.shields.io/badge/MySQL%20%2F%20MariaDB-003545?logo=mariadb&logoColor=white)
 ![Socket.io](https://img.shields.io/badge/Socket.io-realtime-010101?logo=socket.io&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -60,7 +60,7 @@ Real-time chat, notifications and presence run over **Socket.io**.
 └───────────────────────────────────────┬────────────────────────────────────────────┘
                                          │  Prisma ORM
                                 ┌────────▼─────────┐
-                                │   PostgreSQL      │
+                                │  MySQL / MariaDB  │
                                 └───────────────────┘
 ```
 
@@ -70,7 +70,7 @@ Real-time chat, notifications and presence run over **Socket.io**.
 |---|---|
 | Frontend | TanStack Start, React, TailwindCSS, Radix UI, dnd-kit (drag & drop), React Hook Form |
 | Backend | Node.js, Express, Prisma ORM, Socket.io, JWT, Helmet, express-rate-limit, Zod, Multer, QRCode |
-| Database | PostgreSQL |
+| Database | MySQL / MariaDB (MariaDB 10.11 in local Docker, MySQL on Hostinger) |
 | Realtime | Socket.io (chat, notifications, presence) |
 
 ## 📁 Structure
@@ -93,17 +93,17 @@ UR3/
 ### Prerequisites
 - Node.js 20+ · Docker Desktop (or Docker Engine with the Compose plugin)
 
-### PostgreSQL with Docker Compose
+### MariaDB with Docker Compose
 
-From the project root, create the local Compose environment file and start PostgreSQL:
+From the project root, create the local Compose environment file and start MariaDB:
 
 ```bash
 cp .env.example .env
-docker compose up -d db
+docker compose up -d mariadb
 ```
 
 The database is available to applications running on your computer at
-`localhost:5435`. Compose stores its data in the persistent `postgres_data` volume.
+`localhost:3307`. Compose stores its data in the persistent `mariadb_data` volume.
 The example credentials are for local development only; change them in both `.env`
 and `backend/.env` if you choose a different password. Do not use the example
 credentials in production.
@@ -138,14 +138,16 @@ node prisma/seed-news.js      # sample news (--remove to delete them)
 
 #### Backup and restore (local Docker database)
 
+On Hostinger, use hPanel → Databases → phpMyAdmin (Export / Import).
+
 `backend/uploads` and `backend/private-uploads` hold the uploaded files: back them up too.
 
 ```bash
-mkdir -p backend/backups && docker exec ur3-db-1 sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner -Fc' > backend/backups/backup.dump
+mkdir -p backend/backups && docker exec ur3-mariadb-1 sh -c 'mariadb-dump -u"$MARIADB_USER" -p"$MARIADB_PASSWORD" --single-transaction --routines "$MARIADB_DATABASE"' > backend/backups/backup.sql
 ```
 
 ```bash
-docker exec -i ur3-db-1 sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --clean --if-exists' < backend/backups/backup.dump
+docker exec -i ur3-mariadb-1 sh -c 'mariadb -u"$MARIADB_USER" -p"$MARIADB_PASSWORD" "$MARIADB_DATABASE"' < backend/backups/backup.sql
 ```
 
 ### Frontend
@@ -165,7 +167,7 @@ each with strict, permission-based access, and scoped to the ONLINE or CLASSROOM
 
 - [ ] API documentation (OpenAPI)
 - [ ] Automated tests (unit + e2e)
-- [ ] Dockerfile + docker-compose (app + PostgreSQL)
+- [ ] Dockerfile + docker-compose (app + MariaDB)
 - [ ] CI (lint + build + migrate) via GitHub Actions
 - [ ] Mobile companion app (React Native)
 

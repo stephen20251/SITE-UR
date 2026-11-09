@@ -277,9 +277,9 @@ export async function listTuition({ status, q, month, level, mentionId, page = 1
     ...(q && {
       student: {
         OR: [
-          { matricule: { contains: q, mode: 'insensitive' } },
-          { user: { firstName: { contains: q, mode: 'insensitive' } } },
-          { user: { lastName: { contains: q, mode: 'insensitive' } } },
+          { matricule: { contains: q } },
+          { user: { firstName: { contains: q } } },
+          { user: { lastName: { contains: q } } },
         ],
       },
     }),
@@ -406,9 +406,9 @@ export async function searchStudentsForTuition(q) {
       status: 'ACTIVE',
       ...(q && {
         OR: [
-          { matricule: { contains: q, mode: 'insensitive' } },
-          { user: { firstName: { contains: q, mode: 'insensitive' } } },
-          { user: { lastName: { contains: q, mode: 'insensitive' } } },
+          { matricule: { contains: q } },
+          { user: { firstName: { contains: q } } },
+          { user: { lastName: { contains: q } } },
         ],
       }),
     },
@@ -1109,9 +1109,9 @@ export async function tuitionByMonth({ month, mentionId, q, status }) {
       ...(mentionId && { mentionId }),
       ...(q && {
         OR: [
-          { matricule: { contains: q, mode: 'insensitive' } },
-          { user: { firstName: { contains: q, mode: 'insensitive' } } },
-          { user: { lastName: { contains: q, mode: 'insensitive' } } },
+          { matricule: { contains: q } },
+          { user: { firstName: { contains: q } } },
+          { user: { lastName: { contains: q } } },
         ],
       }),
     },

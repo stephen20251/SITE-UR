@@ -47,13 +47,14 @@ export async function getLessonOwned(lessonId, teacherId) {
 export async function getQuizOwned(quizId, teacherId) {
   const quiz = await prisma.quiz.findUnique({
     where: { id: quizId },
-    include: { course: { select: { id: true, teacherId: true } } },
+    // La relation du quiz vers son cours en ligne s'appelle « onlineCourse ».
+    include: { onlineCourse: { select: { id: true, teacherId: true } } },
   });
   if (!quiz) throw new HttpError(404, 'Quiz not found');
-  if (quiz.course.teacherId !== teacherId && !await isSuperAdmin(teacherId)) {
+  if (quiz.onlineCourse?.teacherId !== teacherId && !await isSuperAdmin(teacherId)) {
     throw new HttpError(403, 'You do not own this course');
   }
-  return quiz;
+  return { ...quiz, course: quiz.onlineCourse };
 }
 
 // ─── Enrollment guard ───

@@ -26,8 +26,8 @@ export const listInvoices = async (req, res) => {
   if (status) where.status = status
   if (search) {
     where.OR = [
-      { invoiceNumber: { contains: search, mode: 'insensitive' } },
-      { student: { user: { OR: [{ firstName: { contains: search, mode: 'insensitive' } }, { lastName: { contains: search, mode: 'insensitive' } }] } } },
+      { invoiceNumber: { contains: search } },
+      { student: { user: { OR: [{ firstName: { contains: search } }, { lastName: { contains: search } }] } } },
     ]
   }
   const [total, invoices] = await Promise.all([

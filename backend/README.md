@@ -1,6 +1,6 @@
 # University System — Backend
 
-Production-ready Node.js + Express + PostgreSQL + Prisma + Socket.io backend for the **University System** platform.
+Production-ready Node.js + Express + MySQL / MariaDB + Prisma + Socket.io backend for the **University System** platform.
 
 Two isolated subsystems share one infrastructure but are logically separated by `System` enum and role middleware:
 
@@ -12,7 +12,7 @@ Two isolated subsystems share one infrastructure but are logically separated by 
 ## Stack
 
 - Node.js 20+ / Express 4
-- PostgreSQL 14+
+- MySQL 8+ or MariaDB 10.11+
 - Prisma ORM
 - JWT (access + refresh tokens)
 - bcrypt password hashing

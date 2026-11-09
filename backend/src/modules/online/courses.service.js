@@ -154,8 +154,8 @@ export async function listPublished({ page, limit, q, categoryId, sort = 'recent
     ...(q && {
       AND: [{
         OR: [
-          { title: { contains: q, mode: 'insensitive' } },
-          { description: { contains: q, mode: 'insensitive' } },
+          { title: { contains: q } },
+          { description: { contains: q } },
         ],
       }],
     }),
@@ -198,7 +198,7 @@ export async function listMine(teacherId, { page, limit, q, status }) {
   const where = {
     teacherId,
     ...(status && { status }),
-    ...(q && { title: { contains: q, mode: 'insensitive' } }),
+    ...(q && { title: { contains: q } }),
   };
   const [items, total] = await Promise.all([
     prisma.onlineCourse.findMany({
@@ -586,20 +586,19 @@ export async function recommendations(studentId, limit = 8) {
   const catIds = [...new Set(enrollments.map((e) => e.course.categoryId).filter(Boolean))];
   const tags = [...new Set(enrollments.flatMap((e) => e.course.tags ?? []))];
 
-  const affinity = catIds.length || tags.length
-    ? {
-        OR: [
-          ...(catIds.length ? [{ categoryId: { in: catIds } }] : []),
-          ...(tags.length ? [{ tags: { hasSome: tags } }] : []),
-        ],
-      }
-    : {};
-
-  let rows = await prisma.onlineCourse.findMany({
-    where: { status: 'PUBLISHED', id: { notIn: enrolledIds }, ...affinity },
-    select: courseCard,
-    take: 50,
-  });
+  // Les tags sont une liste JSON (MySQL) : la correspondance par tag se fait ici.
+  const tagSet = new Set(tags);
+  let rows = [];
+  if (catIds.length || tags.length) {
+    const candidates = await prisma.onlineCourse.findMany({
+      where: { status: 'PUBLISHED', id: { notIn: enrolledIds }, ...(!tags.length && { categoryId: { in: catIds } }) },
+      select: courseCard,
+      take: tags.length ? 300 : 50,
+    });
+    rows = candidates
+      .filter((c) => (c.category && catIds.includes(c.category.id)) || (c.tags ?? []).some((t) => tagSet.has(t)))
+      .slice(0, 50);
+  }
   if (rows.length === 0) {
     rows = await prisma.onlineCourse.findMany({
       where: { status: 'PUBLISHED', id: { notIn: enrolledIds } },
@@ -611,7 +610,6 @@ export async function recommendations(studentId, limit = 8) {
 
   const rated = await withRatings(rows);
   const catSet = new Set(catIds);
-  const tagSet = new Set(tags);
   return rated
     .map((c) => ({
       ...c,

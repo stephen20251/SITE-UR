@@ -30,7 +30,7 @@ router.post('/categories', requireRole('TEACHER_ONLINE'), asyncHandler(async (re
   if (name.length < 2) throw new HttpError(400, 'Nom de catégorie trop court');
   const slug = slugify(name);
   const existing = await prisma.onlineCategory.findFirst({
-    where: { OR: [{ slug }, { name: { equals: name, mode: 'insensitive' } }] },
+    where: { OR: [{ slug }, { name: { equals: name } }] },
   });
   res.status(existing ? 200 : 201).json(existing ?? await prisma.onlineCategory.create({ data: { name, slug, icon: '📘' } }));
 }));

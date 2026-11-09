@@ -191,8 +191,8 @@ export async function adminListCourses({ page = 1, limit = 20, q, status, teache
     ...(categoryId && { categoryId }),
     ...(q && {
       OR: [
-        { title: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
+        { title: { contains: q } },
+        { description: { contains: q } },
       ],
     }),
   };
@@ -307,9 +307,9 @@ export async function adminListTeachers({ page = 1, limit = 20, q } = {}) {
     systemRole: { in: ['TEACHER_ONLINE', 'SUPER_ADMIN'] },
     ...(q && {
       OR: [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName: { contains: q, mode: 'insensitive' } },
-        { email: { contains: q, mode: 'insensitive' } },
+        { firstName: { contains: q } },
+        { lastName: { contains: q } },
+        { email: { contains: q } },
       ],
     }),
   };
@@ -351,9 +351,9 @@ export async function adminListStudents({ page = 1, limit = 20, q } = {}) {
     systemRole: 'STUDENT_ONLINE',
     ...(q && {
       OR: [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName: { contains: q, mode: 'insensitive' } },
-        { email: { contains: q, mode: 'insensitive' } },
+        { firstName: { contains: q } },
+        { lastName: { contains: q } },
+        { email: { contains: q } },
       ],
     }),
   };
@@ -381,8 +381,8 @@ export async function listMedia({ page = 1, limit = 24, q, type } = {}) {
     ...(type && { type }),
     ...(q && {
       OR: [
-        { name: { contains: q, mode: 'insensitive' } },
-        { originalName: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q } },
+        { originalName: { contains: q } },
       ],
     }),
   };
@@ -535,9 +535,9 @@ export async function adminListUsers({ page = 1, limit = 20, q, role, status } =
     ...(status === 'inactive' && { isActive: false }),
     ...(q && {
       OR: [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName:  { contains: q, mode: 'insensitive' } },
-        { email:     { contains: q, mode: 'insensitive' } },
+        { firstName: { contains: q } },
+        { lastName:  { contains: q } },
+        { email:     { contains: q } },
       ],
     }),
   };
@@ -599,8 +599,8 @@ export async function adminListCertificates({ page = 1, limit = 20, q } = {}) {
   const where = q
     ? {
         OR: [
-          { code: { contains: q, mode: 'insensitive' } },
-          { course: { title: { contains: q, mode: 'insensitive' } } },
+          { code: { contains: q } },
+          { course: { title: { contains: q } } },
         ],
       }
     : {};
@@ -639,8 +639,8 @@ export async function adminListLiveSessions({ page = 1, limit = 20, q } = {}) {
   const where = q
     ? {
         OR: [
-          { title: { contains: q, mode: 'insensitive' } },
-          { course: { title: { contains: q, mode: 'insensitive' } } },
+          { title: { contains: q } },
+          { course: { title: { contains: q } } },
         ],
       }
     : {};
@@ -665,8 +665,8 @@ export async function adminListAnnouncements({ page = 1, limit = 20, q } = {}) {
   const where = q
     ? {
         OR: [
-          { title: { contains: q, mode: 'insensitive' } },
-          { course: { title: { contains: q, mode: 'insensitive' } } },
+          { title: { contains: q } },
+          { course: { title: { contains: q } } },
         ],
       }
     : {};
@@ -702,10 +702,10 @@ export async function adminListReviews({ page = 1, limit = 20, q, hidden } = {})
     ...(hidden === true ? { isHidden: true } : hidden === false ? { isHidden: false } : {}),
     ...(q && {
       OR: [
-        { comment: { contains: q, mode: 'insensitive' } },
-        { course: { title: { contains: q, mode: 'insensitive' } } },
-        { student: { firstName: { contains: q, mode: 'insensitive' } } },
-        { student: { lastName: { contains: q, mode: 'insensitive' } } },
+        { comment: { contains: q } },
+        { course: { title: { contains: q } } },
+        { student: { firstName: { contains: q } } },
+        { student: { lastName: { contains: q } } },
       ],
     }),
   };
