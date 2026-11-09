@@ -3,6 +3,7 @@
  */
 import { useRef, useState, useCallback, useEffect } from "react";
 import { Send, Paperclip, Smile, X, Loader2 } from "lucide-react";
+import { API_ORIGIN } from "@/lib/env";
 
 // Curated emoji palette (no external dependency)
 const EMOJI_ROWS = [
@@ -58,7 +59,7 @@ export function MessageInput({
     setDraft("");
     try {
       const tok = localStorage.getItem("us.accessToken");
-      const res = await fetch(`http://localhost:4000/api/chat/rooms/${roomId}/messages`, {
+      const res = await fetch(`${API_ORIGIN}/api/chat/rooms/${roomId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
         body: JSON.stringify({ body: text }),
@@ -93,7 +94,7 @@ export function MessageInput({
     };
     xhr.onerror = () => setUpload(null);
 
-    xhr.open("POST", `http://localhost:4000/api/chat/rooms/${roomId}/upload`);
+    xhr.open("POST", `${API_ORIGIN}/api/chat/rooms/${roomId}/upload`);
     if (tok) xhr.setRequestHeader("Authorization", `Bearer ${tok}`);
     xhr.send(fd);
   }, [roomId, draft, onMessageSent]);

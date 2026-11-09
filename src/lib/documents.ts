@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "./api";
+import { API_ORIGIN } from "@/lib/env";
 
 export type DocumentInput = {
   key: string;
@@ -47,7 +48,7 @@ export function useDocumentTemplate(id: string | undefined) {
 export function useGenerateDocument() {
   return useMutation({
     mutationFn: ({ templateId, inputs }: { templateId: string; inputs: Record<string, string> }) =>
-      fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/documents/generate/${templateId}`, {
+      fetch(`${API_ORIGIN}/api/documents/generate/${templateId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

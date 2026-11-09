@@ -14,6 +14,7 @@ import { useRequireOnline, StatusPill } from "@/components/online/shared";
 import { usePublicCategories } from "@/lib/lms-admin";
 import { CategorySelect, MentionSelect } from "@/components/online/category-select";
 import { CursusFields, emptyCursus, cursusPayload, cursusIncomplete, type CursusValue } from "@/components/online/cursus-fields";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/online/teacher")({ component: TeacherDash });
 
@@ -136,7 +137,7 @@ function TeacherDash() {
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           {c.thumbnail ? (
-                            <img src={`http://localhost:4000${c.thumbnail}`} alt=""
+                            <img src={`${API_ORIGIN}${c.thumbnail}`} alt=""
                               className="h-10 w-16 shrink-0 rounded-lg object-cover" />
                           ) : (
                             <div className="h-10 w-16 shrink-0 rounded-lg bg-gradient-to-br from-online/20 to-online/5 grid place-items-center">

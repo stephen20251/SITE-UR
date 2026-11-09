@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useRequireOnline } from "@/components/online/shared";
 import { getSocket, useSocketEvent } from "@/lib/socket";
+import { API_ORIGIN } from "@/lib/env";
 
 // pdfjs touches DOM globals (DOMMatrix) at import time, which crashes SSR —
 // load it lazily on the client only, the first time a presentation is shown.
@@ -29,7 +30,7 @@ function loadPdfjs() {
   return pdfjsPromise;
 }
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = API_ORIGIN;
 const absUrl = (u: string) => (u.startsWith("http") ? u : `${API_BASE}${u}`);
 
 type BoardDoc = { url: string; page: number; numPages: number; kind?: "pdf" | "image" };

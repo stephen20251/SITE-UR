@@ -3,9 +3,7 @@
 // fetch-based (no extra deps), with bearer-token auth + transparent refresh.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const API_URL =
-  ((import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "")) ||
-  "http://localhost:4000/api";
+import { API_URL } from "./env";
 
 const isBrowser = typeof window !== "undefined";
 

@@ -12,6 +12,7 @@
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '../database/prisma.js';
+import { fileFromUploadUrl } from '../config/paths.js';
 
 const MSG_DAYS = Number(process.env.RETENTION_MESSAGES_DAYS || 30);
 const NOTIF_DAYS = Number(process.env.RETENTION_NOTIF_DAYS || 30);
@@ -22,8 +23,8 @@ const ago = (days) => new Date(Date.now() - days * 86_400_000);
 function safeUnlinkUpload(fileUrl) {
   // Only ever touch files inside the local uploads directory.
   if (!fileUrl || !fileUrl.startsWith('/uploads/')) return false;
-  const abs = path.resolve('.' + fileUrl);
-  if (!abs.startsWith(path.resolve('uploads'))) return false;
+  const abs = fileFromUploadUrl(fileUrl);
+  if (!abs) return false;
   try { fs.unlinkSync(abs); return true; } catch { return false; }
 }
 

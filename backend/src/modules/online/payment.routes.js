@@ -6,12 +6,13 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { authenticate } from '../../middlewares/auth.js';
 import * as svc from './payment.service.js';
 import { validateCoupon } from './coupon.service.js';
+import { uploadsPath } from '../../config/paths.js';
 
 const router = Router();
 router.use(authenticate);
 
 // Multer for screenshot uploads
-const uploadDir = path.resolve('uploads/lms-media');
+const uploadDir = uploadsPath('lms-media');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const storage = multer.diskStorage({
   destination: uploadDir,

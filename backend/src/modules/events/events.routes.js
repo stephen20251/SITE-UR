@@ -16,9 +16,10 @@ import { prisma } from '../../database/prisma.js';
 import { authenticate } from '../../middlewares/auth.js';
 import { requireAnyPermission } from '../../middlewares/rbac.js';
 import { asyncHandler, HttpError } from '../../utils/asyncHandler.js';
+import { uploadsPath, fileFromUploadUrl } from '../../config/paths.js';
 
 const r = Router();
-const UPLOAD_DIR = path.resolve('uploads', 'events');
+const UPLOAD_DIR = uploadsPath('events');
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -33,7 +34,7 @@ const upload = multer({
 });
 
 const removeFile = (url) => {
-  if (url?.startsWith('/uploads/events/')) fs.unlink(path.resolve(url.slice(1)), () => {});
+  if (url?.startsWith('/uploads/events/')) fs.unlink(fileFromUploadUrl(url) ?? '', () => {});
 };
 
 // Validation des champs envoyés par le formulaire

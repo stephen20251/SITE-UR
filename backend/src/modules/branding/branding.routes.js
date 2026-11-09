@@ -5,13 +5,13 @@ import multer from 'multer';
 import { authenticate } from '../../middlewares/auth.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { getBranding, updateBranding } from './branding.service.js';
+import { UPLOADS_DIR } from '../../config/paths.js';
 
 const r = Router();
 r.use(authenticate);
 
 // ── Multer setup ───────────────────────────────────────────────────────────────
 
-const UPLOADS_DIR = path.resolve('uploads');
 
 function brandingStorage(subfolder) {
   return multer.diskStorage({

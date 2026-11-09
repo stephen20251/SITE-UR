@@ -4,16 +4,15 @@ import { Router } from 'express';
 import { prisma } from '../../database/prisma.js';
 import { asyncHandler, HttpError } from '../../utils/asyncHandler.js';
 import { isProtectedCourse, verifyMediaToken } from './cursus.access.js';
+import { fileFromUploadUrl } from '../../config/paths.js';
 
 // Contenu des cours du cursus : non téléchargeable, non partageable.
 // Les fichiers ne sont servis qu'au travers d'une URL signée, courte durée,
 // liée à l'utilisateur (délivrée par la fiche du cours après contrôle d'accès).
-const UPLOADS = path.resolve('uploads');
 
 function localPath(url) {
-  if (!url?.startsWith('/uploads/')) return null;
-  const p = path.resolve(UPLOADS, url.slice('/uploads/'.length));
-  return p.startsWith(UPLOADS) && fs.existsSync(p) ? p : null;
+  const p = fileFromUploadUrl(url);
+  return p && fs.existsSync(p) ? p : null;
 }
 
 function sendInline(res, file, mimeType, downloadName) {

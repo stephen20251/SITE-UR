@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import { useSocketEvent } from "./socket";
+import { API_ORIGIN } from "@/lib/env";
 
 export type ChatUser = { id: string; firstName: string; lastName: string; avatarUrl?: string | null; role: string };
 
@@ -99,7 +100,7 @@ export function useSendChatFile() {
       const fd = new FormData();
       fd.append("file", file);
       if (body) fd.append("body", body);
-      return fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/erp-chat/rooms/${roomId}/upload`, {
+      return fetch(`${API_ORIGIN}/api/erp-chat/rooms/${roomId}/upload`, {
         method: "POST",
         headers: { Authorization: `Bearer ${localStorage.getItem("us.accessToken") ?? ""}` },
         body: fd,

@@ -15,8 +15,9 @@ import { useClearUserCache, useMyContext } from "@/lib/context";
 import { useErpUnreadCount } from "@/lib/chat";
 import { BackHomeButtons } from "@/components/nav-buttons";
 import { displayRoleName, isFinanceRole, isMentionResponsible, isPresenceRole } from "@/components/classroom/shared";
+import { API_ORIGIN } from "@/lib/env";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const API_URL = API_ORIGIN;
 
 export const Route = createFileRoute("/classroom")({ component: ClassroomLayout });
 

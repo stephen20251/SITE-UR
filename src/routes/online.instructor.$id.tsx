@@ -3,13 +3,14 @@ import { BookOpen, Users, Star, GraduationCap, Loader2, Play } from "lucide-reac
 import { useInstructorProfile, type CourseCard } from "@/lib/online";
 import { OnlineNavbar, initials } from "@/components/online/shared";
 import { RatingBadge } from "@/components/online/engagement";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/online/instructor/$id")({
   head: () => ({ meta: [{ title: "Instructeur — UR Online" }] }),
   component: InstructorPage,
 });
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = API_ORIGIN;
 function mediaUrl(path?: string | null): string | undefined {
   if (!path) return undefined;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, tokenStore } from "./api";
+import { API_ORIGIN } from "@/lib/env";
 
 export type CardTemplate = {
   id: string;
@@ -21,7 +22,7 @@ export type BulkCardResult = {
   verso: string;
 };
 
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const BASE = API_ORIGIN;
 
 function authHeaders() {
   return { "Content-Type": "application/json", Authorization: `Bearer ${tokenStore.access ?? ""}` };

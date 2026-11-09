@@ -5,11 +5,11 @@ import multer from 'multer';
 import { authenticate } from '../../middlewares/auth.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { prisma } from '../../database/prisma.js';
+import { UPLOADS_DIR, fileFromUploadUrl } from '../../config/paths.js';
 
 const r = Router();
 r.use(authenticate);
 
-const UPLOADS_DIR = path.resolve('uploads');
 
 function diskStorage(subfolder) {
   return multer.diskStorage({
@@ -42,7 +42,7 @@ r.post('/avatar', avatarUpload.single('avatar'), asyncHandler(async (req, res) =
   // Delete old avatar file if stored locally
   const current = await prisma.user.findUnique({ where: { id: req.user.sub }, select: { avatarUrl: true } });
   if (current?.avatarUrl?.startsWith('/uploads/')) {
-    const oldPath = path.join(UPLOADS_DIR, '..', current.avatarUrl);
+    const oldPath = fileFromUploadUrl(current.avatarUrl) ?? '';
     fs.unlink(oldPath, () => {});
   }
 
@@ -58,7 +58,7 @@ r.post('/avatar', avatarUpload.single('avatar'), asyncHandler(async (req, res) =
 r.delete('/avatar', asyncHandler(async (req, res) => {
   const current = await prisma.user.findUnique({ where: { id: req.user.sub }, select: { avatarUrl: true } });
   if (current?.avatarUrl?.startsWith('/uploads/')) {
-    const filePath = path.join(UPLOADS_DIR, '..', current.avatarUrl);
+    const filePath = fileFromUploadUrl(current.avatarUrl) ?? '';
     fs.unlink(filePath, () => {});
   }
   const user = await prisma.user.update({
@@ -76,7 +76,7 @@ r.post('/signature', signatureUpload.single('signature'), asyncHandler(async (re
 
   const current = await prisma.user.findUnique({ where: { id: req.user.sub }, select: { signatureUrl: true } });
   if (current?.signatureUrl?.startsWith('/uploads/')) {
-    const oldPath = path.join(UPLOADS_DIR, '..', current.signatureUrl);
+    const oldPath = fileFromUploadUrl(current.signatureUrl) ?? '';
     fs.unlink(oldPath, () => {});
   }
 
@@ -92,7 +92,7 @@ r.post('/signature', signatureUpload.single('signature'), asyncHandler(async (re
 r.delete('/signature', asyncHandler(async (req, res) => {
   const current = await prisma.user.findUnique({ where: { id: req.user.sub }, select: { signatureUrl: true } });
   if (current?.signatureUrl?.startsWith('/uploads/')) {
-    fs.unlink(path.join(UPLOADS_DIR, '..', current.signatureUrl), () => {});
+    fs.unlink(fileFromUploadUrl(current.signatureUrl) ?? '', () => {});
   }
   const user = await prisma.user.update({
     where: { id: req.user.sub },

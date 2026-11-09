@@ -16,6 +16,7 @@ import {
   LETTER_CATEGORY_LABELS, LETTER_CATEGORY_COLORS,
   type LetterTemplate, type GeneratedDoc,
 } from "@/lib/letters";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/classroom/letters")({ component: LettersPage });
 
@@ -553,7 +554,7 @@ function HistoryTab() {
 
   async function openDoc(id: string) {
     try {
-      const r = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/letters/history/${id}?html=1`, {
+      const r = await fetch(`${API_ORIGIN}/api/letters/history/${id}?html=1`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("us.accessToken") ?? ""}` },
       });
       setViewHtml(await r.text());

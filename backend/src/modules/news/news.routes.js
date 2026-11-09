@@ -19,9 +19,10 @@ import { authenticate } from '../../middlewares/auth.js';
 import { requireSystemRole } from '../../middlewares/rbac.js';
 import { asyncHandler, HttpError } from '../../utils/asyncHandler.js';
 import { uniqueSlug } from '../../utils/slug.js';
+import { uploadsPath, fileFromUploadUrl } from '../../config/paths.js';
 
 const r = Router();
-const UPLOAD_DIR = path.resolve('uploads', 'news');
+const UPLOAD_DIR = uploadsPath('news');
 const CATEGORIES = ['ACTUALITE', 'ANNONCE_OFFICIELLE', 'CONFERENCE', 'SOUTENANCE', 'PUBLICATION', 'RESULTAT', 'ACTIVITE'];
 // Une publication passe aux archives après 12 mois, ou quand l'admin l'y place.
 const ARCHIVE_AFTER_MONTHS = 12;
@@ -39,7 +40,7 @@ const upload = multer({
 });
 
 const removeFile = (url) => {
-  if (url?.startsWith('/uploads/news/')) fs.unlink(path.resolve(url.slice(1)), () => {});
+  if (url?.startsWith('/uploads/news/')) fs.unlink(fileFromUploadUrl(url) ?? '', () => {});
 };
 
 function parseInput(b, partial = false) {

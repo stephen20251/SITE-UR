@@ -1,8 +1,9 @@
 import { prisma } from '../../database/prisma.js';
 import { HttpError } from '../../utils/asyncHandler.js';
 import { getLetterTemplate } from './letters.templates.js';
+import { env } from '../../config/env.js';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:4000';
+const API_URL = env.API_URL;
 
 // ── Variable resolution ───────────────────────────────────────────────────────
 

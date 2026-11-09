@@ -42,6 +42,7 @@ import {
   type AdminLiveSession, type AdminAnnouncement, type AdminReview,
 } from "@/lib/lms-admin";
 import { certThemeFrom, CERT_DEFAULTS, type CertTheme } from "./online.certificate.$code";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/online/admin")({
   component: AdminPanel,
@@ -283,7 +284,7 @@ function DashboardTab() {
 // Settings
 // ══════════════════════════════════════════════════════════════════════════════
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = API_ORIGIN;
 function settingsMediaUrl(path?: string | null) {
   if (!path) return undefined;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
@@ -1470,7 +1471,7 @@ function MediaTab() {
                   </div>
                   {file.type === "IMAGE" && (
                     <div className="mb-2 aspect-video overflow-hidden rounded-lg bg-muted">
-                      <img src={`http://localhost:4000${file.url.startsWith('/') ? '' : '/'}${file.url}`} alt={file.name}
+                      <img src={`${API_ORIGIN}${file.url.startsWith('/') ? '' : '/'}${file.url}`} alt={file.name}
                         className="h-full w-full object-cover" />
                     </div>
                   )}
@@ -1486,11 +1487,11 @@ function MediaTab() {
                           className="flex-1 rounded border py-1 text-xs hover:bg-accent">
                           <Pencil className="mx-auto h-3 w-3" />
                         </button>
-                        <a href={`http://localhost:4000${file.url}`} target="_blank" rel="noopener noreferrer"
+                        <a href={`${API_ORIGIN}${file.url}`} target="_blank" rel="noopener noreferrer"
                           className="flex-1 rounded border py-1 text-xs hover:bg-accent flex items-center justify-center">
                           <ExternalLink className="h-3 w-3" />
                         </a>
-                        <button onClick={() => { navigator.clipboard.writeText(`http://localhost:4000${file.url}`); toast.success("URL copiée"); }}
+                        <button onClick={() => { navigator.clipboard.writeText(`${API_ORIGIN}${file.url}`); toast.success("URL copiée"); }}
                           className="flex-1 rounded border py-1 text-xs hover:bg-accent">
                           <Copy className="mx-auto h-3 w-3" />
                         </button>
@@ -1895,7 +1896,7 @@ function TestimonialList() {
 // Payments
 // ══════════════════════════════════════════════════════════════════════════════
 
-const API_BASE_PAY = "http://localhost:4000";
+const API_BASE_PAY = API_ORIGIN;
 function payMediaUrl(path?: string | null) {
   if (!path) return undefined;
   if (path.startsWith("http")) return path;

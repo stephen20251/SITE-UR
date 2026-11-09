@@ -19,11 +19,12 @@ import { requireSystemRole } from '../../middlewares/rbac.js';
 import { asyncHandler, HttpError } from '../../utils/asyncHandler.js';
 import { CURSUS_KINDS } from '../cursus/cursus.access.js';
 import { ensureProfile } from '../me/ensure-profile.js';
+import { privatePath } from '../../config/paths.js';
 
 const r = Router();
 r.use(authenticate);
 
-const CV_DIR = path.resolve('private-uploads', 'teacher-cv');
+const CV_DIR = privatePath('teacher-cv');
 const MAX_CV_SIZE = 10 * 1024 * 1024;
 
 const upload = multer({

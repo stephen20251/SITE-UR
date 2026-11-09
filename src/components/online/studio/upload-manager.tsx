@@ -3,6 +3,7 @@
  */
 import { useRef, useState, useCallback } from "react";
 import { Upload, X, Loader2, Check, AlertCircle, File, Film, FileText, Volume2, Code, Archive, Image } from "lucide-react";
+import { API_ORIGIN } from "@/lib/env";
 
 export type UploadedFile = {
   url: string;
@@ -89,7 +90,7 @@ export function useUploadManager(endpoint: string) {
     const fd = new FormData();
     fd.append("file", file);
     const tok = localStorage.getItem("us.accessToken");
-    xhr.open("POST", `http://localhost:4000/api${endpoint}`);
+    xhr.open("POST", `${API_ORIGIN}/api${endpoint}`);
     if (tok) xhr.setRequestHeader("Authorization", `Bearer ${tok}`);
     update(id, { xhr, status: "uploading" });
     xhr.send(fd);

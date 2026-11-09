@@ -33,6 +33,7 @@ import { CategorySelect, MentionSelect } from "@/components/online/category-sele
 import { useUploadManager, UploadManagerUI, DropZone } from "@/components/online/studio/upload-manager";
 import { api } from "@/lib/api";
 import { BackHomeButtons } from "@/components/nav-buttons";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/online/studio/$id")({
   component: CourseStudio,
@@ -234,7 +235,7 @@ function OverviewTab({ course: c, onGoToTab }: { course: CourseDetail; onGoToTab
   ];
   const done = qChecks.filter(q => q.done).length;
   const pct = Math.round((done / qChecks.length) * 100);
-  const apiBase = "http://localhost:4000";
+  const apiBase = API_ORIGIN;
 
   const STEPS: { label: string; tab: StudioTab; done: boolean }[] = [
     { label: "Image de couverture",   tab: "cover",   done: !!c.thumbnail },
@@ -487,7 +488,7 @@ function CoverTab({ course }: { course: CourseDetail }) {
     useUploadManager(`/online/courses/${course.id}/upload-thumbnail`);
   const { uploads: previewUploads, uploadFile: uploadPreview, cancel: cancelPreview, remove: removePreview } =
     useUploadManager(`/online/courses/${course.id}/upload-preview`);
-  const apiBase = "http://localhost:4000";
+  const apiBase = API_ORIGIN;
 
   const handleThumb = (files: File[]) => {
     const f = files[0];
@@ -602,7 +603,7 @@ function LessonEditorTab({ lesson, courseId }: { lesson: CourseLesson; courseId:
   const [allowDownload, setAllowDownload] = useState((lesson as any).allowDownload ?? true);
   const [isPreview, setIsPreview] = useState((lesson as any).isPreview ?? false);
   const { uploads, uploadFile, cancel, remove } = useUploadManager(`/online/studio/lessons/${lesson.id}/files/upload`);
-  const apiBase = "http://localhost:4000";
+  const apiBase = API_ORIGIN;
 
   const { data: files = [], refetch: refetchFiles } = useQuery({
     queryKey: ["lesson-files", lesson.id],
@@ -865,7 +866,7 @@ function AssignmentsTab({ course }: { course: CourseDetail }) {
               <div className="mt-2 space-y-1">
                 {(a.attachments ?? []).map((f: { name: string; url: string }) => (
                   <div key={f.url} className="flex items-center gap-2 text-xs">
-                    <a href={`http://localhost:4000${f.url}`} target="_blank" rel="noreferrer" className="truncate text-online hover:underline">📎 {f.name}</a>
+                    <a href={`${API_ORIGIN}${f.url}`} target="_blank" rel="noreferrer" className="truncate text-online hover:underline">📎 {f.name}</a>
                     <button onClick={() => detach(a.id, f.url)} className="text-muted-foreground hover:text-destructive" title="Retirer"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
@@ -1207,7 +1208,7 @@ function SettingsTab({ course }: { course: CourseDetail }) {
 // ── Live Preview Modal ────────────────────────────────────────────────────────
 
 function LivePreviewModal({ course, onClose }: { course: CourseDetail; onClose: () => void }) {
-  const apiBase = "http://localhost:4000";
+  const apiBase = API_ORIGIN;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
       <div className="flex h-[90vh] w-full max-w-4xl flex-col rounded-2xl bg-background shadow-2xl">

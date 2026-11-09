@@ -6,10 +6,11 @@ import { ApiError } from "@/lib/api";
 import { openCv, titleLabel, useFaculty, type AcademicTitle, type FacultyMember } from "@/lib/faculty";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { Card, Empty, Loading, PageHeader } from "@/components/classroom/cursus-ui";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/classroom/corps-enseignant")({ component: FacultyPage });
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const API_URL = API_ORIGIN;
 const FILES_BASE = API_URL.replace(/\/api\/?$/, "");
 const photoUrl = (url: string | null) => (url ? (url.startsWith("http") ? url : `${FILES_BASE}${url}`) : null);
 

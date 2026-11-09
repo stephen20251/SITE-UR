@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { useBulletin, useSemesters, type BulletinData } from "@/lib/classroom";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/classroom/bulletin")({ component: BulletinPage });
 
@@ -171,7 +172,7 @@ function downloadBulletin(html: string, filename: string) {
 
 async function generateBulkBulletins(ids: string[], semId: string, semLabel: string) {
   if (!ids.length) return;
-  const BASE  = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+  const BASE  = API_ORIGIN;
   const token = localStorage.getItem("us.accessToken") ?? "";
   toast.info(`Génération de ${ids.length} bulletin${ids.length !== 1 ? "s" : ""}…`);
   try {

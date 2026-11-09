@@ -6,11 +6,12 @@ import { asyncHandler, HttpError } from '../../utils/asyncHandler.js';
 import { requireSystem } from '../../middlewares/auth.js';
 import { prisma } from '../../database/prisma.js';
 import * as svc from './live-sessions.service.js';
+import { uploadsPath } from '../../config/paths.js';
 
 const r = Router();
 
 // Presentation uploads (PDF shown on the live blackboard)
-const presDir = path.resolve('uploads/presentations');
+const presDir = uploadsPath('presentations');
 if (!fs.existsSync(presDir)) fs.mkdirSync(presDir, { recursive: true });
 const presUpload = multer({
   storage: multer.diskStorage({

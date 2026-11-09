@@ -2,6 +2,7 @@ import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { createApp } from './app.js';
 import { env } from './config/env.js';
+import { corsOrigin } from './config/cors.js';
 import { disconnectPrisma } from './database/prisma.js';
 import { registerIO } from './realtime/events.js';
 import { initSocket } from './socket/index.js';
@@ -13,18 +14,9 @@ const app = createApp();
 const server = http.createServer(app);
 
 // ─── Socket.io (Phase 5: auth, presence, chat rooms, notifications) ───
-// Same CORS policy as the HTTP app: env allow-list + any localhost port (dev).
-const allowList = env.CORS_ORIGIN === '*' ? null : env.CORS_ORIGIN.split(',').map((s) => s.trim());
+// Même règle CORS que l'API HTTP (src/config/cors.js).
 const io = new SocketIOServer(server, {
-  cors: {
-    origin: allowList === null
-      ? true
-      : (origin, cb) => {
-          const isLocal = origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-          cb(null, !origin || isLocal || allowList.includes(origin));
-        },
-    credentials: true,
-  },
+  cors: { origin: corsOrigin, credentials: true },
 });
 
 // Expose io to services (notifications, chat fan-out, course:published, …) without

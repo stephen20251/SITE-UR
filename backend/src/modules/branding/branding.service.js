@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { env } from '../../config/env.js';
 
 const prisma = new PrismaClient();
 
@@ -32,7 +33,7 @@ export async function updateBranding(data) {
 // Resolve {{school.*}} variables map for template injection
 export async function resolveBrandingVars() {
   const b = await getBranding();
-  const BASE_URL = process.env.BASE_URL ?? 'http://localhost:4000';
+  const BASE_URL = env.API_URL;
 
   function toUrl(path) {
     if (!path) return '';

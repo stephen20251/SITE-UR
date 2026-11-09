@@ -14,9 +14,10 @@ import {
   listMineQuery,
 } from './courses.schemas.js';
 import * as svc from './courses.service.js';
+import { uploadsPath } from '../../config/paths.js';
 
 // Multer for course media (thumbnail + preview video)
-const courseMediaDir = path.resolve('uploads/courses');
+const courseMediaDir = uploadsPath('courses');
 if (!fs.existsSync(courseMediaDir)) fs.mkdirSync(courseMediaDir, { recursive: true });
 const courseUpload = multer({
   storage: multer.diskStorage({

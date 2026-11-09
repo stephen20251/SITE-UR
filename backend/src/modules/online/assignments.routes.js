@@ -5,9 +5,10 @@ import fs from 'fs';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { requireSystem } from '../../middlewares/auth.js';
 import * as svc from './assignments.service.js';
+import { uploadsPath } from '../../config/paths.js';
 
 // Fichiers d'exercices joints aux devoirs (énoncés, données…)
-const attachDir = path.resolve('uploads/assignments');
+const attachDir = uploadsPath('assignments');
 if (!fs.existsSync(attachDir)) fs.mkdirSync(attachDir, { recursive: true });
 const attachUpload = multer({
   storage: multer.diskStorage({

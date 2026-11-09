@@ -24,6 +24,7 @@ import {
   type CourseModule, type CourseLesson,
 } from "@/lib/online";
 import { api } from "@/lib/api";
+import { API_ORIGIN } from "@/lib/env";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -103,7 +104,7 @@ function useInlineUpload(lessonId: string | null, courseId: string) {
       }
     };
     xhr.onerror = () => { setStatus("error"); setErrorMsg("Erreur réseau"); };
-    xhr.open("POST", `http://localhost:4000/api/online/lessons/${lessonId}/upload`);
+    xhr.open("POST", `${API_ORIGIN}/api/online/lessons/${lessonId}/upload`);
     if (tok) xhr.setRequestHeader("Authorization", `Bearer ${tok}`);
     xhr.send(fd);
   }, [lessonId, courseId, qc]);

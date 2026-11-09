@@ -5,6 +5,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env.js';
+import { corsOrigin } from './config/cors.js';
 import { errorMiddleware, notFoundMiddleware } from './middlewares/error.js';
 
 // Core
@@ -47,27 +48,19 @@ import affectationRoutes from './modules/affectation/affectation.routes.js';
 import designerRoutes from './modules/designer/designer.routes.js';
 import cursusRoutes from './modules/cursus/cursus.routes.js';
 import { mediaRouter, blockProtectedUploads } from './modules/cursus/media.routes.js';
+import { UPLOADS_DIR } from './config/paths.js';
 
 export function createApp() {
   const app = express();
 
   app.disable('x-powered-by');
+  // Derrière le proxy de l'hébergeur : vraie adresse IP des visiteurs (limites de requêtes).
+  if (env.TRUST_PROXY) app.set('trust proxy', env.TRUST_PROXY);
   app.use(helmet());
-  // CORS: the env allow-list, plus any localhost/127.0.0.1 port in dev — the
-  // Vite dev server hops ports (5173 → 8081…) when its default is taken.
-  const allowList = env.CORS_ORIGIN === '*' ? null : env.CORS_ORIGIN.split(',').map((s) => s.trim());
-  app.use(cors({
-    origin: allowList === null
-      ? true
-      : (origin, cb) => {
-          const isLocal = origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-          cb(null, !origin || isLocal || allowList.includes(origin));
-        },
-    credentials: true,
-  }));
+  app.use(cors({ origin: corsOrigin, credentials: true }));
   app.use(express.json({ limit: '5mb' }));
   app.use(express.urlencoded({ extended: true }));
-  if (env.NODE_ENV !== 'test') app.use(morgan('dev'));
+  if (env.NODE_ENV !== 'test') app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
   app.use(rateLimit({ windowMs: 60_000, max: 500, standardHeaders: true, legacyHeaders: false }));
 
@@ -81,7 +74,7 @@ export function createApp() {
   app.use('/uploads', (req, res, next) => {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
-  }, express.static(path.resolve('uploads')));
+  }, express.static(UPLOADS_DIR));
 
   // Auth
   app.use('/api/auth', authRoutes);

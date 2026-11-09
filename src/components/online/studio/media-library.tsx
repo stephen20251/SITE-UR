@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X, Film, FileText, Volume2, Image, Archive, Code, File, Check } from "lucide-react";
 import { api } from "@/lib/api";
+import { API_ORIGIN } from "@/lib/env";
 
 type MediaFile = {
   id: string;
@@ -42,7 +43,7 @@ function formatSize(bytes: number) {
   return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
 }
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = API_ORIGIN;
 
 export function MediaLibraryModal({
   onSelect,

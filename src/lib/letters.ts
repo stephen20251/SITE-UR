@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, tokenStore } from "./api";
+import { API_ORIGIN } from "@/lib/env";
 
 export type LetterInput = {
   key: string;
@@ -32,7 +33,7 @@ export type GeneratedDoc = {
   author: { firstName: string; lastName: string };
 };
 
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const BASE = API_ORIGIN;
 
 export const LETTER_CATEGORY_LABELS: Record<string, string> = {
   ETUDIANT:  "Étudiants",

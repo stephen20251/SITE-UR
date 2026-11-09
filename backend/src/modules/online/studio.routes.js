@@ -5,8 +5,9 @@ import fs from 'fs';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { authenticate, requireRole } from '../../middlewares/auth.js';
 import * as svc from './studio.service.js';
+import { uploadsPath } from '../../config/paths.js';
 
-const lessonMediaDir = path.resolve('uploads/lessons');
+const lessonMediaDir = uploadsPath('lessons');
 if (!fs.existsSync(lessonMediaDir)) fs.mkdirSync(lessonMediaDir, { recursive: true });
 
 const upload = multer({

@@ -15,9 +15,10 @@ import {
   updateLessonBody,
 } from './curriculum.schemas.js';
 import * as svc from './curriculum.service.js';
+import { uploadsPath } from '../../config/paths.js';
 
 // Multer for lesson content uploads
-const lessonMediaDir = path.resolve('uploads/lessons');
+const lessonMediaDir = uploadsPath('lessons');
 if (!fs.existsSync(lessonMediaDir)) fs.mkdirSync(lessonMediaDir, { recursive: true });
 const lessonUpload = multer({
   storage: multer.diskStorage({

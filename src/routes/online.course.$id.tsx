@@ -30,6 +30,7 @@ import {
   ProtectedArea, ProtectedNotice, ProtectedPdf, UnviewableDocument, useProtectedContent,
 } from "@/components/online/protected-content";
 import { cursusPlace } from "@/lib/cursus";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/online/course/$id")({
   component: Course,
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/online/course/$id")({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = API_ORIGIN;
 function mediaUrl(path?: string | null): string | undefined {
   if (!path) return undefined;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;

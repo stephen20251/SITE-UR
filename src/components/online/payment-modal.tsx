@@ -5,8 +5,9 @@ import {
   useMobileMoneySettings, useCreatePayment, useUploadScreenshot, useApplyCoupon,
   type PaymentMethod, type CoursePayment, type CouponPreview,
 } from "@/lib/payments";
+import { API_ORIGIN } from "@/lib/env";
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = API_ORIGIN;
 function mediaUrl(path: string) {
   if (path.startsWith("http")) return path;
   return `${API_BASE}${path}`;

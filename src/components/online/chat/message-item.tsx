@@ -5,8 +5,9 @@ import { useState } from "react";
 import { Download, FileText, Film, Volume2, File, Archive, Image as ImageIcon, X } from "lucide-react";
 import type { ChatMessage } from "@/lib/chat";
 import { initials } from "@/components/online/shared";
+import { API_ORIGIN } from "@/lib/env";
 
-const BASE = "http://localhost:4000";
+const BASE = API_ORIGIN;
 
 function fileIcon(mime: string | null | undefined) {
   if (!mime) return File;

@@ -5,12 +5,12 @@ import multer from 'multer';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { authenticate } from '../../middlewares/auth.js';
 import * as svc from './erp-chat.service.js';
+import { UPLOADS_DIR } from '../../config/paths.js';
 
 const router = Router();
 router.use(authenticate);
 
 // ── File upload for chat messages ──────────────────────────────────────────────
-const UPLOADS_DIR = path.resolve('uploads');
 
 const chatStorage = multer.diskStorage({
   destination: (req, file, cb) => {

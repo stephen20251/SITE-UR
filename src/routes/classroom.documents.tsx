@@ -13,6 +13,7 @@ import { api, tokenStore } from "@/lib/api";
 import { useDocumentTemplates, CATEGORY_LABELS, CATEGORY_COLORS, type DocumentTemplate } from "@/lib/documents";
 import { useSemesters } from "@/lib/classroom";
 import { useRequireClassroom } from "@/components/classroom/shared";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/classroom/documents")({ component: DocumentsPage });
 
@@ -380,7 +381,7 @@ function GeneratorPanel({
       const inputs = { studentId, ...extraValues };
       const token  = tokenStore.access;
       const r = await fetch(
-        `${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/documents/generate/${template.id}`,
+        `${API_ORIGIN}/api/documents/generate/${template.id}`,
         { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` }, body: JSON.stringify(inputs) },
       );
       if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error((e as { message?: string }).message ?? "Erreur"); }
@@ -396,7 +397,7 @@ function GeneratorPanel({
     try {
       const token = tokenStore.access;
       const r = await fetch(
-        `${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/documents/generate/${template.id}`,
+        `${API_ORIGIN}/api/documents/generate/${template.id}`,
         { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` }, body: JSON.stringify({ teacherId, ...extraValues }) },
       );
       if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error((e as { message?: string }).message ?? "Erreur"); }
@@ -413,7 +414,7 @@ function GeneratorPanel({
       const token = tokenStore.access;
       const items = studentIds.map((studentId) => ({ studentId, ...extraValues }));
       const r = await fetch(
-        `${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/documents/generate-bulk/${template.id}`,
+        `${API_ORIGIN}/api/documents/generate-bulk/${template.id}`,
         { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` }, body: JSON.stringify({ items }) },
       );
       if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error((e as { message?: string }).message ?? "Erreur"); }

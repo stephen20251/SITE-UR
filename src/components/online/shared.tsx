@@ -11,13 +11,14 @@ import { BackHomeButtons } from "@/components/nav-buttons";
 import { usePublicSettings } from "@/lib/lms-admin";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/lib/notifications";
 import { useOnlineUnreadCount } from "@/lib/chat";
+import { API_ORIGIN } from "@/lib/env";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export const initials = (first?: string, last?: string) =>
   `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "U";
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = API_ORIGIN;
 function mediaUrl(path?: string | null): string | undefined {
   if (!path) return undefined;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;

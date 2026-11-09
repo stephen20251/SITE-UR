@@ -1,9 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import { getCardTemplate, CARD_TEMPLATES } from './cards.templates.js';
 import { resolveBrandingVars } from '../branding/branding.service.js';
+import { env } from '../../config/env.js';
 
 const prisma = new PrismaClient();
-const BASE_URL = process.env.BASE_URL ?? 'http://localhost:4000';
+const BASE_URL = env.API_URL;
 
 // ── Resolve student vars from DB ───────────────────────────────────────────────
 

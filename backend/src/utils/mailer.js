@@ -6,10 +6,11 @@
 import fs from 'fs';
 import path from 'path';
 import nodemailer from 'nodemailer';
+import { env } from '../config/env.js';
 
 const SMTP_HOST = process.env.SMTP_HOST;
 const FROM = process.env.MAIL_FROM || 'UR Online <no-reply@ur-online.mg>';
-const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+const APP_URL = env.APP_URL;
 
 let transport = null;
 if (SMTP_HOST) {

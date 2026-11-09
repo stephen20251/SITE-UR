@@ -8,8 +8,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, tokenStore } from "@/lib/api";
 import { ACADEMIC_TITLES, openCv, titleLabel } from "@/lib/faculty";
 import { toast } from "sonner";
+import { API_ORIGIN } from "@/lib/env";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const API_URL = API_ORIGIN;
 
 export const Route = createFileRoute("/classroom/profile")({ component: ProfilePage });
 

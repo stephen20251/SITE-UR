@@ -10,10 +10,11 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { tokenStore } from "@/lib/api";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/classroom/config/universite")({ component: UniversitePage });
 
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const BASE = API_ORIGIN;
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

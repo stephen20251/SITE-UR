@@ -18,8 +18,9 @@ import path from 'path'
 import { prisma } from '../../database/prisma.js'
 import { HttpError } from '../../utils/asyncHandler.js'
 import { loadStaffContext } from '../../middlewares/rbac.js'
+import { privatePath } from '../../config/paths.js'
 
-export const PRIVATE_DIR = path.resolve('private-uploads', 'candidates')
+export const PRIVATE_DIR = privatePath('candidates')
 
 export const DOC_TYPES = {
   // Pré-inscription

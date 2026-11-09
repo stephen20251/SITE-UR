@@ -10,13 +10,14 @@ import {
   chatKeys, type ChatRoomCard, type ChatMessage, type ErpContact,
 } from "@/lib/chat";
 import { getSocket, socketEmit, useSocketEvent, useSocketConnected } from "@/lib/socket";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/classroom/chat")({
   validateSearch: (s): { room?: string } => ({ room: typeof s.room === "string" ? s.room : undefined }),
   component: ChatPage,
 });
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const API_URL = API_ORIGIN;
 const shortTime = (iso: string) => new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
 function UserAvatar({ url, initials, size = 10 }: { url?: string | null; initials: string; size?: number }) {

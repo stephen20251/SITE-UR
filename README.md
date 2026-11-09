@@ -157,6 +157,17 @@ npm install
 npm run dev                   # TanStack Start dev server
 ```
 
+## 🌍 Deployment (Hostinger)
+
+Step-by-step guide in French: [DEPLOIEMENT.md](DEPLOIEMENT.md) — two Node.js web apps
+(API in `backend/`, site at the repository root) and a MySQL database. The API prepares the
+database and creates the first Super Admin on its first start.
+
+```bash
+npm run build && npm start              # site: node .output/server/index.mjs (VITE_API_URL at build time)
+cd backend && npm install && npm start  # API: migrations, first-install data, then the server
+```
+
 ## 👥 Roles
 
 `admin` · `chef_de_mention` · `responsable_pédagogique` · `secrétaire` · `trésorier / finance` ·

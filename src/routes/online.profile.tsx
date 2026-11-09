@@ -17,13 +17,14 @@ import { OnlineNavbar, ProgressBar, initials, useRequireOnline, effectiveOnlineR
 import { MyInfoCard, roleLabel } from "@/components/online/my-info";
 import { PaymentStatusBadge } from "@/components/online/payment-modal";
 import { toast } from "sonner";
+import { API_ORIGIN } from "@/lib/env";
 
 export const Route = createFileRoute("/online/profile")({
   head: () => ({ meta: [{ title: "Mon profil — UR Online" }] }),
   component: ProfilePage,
 });
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = API_ORIGIN;
 function mediaUrl(path?: string | null): string | undefined {
   if (!path) return undefined;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
@@ -455,7 +456,7 @@ function GamificationCard() {
   );
 }
 
-const API_BASE_W = "http://localhost:4000";
+const API_BASE_W = API_ORIGIN;
 function thumbUrl(path?: string | null): string | undefined {
   if (!path) return undefined;
   if (path.startsWith("http")) return path;

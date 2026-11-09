@@ -8,12 +8,13 @@ import { validate } from '../../middlewares/validate.js';
 import { onlineUserIds } from '../../socket/presence.js';
 import { roomIdParam, courseIdParam, userIdParam, messagesQuery, sendMessageBody } from './chat.schemas.js';
 import * as svc from './chat.service.js';
+import { uploadsPath } from '../../config/paths.js';
 
 const router = Router();
 router.use(authenticate);
 
 // ─── Upload setup ──────────────────────────────────────────────────────────
-const chatUploadDir = path.resolve('uploads/chat');
+const chatUploadDir = uploadsPath('chat');
 if (!fs.existsSync(chatUploadDir)) fs.mkdirSync(chatUploadDir, { recursive: true });
 
 const chatUpload = multer({
