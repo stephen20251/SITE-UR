@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { authenticate } from '../../middlewares/auth.js';
 import { validate } from '../../middlewares/validate.js';
-import { registerSchema, registerCandidateSchema, loginSchema, refreshSchema } from './auth.schemas.js';
+import { registerSchema, registerCandidateSchema, loginSchema, refreshSchema, forgotPasswordSchema } from './auth.schemas.js';
 import * as svc from './auth.service.js';
 import { prisma } from '../../database/prisma.js';
 
@@ -39,6 +39,19 @@ router.post('/refresh', validate({ body: refreshSchema }), asyncHandler(async (r
 
 router.post('/logout', validate({ body: refreshSchema }), asyncHandler(async (req, res) => {
   res.json(await svc.logout(req.body.refreshToken));
+}));
+
+// Mot de passe : changement (connecté), oubli (lien par e-mail), réinitialisation
+router.post('/change-password', authenticate, authLimiter, asyncHandler(async (req, res) => {
+  res.json(await svc.changePassword(req.user.sub, req.body ?? {}));
+}));
+
+router.post('/forgot-password', authLimiter, validate({ body: forgotPasswordSchema }), asyncHandler(async (req, res) => {
+  res.json(await svc.forgotPassword(req.body.email));
+}));
+
+router.post('/reset-password', authLimiter, asyncHandler(async (req, res) => {
+  res.json(await svc.resetPassword(req.body ?? {}));
 }));
 
 router.get('/me', authenticate, asyncHandler(async (req, res) => {

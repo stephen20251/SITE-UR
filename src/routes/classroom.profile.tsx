@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { Loader2, Building2, GraduationCap, BookOpen, Users, Mail, TrendingUp, Calendar, CreditCard, Camera, Pen, Trash2, Upload, UserRound, Phone, Pencil, Save, X, Clock, ShieldCheck, LifeBuoy, FileText, CheckCircle2, AlertCircle, Award } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { studyModeLabel } from "@/components/classroom/study-mode";
+import { ChangePasswordCard } from "@/components/account-password";
 import { useMyContext, isStudentCtx, isTeacherCtx, isParentCtx, isStaffCtx, isAdminCtx, type MyContext, type TeacherCtx } from "@/lib/context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, tokenStore } from "@/lib/api";
@@ -715,6 +716,8 @@ function ProfilePage() {
           )}
         </>
       )}
+
+      <ChangePasswordCard />
 
       {/* Signature — staff/teacher/admin */}
       {canSign && (

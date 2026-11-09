@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { STUDY_MODES, StudyModeBadge, StudyModePicker, type StudyMode } from "@/components/classroom/study-mode";
+import { AccountResult } from "@/components/account-password";
 
 export const Route = createFileRoute("/classroom/inscription")({ component: InscriptionPage });
 
@@ -130,17 +131,16 @@ function EnrollModal({ onClose }: { onClose: () => void }) {
   const unenrolled = useUnenrolled(existQ);
 
   // Mot de passe provisoire généré par le serveur : affiché une seule fois.
-  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [created, setCreated] = useState<{ email: string; temporaryPassword?: string; emailSent?: boolean } | null>(null);
 
   const enroll = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api<{ temporaryPassword?: string }>(tab === "new" ? "/inscriptions" : "/inscriptions/existing", { method: "POST", body }),
-    onSuccess: (created) => {
+      api<{ temporaryPassword?: string; emailSent?: boolean; user?: { email: string } }>(tab === "new" ? "/inscriptions" : "/inscriptions/existing", { method: "POST", body }),
+    onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["inscriptions"] });
       qc.invalidateQueries({ queryKey: ["inscriptions-stats"] });
       toast.success("Inscription créée avec succès");
-      if (created.temporaryPassword) setTempPassword(created.temporaryPassword);
-      else onClose();
+      setCreated({ email: res.user?.email ?? "", temporaryPassword: res.temporaryPassword, emailSent: res.emailSent });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -156,18 +156,11 @@ function EnrollModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  if (tempPassword) {
+  if (created) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-        <div className="w-full max-w-md space-y-4 rounded-2xl border bg-card p-6 shadow-2xl">
-          <h2 className="flex items-center gap-2 font-semibold"><CheckCircle2 size={18} className="text-emerald-600" /> Étudiant inscrit</h2>
-          <p className="text-sm text-muted-foreground">
-            Mot de passe provisoire à transmettre à l'étudiant. Il ne sera plus affiché : notez-le maintenant.
-          </p>
-          <code className="block select-all rounded-xl bg-muted px-4 py-3 text-center font-mono text-base">{tempPassword}</code>
-          <button onClick={onClose} className="w-full rounded-xl grad-classroom py-2.5 text-sm font-semibold text-white hover:opacity-90">
-            C'est noté
-          </button>
+        <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-2xl">
+          <AccountResult {...created} onClose={onClose} />
         </div>
       </div>
     );

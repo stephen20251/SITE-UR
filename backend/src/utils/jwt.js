@@ -8,7 +8,13 @@ export const signAccessToken = (payload) =>
 export const signRefreshToken = (payload) =>
   jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRES });
 
-export const verifyAccessToken = (token) => jwt.verify(token, env.JWT_ACCESS_SECRET);
+export const verifyAccessToken = (token) => {
+  const payload = jwt.verify(token, env.JWT_ACCESS_SECRET);
+  // Les jetons à usage précis (lien de vidéo signé, réinitialisation de mot de passe)
+  // portent un « typ » : ils ne doivent jamais ouvrir une session.
+  if (payload.typ) throw new jwt.JsonWebTokenError('Jeton de session invalide');
+  return payload;
+};
 export const verifyRefreshToken = (token) => jwt.verify(token, env.JWT_REFRESH_SECRET);
 
 // Store hashed refresh tokens in DB (never the raw value)

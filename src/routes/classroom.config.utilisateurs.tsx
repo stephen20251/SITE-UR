@@ -6,6 +6,7 @@ import {
   useAdminUsers, useCreateUser, useAdminRoles,
   SYSTEM_ROLE_META, type SystemRole, type AdminUser,
 } from "@/lib/config";
+import { AccountResult } from "@/components/account-password";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -68,6 +69,8 @@ function CreateUserDialog({ onClose }: { onClose: () => void }) {
     systemRole: "TEACHER" as SystemRole, password: "",
   });
 
+  const [created, setCreated] = useState<{ email: string; temporaryPassword?: string; emailSent?: boolean } | null>(null);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -80,10 +83,20 @@ function CreateUserDialog({ onClose }: { onClose: () => void }) {
         phone: form.phone || undefined,
       });
       toast.success(`Compte créé : ${user.firstName} ${user.lastName}`);
-      onClose();
-    } catch {
-      toast.error("Erreur lors de la création du compte");
+      setCreated({ email: user.email, temporaryPassword: user.temporaryPassword, emailSent: user.emailSent });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la création du compte");
     }
+  }
+
+  if (created) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-2xl">
+          <AccountResult {...created} onClose={onClose} />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -92,7 +105,7 @@ function CreateUserDialog({ onClose }: { onClose: () => void }) {
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="font-bold">Nouvel utilisateur</h2>
-            <p className="text-xs text-muted-foreground">Un email de confirmation sera envoyé</p>
+            <p className="text-xs text-muted-foreground">Un e-mail avec l'identifiant est envoyé à la personne</p>
           </div>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-accent"><X size={16} /></button>
         </div>
@@ -136,14 +149,13 @@ function CreateUserDialog({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Mot de passe *</label>
+            <label className="mb-1.5 block text-sm font-medium">Mot de passe (facultatif)</label>
             <div className="relative">
               <input
                 type={showPwd ? "text" : "password"}
                 className={inp + " pr-10"}
-                placeholder="Min. 8 caractères"
+                placeholder="Vide : provisoire envoyé par e-mail"
                 value={form.password}
-                required
                 minLength={8}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
               />

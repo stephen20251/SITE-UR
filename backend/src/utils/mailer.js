@@ -9,15 +9,17 @@ import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 
 const SMTP_HOST = process.env.SMTP_HOST;
-const FROM = process.env.MAIL_FROM || 'UR Online <no-reply@ur-online.mg>';
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const FROM = process.env.MAIL_FROM || process.env.SMTP_USER || 'Université Références <no-reply@localhost>';
 const APP_URL = env.APP_URL;
 
 let transport = null;
 if (SMTP_HOST) {
   transport = nodemailer.createTransport({
     host: SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: process.env.SMTP_SECURE === 'true',
+    port: SMTP_PORT,
+    // Port 465 (messagerie Hostinger) : SSL direct. Port 587 : STARTTLS.
+    secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : SMTP_PORT === 465,
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
       : undefined,
@@ -26,11 +28,18 @@ if (SMTP_HOST) {
 
 const LOG_DIR = path.resolve('logs/emails');
 
+// Texte venant des utilisateurs (noms…) inséré dans un e-mail HTML.
+export const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+export const smtpConfigured = () => Boolean(transport);
+
 // Branded, inline-styled HTML shell (email clients ignore external CSS).
 export function renderEmail({ title, greeting, body, ctaLabel, ctaUrl, footer }) {
+  // Lien d'action : chemin du site (« /classroom ») ou adresse complète
+  const href = ctaUrl && /^https?:\/\//.test(ctaUrl) ? ctaUrl : `${APP_URL}${ctaUrl}`;
   const cta = ctaLabel && ctaUrl
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px auto 0"><tr><td style="border-radius:12px;background:linear-gradient(135deg,#3b2d8f,#6d28d9)">
-         <a href="${APP_URL}${ctaUrl}" style="display:inline-block;padding:13px 32px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none">${ctaLabel}</a>
+         <a href="${href}" style="display:inline-block;padding:13px 32px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none">${ctaLabel}</a>
        </td></tr></table>`
     : '';
   return `<!doctype html><html><body style="margin:0;padding:0;background:#f4f4f7">
@@ -38,7 +47,7 @@ export function renderEmail({ title, greeting, body, ctaLabel, ctaUrl, footer })
     <tr><td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%">
         <tr><td style="padding:0 0 18px;text-align:center;font-family:Arial,sans-serif">
-          <span style="font-size:20px;font-weight:bold;color:#3b2d8f">🎓 UR Online</span>
+          <span style="font-size:20px;font-weight:bold;color:#3b2d8f">🎓 Université Références</span>
         </td></tr>
         <tr><td style="background:#ffffff;border-radius:16px;padding:36px 36px 32px;font-family:Arial,sans-serif;color:#111827">
           <h1 style="margin:0 0 16px;font-size:22px;color:#111827">${title}</h1>
@@ -47,7 +56,7 @@ export function renderEmail({ title, greeting, body, ctaLabel, ctaUrl, footer })
           ${cta}
         </td></tr>
         <tr><td style="padding:20px 12px;text-align:center;font-family:Arial,sans-serif;font-size:12px;color:#9ca3af;line-height:1.6">
-          ${footer ?? 'Université Références — plateforme officielle UR Online.<br/>Vous recevez cet e-mail car vous avez un compte sur UR Online.'}
+          ${footer ?? 'Université Références — Antananarivo.<br/>Vous recevez cet e-mail car vous avez un compte sur la plateforme de l’université.'}
         </td></tr>
       </table>
     </td></tr>

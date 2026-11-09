@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ReinitialiserMotDePasseRouteImport } from './routes/reinitialiser-mot-de-passe'
 import { Route as OnlineRouteImport } from './routes/online'
+import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as ErpRouteImport } from './routes/erp'
 import { Route as ClassroomRouteImport } from './routes/classroom'
@@ -114,9 +116,19 @@ import { Route as ClassroomAnneesIdRouteImport } from './routes/classroom.annees
 import { Route as ErpPlanningViewIdRouteImport } from './routes/erp.planning.view.$id'
 import { Route as ClassroomPlanningViewIdRouteImport } from './routes/classroom.planning.view.$id'
 
+const ReinitialiserMotDePasseRoute = ReinitialiserMotDePasseRouteImport.update({
+  id: '/reinitialiser-mot-de-passe',
+  path: '/reinitialiser-mot-de-passe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnlineRoute = OnlineRouteImport.update({
   id: '/online',
   path: '/online',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MotDePasseOublieRoute = MotDePasseOublieRouteImport.update({
+  id: '/mot-de-passe-oublie',
+  path: '/mot-de-passe-oublie',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuideRoute = GuideRouteImport.update({
@@ -649,7 +661,9 @@ export interface FileRoutesByFullPath {
   '/classroom': typeof ClassroomRouteWithChildren
   '/erp': typeof ErpRouteWithChildren
   '/guide': typeof GuideRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/online': typeof OnlineRouteWithChildren
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/actualites/$slug': typeof ActualitesSlugRoute
   '/actualites/archives': typeof ActualitesArchivesRoute
   '/classroom/actualites': typeof ClassroomActualitesRoute
@@ -753,6 +767,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/choice': typeof ChoiceRoute
   '/guide': typeof GuideRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/actualites/$slug': typeof ActualitesSlugRoute
   '/actualites/archives': typeof ActualitesArchivesRoute
   '/classroom/actualites': typeof ClassroomActualitesRoute
@@ -853,7 +869,9 @@ export interface FileRoutesById {
   '/classroom': typeof ClassroomRouteWithChildren
   '/erp': typeof ErpRouteWithChildren
   '/guide': typeof GuideRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/online': typeof OnlineRouteWithChildren
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/actualites/$slug': typeof ActualitesSlugRoute
   '/actualites/archives': typeof ActualitesArchivesRoute
   '/classroom/actualites': typeof ClassroomActualitesRoute
@@ -961,7 +979,9 @@ export interface FileRouteTypes {
     | '/classroom'
     | '/erp'
     | '/guide'
+    | '/mot-de-passe-oublie'
     | '/online'
+    | '/reinitialiser-mot-de-passe'
     | '/actualites/$slug'
     | '/actualites/archives'
     | '/classroom/actualites'
@@ -1065,6 +1085,8 @@ export interface FileRouteTypes {
     | '/'
     | '/choice'
     | '/guide'
+    | '/mot-de-passe-oublie'
+    | '/reinitialiser-mot-de-passe'
     | '/actualites/$slug'
     | '/actualites/archives'
     | '/classroom/actualites'
@@ -1164,7 +1186,9 @@ export interface FileRouteTypes {
     | '/classroom'
     | '/erp'
     | '/guide'
+    | '/mot-de-passe-oublie'
     | '/online'
+    | '/reinitialiser-mot-de-passe'
     | '/actualites/$slug'
     | '/actualites/archives'
     | '/classroom/actualites'
@@ -1271,7 +1295,9 @@ export interface RootRouteChildren {
   ClassroomRoute: typeof ClassroomRouteWithChildren
   ErpRoute: typeof ErpRouteWithChildren
   GuideRoute: typeof GuideRoute
+  MotDePasseOublieRoute: typeof MotDePasseOublieRoute
   OnlineRoute: typeof OnlineRouteWithChildren
+  ReinitialiserMotDePasseRoute: typeof ReinitialiserMotDePasseRoute
   ActualitesSlugRoute: typeof ActualitesSlugRoute
   ActualitesArchivesRoute: typeof ActualitesArchivesRoute
   ActualitesIndexRoute: typeof ActualitesIndexRoute
@@ -1279,11 +1305,25 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reinitialiser-mot-de-passe': {
+      id: '/reinitialiser-mot-de-passe'
+      path: '/reinitialiser-mot-de-passe'
+      fullPath: '/reinitialiser-mot-de-passe'
+      preLoaderRoute: typeof ReinitialiserMotDePasseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/online': {
       id: '/online'
       path: '/online'
       fullPath: '/online'
       preLoaderRoute: typeof OnlineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mot-de-passe-oublie': {
+      id: '/mot-de-passe-oublie'
+      path: '/mot-de-passe-oublie'
+      fullPath: '/mot-de-passe-oublie'
+      preLoaderRoute: typeof MotDePasseOublieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guide': {
@@ -2300,7 +2340,9 @@ const rootRouteChildren: RootRouteChildren = {
   ClassroomRoute: ClassroomRouteWithChildren,
   ErpRoute: ErpRouteWithChildren,
   GuideRoute: GuideRoute,
+  MotDePasseOublieRoute: MotDePasseOublieRoute,
   OnlineRoute: OnlineRouteWithChildren,
+  ReinitialiserMotDePasseRoute: ReinitialiserMotDePasseRoute,
   ActualitesSlugRoute: ActualitesSlugRoute,
   ActualitesArchivesRoute: ActualitesArchivesRoute,
   ActualitesIndexRoute: ActualitesIndexRoute,

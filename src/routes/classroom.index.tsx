@@ -116,7 +116,10 @@ function ClassroomLogin() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Mot de passe</label>
+              <div className="mb-1 flex items-center justify-between">
+                <label className="block text-xs font-medium text-muted-foreground">Mot de passe</label>
+                <a href="/mot-de-passe-oublie" className="text-xs text-classroom hover:underline">Mot de passe oublié ?</a>
+              </div>
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

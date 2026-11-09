@@ -127,7 +127,7 @@ export function useCreateUser() {
     mutationFn: (data: {
       email: string; firstName: string; lastName: string;
       systemRole: SystemRole; password: string; phone?: string;
-    }) => api<AdminUser>("/admin/users", { method: "POST", body: data }),
+    }) => api<AdminUser & { temporaryPassword?: string; emailSent?: boolean }>("/admin/users", { method: "POST", body: data }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["config", "users"] }),
   });
 }

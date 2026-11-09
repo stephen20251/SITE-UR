@@ -3,6 +3,7 @@ import { HttpError } from '../../utils/asyncHandler.js';
 import bcrypt from 'bcrypt';
 import { STUDY_MODES } from '../cursus/cursus.access.js';
 import { generateTempPassword } from '../../utils/password.js';
+import { sendAccountCreatedEmail } from '../../utils/account-emails.js';
 
 const STUDENT_INCLUDE = {
   user: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true, phone: true, isActive: true } },
@@ -128,7 +129,9 @@ export async function enrollStudent({ firstName, lastName, email, phone, passwor
     });
   });
 
-  return { ...profile, ...(temporaryPassword && { temporaryPassword }) };
+  // Identifiant (et mot de passe provisoire s'il a été généré) envoyé à l'étudiant.
+  const emailSent = await sendAccountCreatedEmail(profile.user ? { ...profile.user, systemRole: 'STUDENT' } : { email, firstName, systemRole: 'STUDENT' }, { temporaryPassword });
+  return { ...profile, emailSent, ...(temporaryPassword && { temporaryPassword }) };
 }
 
 // ── Enroll existing user (user already exists, create profile) ────────────────

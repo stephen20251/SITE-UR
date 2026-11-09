@@ -5,10 +5,10 @@ Le dépôt GitHub `stephen20251/SITE-UR` contient deux applications, déployées
 
 | Application | Dossier du dépôt | Adresse (exemple) | Rôle |
 |---|---|---|---|
-| **API** | `backend` | `https://api.votre-domaine.com` | Base de données, comptes, fichiers, temps réel |
-| **Site** | `.` (racine) | `https://votre-domaine.com` | Pages affichées aux visiteurs |
+| **API** | `backend` | `https://api.univreference.com` | Base de données, comptes, fichiers, temps réel |
+| **Site** | `.` (racine) | `https://univreference.com` | Pages affichées aux visiteurs |
 
-Remplacez `votre-domaine.com` par votre vrai domaine partout dans ce guide.
+Domaine : **univreference.com** (site) et **api.univreference.com** (API, sous-domaine à créer).
 
 > L'interface de hPanel évolue. Si un intitulé diffère de ce guide, cherchez le réglage
 > équivalent ; les valeurs à saisir restent les mêmes.
@@ -44,7 +44,19 @@ Git remplace le dossier de l'application : les fichiers doivent donc être rang�
 À vérifier au premier essai : après un redéploiement, une photo de profil ajoutée avant
 doit toujours s'afficher.
 
-## 3. Application API
+## 3. Adresse e-mail d'envoi (messagerie Hostinger)
+
+La plateforme envoie des e-mails : accès des comptes créés par l'administration, mot de passe
+provisoire, lien « Mot de passe oublié ». Ils partent d'une adresse de votre domaine, incluse
+dans l'offre Hostinger.
+
+1. hPanel → **E-mails** → associez la messagerie au domaine `univreference.com` si ce n'est pas fait.
+2. Créez une boîte, par exemple **`contact@univreference.com`**, avec un mot de passe long.
+3. Ouvrez la boîte dans le webmail et envoyez-vous un message : il doit arriver.
+4. Les réglages d'envoi Hostinger : serveur `smtp.hostinger.com`, port **465** (SSL),
+   identifiant = l'adresse complète, mot de passe = celui de la boîte. Ils servent à l'étape 4.
+
+## 4. Application API
 
 hPanel → **Sites web** → **Ajouter un site web** → **Application web Node.js** →
 importez depuis GitHub (application GitHub de Hostinger) le dépôt `SITE-UR`.
@@ -58,7 +70,7 @@ importez depuis GitHub (application GitHub de Hostinger) le dépôt `SITE-UR`.
 | Commande de build | `npm run build` |
 | Commande de démarrage | `npm start` |
 | Fichier d'entrée (si demandé à la place) | `src/production.js` |
-| Domaine | `api.votre-domaine.com` |
+| Domaine | `api.univreference.com` |
 
 **Variables d'environnement** (paramètres de l'application, jamais dans Git) :
 
@@ -68,20 +80,19 @@ importez depuis GitHub (application GitHub de Hostinger) le dépôt `SITE-UR`.
 | `DATABASE_URL` | l'adresse de l'étape 1 |
 | `JWT_ACCESS_SECRET` | 96 caractères aléatoires (voir ci-dessous) |
 | `JWT_REFRESH_SECRET` | 96 autres caractères aléatoires |
-| `CORS_ORIGIN` | `https://votre-domaine.com,https://www.votre-domaine.com` |
-| `APP_URL` | `https://votre-domaine.com` |
-| `API_URL` | `https://api.votre-domaine.com` |
+| `CORS_ORIGIN` | `https://univreference.com,https://www.univreference.com` |
+| `APP_URL` | `https://univreference.com` |
+| `API_URL` | `https://api.univreference.com` |
 | `UPLOADS_DIR` | `/home/u123456789/ur-fichiers/uploads` |
 | `PRIVATE_UPLOADS_DIR` | `/home/u123456789/ur-fichiers/private` |
 | `ADMIN_EMAIL` | `joel.stephen2017@gmail.com` |
 | `ADMIN_PASSWORD` | mot de passe du Super administrateur (12 caractères minimum) |
 | `ADMIN_FIRST_NAME`, `ADMIN_LAST_NAME` | prénom et nom |
-| `SMTP_HOST` | `smtp.gmail.com` |
-| `SMTP_PORT` | `587` |
-| `SMTP_SECURE` | `false` |
-| `SMTP_USER` | `mananonyamboara@gmail.com` |
-| `SMTP_PASS` | le mot de passe d'application Google (16 caractères) |
-| `MAIL_FROM` | `Université Références <mananonyamboara@gmail.com>` |
+| `SMTP_HOST` | `smtp.hostinger.com` |
+| `SMTP_PORT` | `465` |
+| `SMTP_USER` | `contact@univreference.com` |
+| `SMTP_PASS` | le mot de passe de cette boîte (étape 3) |
+| `MAIL_FROM` | `Université Références <contact@univreference.com>` |
 
 Pour générer un secret, sur votre ordinateur :
 
@@ -91,14 +102,14 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 
 Lancez le déploiement. Au premier démarrage, les journaux de l'application affichent :
 `Migrations de la base`, `Données de base`, `Création du Super administrateur`, puis
-`University System backend on …`. Vérifiez ensuite `https://api.votre-domaine.com/health`
+`University System backend on …`. Vérifiez ensuite `https://api.univreference.com/health`
 (réponse `{"ok":true,…}`).
 
 **Ensuite, retirez `ADMIN_EMAIL` et `ADMIN_PASSWORD`** des variables et redémarrez.
 L'API refuse de démarrer si la configuration est dangereuse (secrets d'exemple,
 `CORS_ORIGIN=*`, adresses en localhost) : le message d'erreur indique quoi corriger.
 
-## 4. Application Site
+## 5. Application Site
 
 Ajoutez une deuxième application web Node.js depuis le même dépôt :
 
@@ -110,25 +121,32 @@ Ajoutez une deuxième application web Node.js depuis le même dépôt :
 | Commande de build | `npm run build` |
 | Commande de démarrage | `npm start` |
 | Fichier d'entrée (si demandé) | `.output/server/index.mjs` |
-| Domaine | `votre-domaine.com` |
+| Domaine | `univreference.com` |
 
 Variable d'environnement, **lue pendant le build** :
 
 | Variable | Valeur |
 |---|---|
-| `VITE_API_URL` | `https://api.votre-domaine.com` (sans `/api` à la fin) |
+| `VITE_API_URL` | `https://api.univreference.com` (sans `/api` à la fin) |
 
 Si vous changez `VITE_API_URL`, relancez un déploiement : la valeur est intégrée au build.
 
-## 5. Vérifications après la mise en ligne
+## 6. Vérifications après la mise en ligne
 
 1. Le site s'ouvre ; la page **Actualités** s'affiche (vide au début).
 2. **Espace numérique** → **Classroom** : connexion avec `joel.stephen2017@gmail.com`.
-3. **Utilisateurs** : créez les comptes du personnel. Un mot de passe provisoire s'affiche
-   une seule fois : transmettez-le à la personne.
-4. Ajoutez une photo de profil, redéployez l'API, vérifiez que la photo est toujours là.
-5. Créez un compte test avec votre propre adresse et vérifiez la réception des e-mails.
-6. Configurez l'année universitaire en cours dans **Années universitaires**.
+   Dans **Mon profil** → **Changer mon mot de passe** si besoin.
+3. **Utilisateurs** → **Nouvel utilisateur** : créez le second Super administrateur,
+   `mananonyamboara@gmail.com`, rôle **Super Admin**, sans saisir de mot de passe.
+   Il reçoit un e-mail avec son identifiant et un mot de passe provisoire : c'est aussi le
+   test de la messagerie. L'écran indique si l'e-mail est parti ; sinon, il affiche le mot
+   de passe provisoire à transmettre vous-même.
+4. Les deux Super administrateurs créent ensuite les autres comptes de la même façon.
+   Seul un Super administrateur peut créer ou modifier un Super administrateur.
+5. Sur la page de connexion, testez **Mot de passe oublié ?** : le lien reçu par e-mail
+   doit ouvrir `https://univreference.com/reinitialiser-mot-de-passe…`.
+6. Ajoutez une photo de profil, redéployez l'API, vérifiez que la photo est toujours là.
+7. Configurez l'année universitaire en cours dans **Années universitaires**.
 
 ## Sauvegardes
 
@@ -149,4 +167,6 @@ applications. Les nouvelles migrations de base sont appliquées au démarrage de
 | L'API ne démarre pas : erreur de connexion à la base | `DATABASE_URL` : hôte, mot de passe ou caractère spécial non encodé |
 | Le site s'affiche mais rien ne charge (connexion impossible) | `VITE_API_URL` absent ou faux au moment du build, ou `CORS_ORIGIN` ne contient pas l'adresse exacte du site |
 | Les photos et vidéos disparaissent après un déploiement | `UPLOADS_DIR` pointe dans le dossier de l'application |
+| Les e-mails ne partent pas (« messagerie non configurée ») | Variables `SMTP_*` absentes ou fausses : vérifiez le mot de passe de la boîte et le port 465 (sinon 587) |
+| Les e-mails arrivent dans les indésirables | Dans hPanel → E-mails, vérifiez que les enregistrements DNS (SPF, DKIM) du domaine sont actifs |
 | « Trop de requêtes » pour tous les utilisateurs | Le proxy n'est pas reconnu : ajoutez `TRUST_PROXY=1` (ou `2`) |

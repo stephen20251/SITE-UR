@@ -113,7 +113,10 @@ function ErpLogin() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Mot de passe</label>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
+                <a href="/mot-de-passe-oublie" className="text-xs font-medium text-[#0F1E3C] hover:underline">Mot de passe oublié ?</a>
+              </div>
               <div className="relative">
                 <input
                   type={showPw ? "text" : "password"} required value={password}

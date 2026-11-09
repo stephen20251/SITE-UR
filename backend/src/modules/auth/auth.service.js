@@ -6,6 +6,9 @@ import {
 } from '../../utils/jwt.js';
 import { HttpError } from '../../utils/asyncHandler.js';
 import { env } from '../../config/env.js';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import { loginPath, sendForgotPasswordEmail } from '../../utils/account-emails.js';
 
 function ttlMs(ttl) {
   const m = /^(\d+)([smhd])$/.exec(ttl);
@@ -173,4 +176,60 @@ function sanitize(u) {
     system: isOnline ? 'ONLINE' : 'CLASSROOM',
     role: u.systemRole, // compat for online.login.tsx which reads user.role
   };
+}
+
+// ─── Mot de passe : changement par l'utilisateur, oubli, réinitialisation ─────
+const MIN_PASSWORD = 8;
+
+function checkNewPassword(pw) {
+  if (typeof pw !== 'string' || pw.length < MIN_PASSWORD) throw new HttpError(400, `Mot de passe trop court (${MIN_PASSWORD} caractères minimum)`);
+  if (pw.length > 128) throw new HttpError(400, 'Mot de passe trop long');
+}
+
+// L'utilisateur connecté change son mot de passe. Les autres sessions sont fermées ;
+// celle en cours est conservée si son jeton de renouvellement est fourni.
+export async function changePassword(userId, { currentPassword, newPassword, refreshToken }) {
+  checkNewPassword(newPassword);
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.isActive) throw new HttpError(401, 'Compte inactif');
+  if (!(await verifyPassword(String(currentPassword ?? ''), user.passwordHash))) throw new HttpError(400, 'Mot de passe actuel incorrect');
+  if (await verifyPassword(newPassword, user.passwordHash)) throw new HttpError(400, 'Choisissez un mot de passe différent de l\'actuel');
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash: await hashPassword(newPassword) } });
+  const keep = refreshToken ? hashToken(refreshToken) : null;
+  await prisma.refreshToken.deleteMany({ where: { userId, ...(keep && { token: { not: keep } }) } });
+  return { ok: true };
+}
+
+// Lien de réinitialisation : valable 1 h et lié au mot de passe actuel, donc
+// inutilisable une fois le mot de passe changé (usage unique).
+const RESET_TTL = '1h';
+const passwordFingerprint = (passwordHash) => crypto.createHash('sha256').update(passwordHash).digest('hex').slice(0, 24);
+
+export async function forgotPassword(email) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  // Même réponse que le compte existe ou non : on ne révèle pas les adresses inscrites.
+  if (user?.isActive) {
+    const token = jwt.sign({ sub: user.id, typ: 'pwreset', v: passwordFingerprint(user.passwordHash) }, env.JWT_ACCESS_SECRET, { expiresIn: RESET_TTL });
+    // Sans attendre l'envoi : temps de réponse identique, compte existant ou non.
+    sendForgotPasswordEmail(user, `${env.APP_URL}/reinitialiser-mot-de-passe?token=${encodeURIComponent(token)}`);
+  }
+  return { ok: true };
+}
+
+export async function resetPassword({ token, newPassword }) {
+  checkNewPassword(newPassword);
+  let payload;
+  try {
+    payload = jwt.verify(String(token ?? ''), env.JWT_ACCESS_SECRET);
+  } catch {
+    throw new HttpError(400, 'Lien expiré ou invalide : refaites une demande');
+  }
+  if (payload.typ !== 'pwreset') throw new HttpError(400, 'Lien expiré ou invalide : refaites une demande');
+  const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+  if (!user || !user.isActive || passwordFingerprint(user.passwordHash) !== payload.v) {
+    throw new HttpError(400, 'Ce lien a déjà été utilisé ou n\'est plus valable : refaites une demande');
+  }
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(newPassword) } });
+  await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+  return { ok: true, loginPath: loginPath(user.systemRole) };
 }

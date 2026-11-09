@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { AccountResult } from "@/components/account-password";
 import { useRequireClassroom } from "@/components/classroom/shared";
 
 export const Route = createFileRoute("/classroom/utilisateurs")({ component: UtilisateursPage });
@@ -88,10 +89,11 @@ function UserModal({
   } : { ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [created, setCreated] = useState<{ email: string; temporaryPassword?: string; emailSent?: boolean } | null>(null);
 
   async function save() {
     if (!form.firstName || !form.lastName || !form.email) { setErr("Nom, prénom et email sont requis"); return; }
-    if (!user && !form.password) { setErr("Mot de passe requis pour un nouvel utilisateur"); return; }
+    if (form.password && form.password.length < 8) { setErr("Mot de passe trop court (8 caractères minimum)"); return; }
     setSaving(true); setErr("");
     try {
       const body: Record<string, string> = {
@@ -102,14 +104,26 @@ function UserModal({
       if (form.password) body.password = form.password;
       if (user) {
         await api(`/admin/users/${user.id}`, { method: "PUT", body });
+        toast.success("Utilisateur mis à jour");
+        onSaved();
+        onClose();
       } else {
-        await api("/admin/users", { method: "POST", body });
+        const r = await api<{ email: string; temporaryPassword?: string; emailSent?: boolean }>("/admin/users", { method: "POST", body });
+        onSaved();
+        setCreated({ email: r.email, temporaryPassword: r.temporaryPassword, emailSent: r.emailSent });
       }
-      toast.success(user ? "Utilisateur mis à jour" : "Utilisateur créé");
-      onSaved();
-      onClose();
     } catch (e: unknown) { setErr((e as Error).message); }
     finally { setSaving(false); }
+  }
+
+  if (created) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+          <AccountResult {...created} onClose={onClose} />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -160,10 +174,10 @@ function UserModal({
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              {user ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : "Mot de passe *"}
+              {user ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : "Mot de passe (facultatif)"}
             </label>
             <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder={user ? "••••••••" : ""}
+              placeholder={user ? "••••••••" : "Vide : mot de passe provisoire envoyé par e-mail"}
               className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-classroom" />
           </div>
         </div>
@@ -246,13 +260,15 @@ function ResetPwdModal({ user, onClose }: { user: UserRow; onClose: () => void }
   const [pwd, setPwd] = useState("");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [result, setResult] = useState<{ temporaryPassword?: string; emailSent?: boolean } | null>(null);
 
   async function reset() {
-    if (!pwd || pwd.length < 8) { toast.error("Mot de passe trop court (8 caractères min)"); return; }
+    if (pwd && pwd.length < 8) { toast.error("Mot de passe trop court (8 caractères min)"); return; }
     setSaving(true);
     try {
-      await api(`/admin/users/${user.id}/reset-password`, { method: "PUT", body: { newPassword: pwd } });
+      const r = await api<{ temporaryPassword?: string; emailSent?: boolean }>(`/admin/users/${user.id}/reset-password`, { method: "PUT", body: pwd ? { newPassword: pwd } : {} });
       setDone(true);
+      setResult(r);
       toast.success("Mot de passe réinitialisé");
     } catch (e: unknown) { toast.error((e as Error).message); }
     finally { setSaving(false); }
@@ -269,15 +285,17 @@ function ResetPwdModal({ user, onClose }: { user: UserRow; onClose: () => void }
           <p className="text-sm text-gray-600">
             Utilisateur : <strong>{user.lastName.toUpperCase()} {user.firstName}</strong>
           </p>
-          {done ? (
+          {done && result?.temporaryPassword ? (
+            <AccountResult email={user.email} temporaryPassword={result.temporaryPassword} emailSent={result.emailSent} onClose={onClose} />
+          ) : done ? (
             <div className="flex items-center gap-2 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
               <CheckCircle size={15} /> Mot de passe mis à jour avec succès
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Nouveau mot de passe</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Nouveau mot de passe (facultatif)</label>
               <input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} autoFocus
-                placeholder="8 caractères minimum"
+                placeholder="Vide : mot de passe provisoire envoyé par e-mail"
                 className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-classroom" />
             </div>
           )}

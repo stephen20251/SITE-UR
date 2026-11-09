@@ -144,6 +144,8 @@ function Login() {
             <Field icon={<Lock className="h-4 w-4" />} placeholder="Mot de passe" type="password" autoComplete="current-password"
               value={password} onChange={(e) => setPassword(e.target.value)} required />
 
+            <div className="text-right"><a href="/mot-de-passe-oublie" className="text-xs font-medium text-online hover:underline">Mot de passe oublié ?</a></div>
+
             {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
             <button type="submit" disabled={pending}

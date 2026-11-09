@@ -37,6 +37,7 @@ const PROFILE_STEPS: Section = {
     "« Ajouter une photo » : choisissez une image JPEG, PNG ou WebP (5 Mo maximum).",
     "Bloc « Mes informations » → « Modifier » : complétez votre téléphone et les champs propres à votre rôle, puis « Enregistrer ».",
     "Le nom et l'adresse e-mail sont gérés par l'administration : pour les corriger, contactez le secrétariat.",
+    "« Changer mon mot de passe » : remplacez le mot de passe provisoire reçu par e-mail. Mot de passe oublié ? Sur la page de connexion, « Mot de passe oublié ? » envoie un lien valable 1 heure.",
   ],
 };
 const COMMS: Section = {
@@ -329,6 +330,7 @@ const GUIDES: RoleGuide[] = [
         title: "Comptes et rôles",
         steps: [
           "« Utilisateurs » : créez les comptes (enseignant, personnel, parent…) et attribuez les rôles (Responsable de mention, Secrétaire, Comptabilité, Responsable Présence).",
+          "Laissez le mot de passe vide : la personne reçoit par e-mail son identifiant et un mot de passe provisoire. Seul un Super administrateur peut créer un autre Super administrateur.",
           "La fiche de profil est créée automatiquement : l'utilisateur complète ensuite sa photo et ses informations dans « Mon profil ».",
           "Bloquez, débloquez ou réinitialisez le mot de passe d'un compte si nécessaire.",
         ],

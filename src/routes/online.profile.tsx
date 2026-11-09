@@ -18,6 +18,7 @@ import { MyInfoCard, roleLabel } from "@/components/online/my-info";
 import { PaymentStatusBadge } from "@/components/online/payment-modal";
 import { toast } from "sonner";
 import { API_ORIGIN } from "@/lib/env";
+import { ChangePasswordCard } from "@/components/account-password";
 
 export const Route = createFileRoute("/online/profile")({
   head: () => ({ meta: [{ title: "Mon profil — UR Online" }] }),
@@ -107,6 +108,7 @@ function ProfilePage() {
       {/* ── Main content ─────────────────────────────────────────────── */}
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="mb-8"><MyInfoCard /></div>
+        <div className="mb-8"><ChangePasswordCard /></div>
         {isLearner && <div className="grid gap-8 lg:grid-cols-3">
 
           {/* ── Left: Courses ──────────────────── */}

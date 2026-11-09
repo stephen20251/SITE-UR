@@ -3,6 +3,7 @@ import { HttpError } from '../../utils/asyncHandler.js';
 import { uniqueSlug } from '../../utils/slug.js';
 import { hashPassword } from '../../utils/hash.js';
 import { generateTempPassword } from '../../utils/password.js';
+import { sendAccountCreatedEmail, sendPasswordResetByAdminEmail } from '../../utils/account-emails.js';
 import { ensureProfile } from '../me/ensure-profile.js';
 
 // ── LMS Settings ──────────────────────────────────────────────────────────────
@@ -563,7 +564,9 @@ export async function adminCreateUser({ firstName, lastName, email, systemRole }
     select: USER_FIELDS,
   });
   await ensureProfile(user.id, systemRole);
-  return { ...user, tempPassword: temp };
+  // Identifiant et mot de passe provisoire envoyés à la personne par e-mail.
+  const emailSent = await sendAccountCreatedEmail({ ...user, email, firstName, systemRole }, { temporaryPassword: temp });
+  return { ...user, tempPassword: temp, emailSent };
 }
 
 export async function adminUpdateUser(id, { firstName, lastName, systemRole, isActive }) {
@@ -586,8 +589,13 @@ export async function adminToggleActive(id) {
 
 export async function adminResetPassword(id) {
   const temp = generateTempPassword();
-  await prisma.user.update({ where: { id }, data: { passwordHash: await hashPassword(temp) } });
-  return { tempPassword: temp };
+  const user = await prisma.user.update({
+    where: { id }, data: { passwordHash: await hashPassword(temp) },
+    select: { email: true, firstName: true, systemRole: true },
+  });
+  await prisma.refreshToken.deleteMany({ where: { userId: id } });
+  const emailSent = await sendPasswordResetByAdminEmail(user, { temporaryPassword: temp });
+  return { tempPassword: temp, emailSent };
 }
 
 export async function adminDeleteUser(id) {
