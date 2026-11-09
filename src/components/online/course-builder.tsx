@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import {
   useCourse, useCreateModule, useDeleteModule, useCreateLesson, useDeleteLesson,
   usePublishCourse, useCourseAnalytics,
-  useCourseLiveSessions, useCreateLiveSession, useDeleteLiveSession,
+  useCourseLiveSessions, useCreateLiveSession, useDeleteLiveSession, useUpdateLiveSession,
   useCourseAssignments, useCreateAssignment, useDeleteAssignment,
   type CourseModule, type LessonType, type LiveSession, type OnlineAssignment,
 } from "@/lib/online";
@@ -274,6 +274,37 @@ function AssignmentsTab({ courseId }: { courseId: string }) {
   );
 }
 
+// Enregistrement d'une session : le lien renseigné ici devient visible par les
+// étudiants du cours (dans le cursus, les étudiants en ligne uniquement).
+function RecordingField({ session }: { session: LiveSession }) {
+  const update = useUpdateLiveSession();
+  const [url, setUrl] = useState(session.recordingUrl ?? "");
+  const dirty = url.trim() !== (session.recordingUrl ?? "");
+  async function save() {
+    try {
+      await update.mutateAsync({ sessionId: session.id, recordingUrl: url.trim() || null });
+      toast.success(url.trim() ? "Enregistrement publié" : "Enregistrement retiré");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Enregistrement impossible");
+    }
+  }
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <input
+        className={`${input} h-8 text-xs`}
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="Lien de l'enregistrement autorisé (https://…)"
+        aria-label="Lien de l'enregistrement"
+      />
+      <button type="button" onClick={save} disabled={!dirty || update.isPending}
+        className="shrink-0 rounded-lg border px-2.5 py-1 text-xs font-medium hover:bg-accent disabled:opacity-40">
+        Publier
+      </button>
+    </div>
+  );
+}
+
 function SessionsTab({ courseId }: { courseId: string }) {
   const sessions = useCourseLiveSessions(courseId);
   const createSession = useCreateLiveSession(courseId);
@@ -323,6 +354,7 @@ function SessionsTab({ courseId }: { courseId: string }) {
                 {new Date(s.scheduledAt).toLocaleString()} · {s.durationMin} min
               </div>
               {s.link && <a href={s.link} target="_blank" rel="noreferrer" className="mt-0.5 block truncate text-xs text-online hover:underline">{s.link}</a>}
+              <RecordingField session={s} />
             </div>
             <button onClick={() => deleteSession.mutate(s.id)} className="text-muted-foreground hover:text-destructive" title="Delete">
               <Trash2 className="h-3.5 w-3.5" />

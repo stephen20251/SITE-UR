@@ -170,13 +170,15 @@ async function buildStudentOverview(profile) {
   }
 
   // Règle de déblocage : mois N payable si N-1 payé ET terminé à 100 %.
+  // En présentiel, le cours se suit en salle : le mois N-1 payé suffit.
+  const presentiel = profile.studyMode === 'PRESENTIEL';
   for (const m of months) {
     const prev = months[m.month - 2];
     if (m.status === 'PAID' || m.status === 'PENDING') { m.canPay = false; m.lockReason = null; continue; }
     if (!level) { m.canPay = false; m.lockReason = "Aucun niveau n'est associé à votre dossier."; continue; }
     if (!prev) { m.canPay = true; m.lockReason = null; continue; }
     if (prev.status !== 'PAID') { m.canPay = false; m.lockReason = `Payez d'abord le mois ${prev.month}.`; continue; }
-    if (!prev.completed) { m.canPay = false; m.lockReason = `Terminez à 100 % les cours du mois ${prev.month}.`; continue; }
+    if (!presentiel && !prev.completed) { m.canPay = false; m.lockReason = `Terminez à 100 % les cours du mois ${prev.month}.`; continue; }
     m.canPay = true; m.lockReason = null;
   }
 
@@ -185,7 +187,7 @@ async function buildStudentOverview(profile) {
   return {
     student: {
       id: profile.id, userId: profile.userId, matricule: profile.matricule,
-      level, mention: profile.mention, promotion: profile.promotion,
+      level, mention: profile.mention, promotion: profile.promotion, studyMode: profile.studyMode,
     },
     monthlyAmount: setting?.monthlyAmount ?? null,
     currency: setting?.currency ?? 'MGA',
@@ -194,7 +196,7 @@ async function buildStudentOverview(profile) {
     paidCount,
     completedCount,
     nextPayableMonth: months.find((m) => m.canPay)?.month ?? null,
-    eligibleForPassage: paidCount === MONTHS.length && completedCount === MONTHS.length,
+    eligibleForPassage: paidCount === MONTHS.length && (presentiel || completedCount === MONTHS.length),
   };
 }
 

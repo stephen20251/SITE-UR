@@ -4,7 +4,7 @@ import { HttpError } from '../../utils/asyncHandler.js';
 import { notifyUser } from '../../utils/notify.js';
 import { sendEmail, renderEmail } from '../../utils/mailer.js';
 import { getEnrollmentOrThrow } from './online.guards.js';
-import { cursusAccess, isCursusEnrollment, quizAudiences } from '../cursus/cursus.access.js';
+import { cursusAccess, isCursusEnrollment, isReservedVideoLesson, quizAudiences } from '../cursus/cursus.access.js';
 
 const CURSUS_LOCK_MSG = {
   tuition_unpaid: "Ce cours est débloqué par le paiement de l'écolage du mois correspondant.",
@@ -149,11 +149,21 @@ async function recomputeProgress(enrollment, courseId) {
     select: { id: true, courseKind: true, cursusLevel: true, mentionId: true },
   });
   // Cursus universitaire : il faut 100 % des leçons ; cours certifiant : 80 %.
-  const threshold = (await isCursusEnrollment(enrollment.studentId, course)) ? 100 : 80;
-  const [totalLessons, completedLessons] = await Promise.all([
-    prisma.onlineLesson.count({ where: { module: { courseId } } }),
-    prisma.onlineLessonProgress.count({ where: { enrollmentId: enrollment.id, completed: true } }),
-  ]);
+  const inCursus = await isCursusEnrollment(enrollment.studentId, course);
+  const threshold = inCursus ? 100 : 80;
+  // Présentiel : les vidéos qui lui sont fermées ne comptent pas dans l'avancement.
+  const presentiel = inCursus && (await prisma.studentProfile.findUnique({
+    where: { userId: enrollment.studentId }, select: { studyMode: true },
+  }))?.studyMode === 'PRESENTIEL';
+  const lessons = await prisma.onlineLesson.findMany({
+    where: { module: { courseId } },
+    select: { id: true, type: true, contentUrl: true, isPreview: true },
+  });
+  const countedIds = lessons.filter((l) => !(presentiel && isReservedVideoLesson(l))).map((l) => l.id);
+  const totalLessons = countedIds.length;
+  const completedLessons = await prisma.onlineLessonProgress.count({
+    where: { enrollmentId: enrollment.id, completed: true, lessonId: { in: countedIds } },
+  });
 
   const progress = totalLessons ? round2((completedLessons / totalLessons) * 100) : 0;
   const lessonsDone = progress >= threshold && !enrollment.completedAt;

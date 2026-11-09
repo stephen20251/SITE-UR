@@ -7,22 +7,10 @@ export const Route = createFileRoute("/erp/login")({
   component: ErpLogin,
 });
 
-const DEMO_ACCOUNTS = [
-  { label: "Super Admin",           email: "admin@ur.mg" },
-  { label: "Chef de Mention",       email: "chef.info@ur.mg" },
-  { label: "Resp. Pédagogique",     email: "resp.peda@ur.mg" },
-  { label: "Secrétaire",            email: "secretaire@ur.mg" },
-  { label: "Comptable",             email: "finance@ur.mg" },
-  { label: "Enseignant",            email: "prof.andriamananjara@ur.mg" },
-  { label: "Étudiant",              email: "etudiant.rakoto@ur.mg" },
-  { label: "Parent",                email: "parent.rakoto@gmail.com" },
-  { label: "Candidat",              email: "candidat.demo@gmail.com" },
-];
-
 function ErpLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("Password123!");
+  const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -152,25 +140,6 @@ function ErpLogin() {
             </button>
           </form>
 
-          {/* Demo accounts */}
-          <div className="mt-8">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Comptes de démo</p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {DEMO_ACCOUNTS.map(a => (
-                <button key={a.email}
-                  onClick={() => setEmail(a.email)}
-                  className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-all text-left ${
-                    email === a.email
-                      ? "border-[#0F1E3C] bg-[#0F1E3C] text-white"
-                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                  }`}
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-[11px] text-gray-400">Mot de passe commun : <code className="bg-gray-100 px-1 rounded">Password123!</code></p>
-          </div>
         </div>
       </div>
     </div>

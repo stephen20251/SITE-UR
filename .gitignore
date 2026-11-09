@@ -42,3 +42,6 @@ backend/private-uploads/
 
 # Local agent settings
 .claude/settings.local.json
+
+# Sauvegardes de la base (contiennent les comptes et les mots de passe hachés)
+backend/backups/

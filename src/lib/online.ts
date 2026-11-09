@@ -89,6 +89,8 @@ export type CourseLesson = {
   completed: boolean;
   watchedSec?: number;
   isPreview?: boolean;
+  // Vidéo réservée aux étudiants en ligne (étudiant en présentiel)
+  onlineOnly?: boolean;
 };
 
 export type CourseModule = {
@@ -130,6 +132,10 @@ export type CourseDetail = CursusFields & {
   relatedCourseIds?: string[];
   // Contenu du cursus : non téléchargeable / non partageable
   protectedContent?: boolean;
+  // Étudiant en présentiel : les vidéos du cours lui sont fermées
+  videosReserved?: boolean;
+  // Étudiant en ligne : il peut télécharger les supports autorisés
+  canDownloadSupports?: boolean;
   // Accès via l'écolage (étudiants de l'université uniquement)
   cursus?: {
     inCursus: boolean;
@@ -275,6 +281,7 @@ export type LiveSession = {
   durationMin: number;
   link: string | null;
   status: SessionStatus;
+  recordingUrl?: string | null;
   createdAt: string;
   teacher: { firstName: string; lastName: string; avatarUrl?: string | null };
   course?: { id: string; title: string; slug: string; thumbnail: string | null };
@@ -781,7 +788,7 @@ export function useCreateLiveSession(courseId: string) {
 export function useUpdateLiveSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ sessionId, ...patch }: { sessionId: string; title?: string; scheduledAt?: string; durationMin?: number; link?: string; status?: SessionStatus }) =>
+    mutationFn: ({ sessionId, ...patch }: { sessionId: string; title?: string; scheduledAt?: string; durationMin?: number; link?: string; status?: SessionStatus; recordingUrl?: string | null }) =>
       api<LiveSession>(`/online/live-sessions/${sessionId}`, { method: "PATCH", body: patch }),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.liveSessions() }),
   });

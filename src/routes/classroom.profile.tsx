@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Loader2, Building2, GraduationCap, BookOpen, Users, Mail, TrendingUp, Calendar, CreditCard, Camera, Pen, Trash2, Upload, UserRound, Phone, Pencil, Save, X, Clock, ShieldCheck, LifeBuoy } from "lucide-react";
+import { Loader2, Building2, GraduationCap, BookOpen, Users, Mail, TrendingUp, Calendar, CreditCard, Camera, Pen, Trash2, Upload, UserRound, Phone, Pencil, Save, X, Clock, ShieldCheck, LifeBuoy, FileText, CheckCircle2, AlertCircle, Award } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
-import { useMyContext, isStudentCtx, isTeacherCtx, isParentCtx, isStaffCtx, isAdminCtx, type MyContext } from "@/lib/context";
+import { studyModeLabel } from "@/components/classroom/study-mode";
+import { useMyContext, isStudentCtx, isTeacherCtx, isParentCtx, isStaffCtx, isAdminCtx, type MyContext, type TeacherCtx } from "@/lib/context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, tokenStore } from "@/lib/api";
+import { api, ApiError, tokenStore } from "@/lib/api";
+import { ACADEMIC_TITLES, openCv, titleLabel } from "@/lib/faculty";
 import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
@@ -168,6 +170,137 @@ function SignatureUpload({ currentUrl, onUpdate }: { currentUrl?: string | null;
             <Trash2 size={12} /> Supprimer
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Dossier académique de l'enseignant : titre, diplôme et CV (PDF) ───────────
+
+function AcademicDossier({ teacher, onSaved }: { teacher: TeacherCtx; onSaved: () => void }) {
+  const p = teacher.profile;
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [academicTitle, setAcademicTitle] = useState<string>(p.academicTitle ?? "");
+  const [highestDegree, setHighestDegree] = useState(p.highestDegree ?? "");
+  const [yearsExperience, setYearsExperience] = useState(p.yearsExperience?.toString() ?? "");
+  const listed = Boolean(p.academicTitle && p.cvFileName);
+  const input = "w-full rounded-xl border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-classroom/30";
+
+  async function upload(file: File) {
+    if (file.type !== "application/pdf") return toast.error("Le CV doit être un fichier PDF");
+    if (file.size > 10 * 1024 * 1024) return toast.error("Le CV ne doit pas dépasser 10 Mo");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("cv", file);
+      await api("/faculty/me/cv", { method: "POST", body: fd, raw: true });
+      toast.success(p.cvFileName ? "CV remplacé" : "CV déposé");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Dépôt impossible");
+    } finally { setUploading(false); }
+  }
+
+  async function remove() {
+    if (!confirm("Retirer votre CV ? Votre fiche ne sera plus visible dans « Corps enseignant ».")) return;
+    setUploading(true);
+    try {
+      await api("/faculty/me/cv", { method: "DELETE" });
+      toast.success("CV retiré");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Suppression impossible");
+    } finally { setUploading(false); }
+  }
+
+  async function view() {
+    try {
+      await openCv("/faculty/me/cv");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Impossible d'ouvrir le CV");
+    }
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      await api("/me/profile", { method: "PATCH", body: { academicTitle: academicTitle || null, highestDegree, yearsExperience: yearsExperience === "" ? null : Number(yearsExperience) } });
+      toast.success("Dossier académique enregistré");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Enregistrement impossible");
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <div className="rounded-2xl border bg-card p-5 shadow-elegant">
+      <div className="mb-3 flex items-center gap-2 border-b pb-3">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-classroom/10 text-classroom"><Award size={14} /></span>
+        <h3 className="text-sm font-semibold">Mon dossier académique et mon CV</h3>
+      </div>
+
+      <div className={`mb-4 flex items-start gap-2 rounded-xl p-3 text-xs ${listed ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300" : "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"}`}>
+        {listed ? <CheckCircle2 size={14} className="mt-0.5 shrink-0" /> : <AlertCircle size={14} className="mt-0.5 shrink-0" />}
+        <span>
+          {listed
+            ? <>Votre fiche de {titleLabel(p.academicTitle)?.toLowerCase()} est visible dans « Corps enseignant » par les étudiants inscrits et leurs parents, avec votre CV.</>
+            : <>Votre fiche n'est pas encore visible. Il manque : {[!p.academicTitle && "votre titre (Professeur ou Docteur)", !p.cvFileName && "votre CV en PDF"].filter(Boolean).join(" et ")}.</>}
+        </span>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="text-xs font-medium text-muted-foreground">Titre académique
+          <select className={`${input} mt-1`} value={academicTitle} onChange={(e) => setAcademicTitle(e.target.value)}>
+            <option value="">— Non renseigné —</option>
+            {ACADEMIC_TITLES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </label>
+        <label className="text-xs font-medium text-muted-foreground">Années d'expérience
+          <input type="number" min={0} max={70} className={`${input} mt-1`} value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} placeholder="Ex. 12" />
+        </label>
+        <label className="text-xs font-medium text-muted-foreground sm:col-span-2">Diplôme le plus élevé
+          <input className={`${input} mt-1`} value={highestDegree} onChange={(e) => setHighestDegree(e.target.value)} placeholder="Ex. Doctorat en informatique, Université d'Antananarivo, 2015" />
+        </label>
+      </div>
+      <div className="mt-3 flex justify-end">
+        <button onClick={save} disabled={saving} className="flex items-center gap-1.5 rounded-xl bg-classroom px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50">
+          {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Enregistrer
+        </button>
+      </div>
+
+      <div className="mt-4 border-t pt-4">
+        <p className="text-xs font-medium text-muted-foreground">Curriculum vitae (PDF, 10 Mo maximum)</p>
+        {p.cvFileName ? (
+          <div className="mt-2 flex flex-wrap items-center gap-3 rounded-xl border p-3">
+            <FileText size={18} className="shrink-0 text-classroom" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{p.cvFileName}</p>
+              {p.cvUpdatedAt && <p className="text-xs text-muted-foreground">Déposé le {fmtDay(p.cvUpdatedAt)}</p>}
+            </div>
+            <button onClick={view} className="rounded-xl border px-3 py-1.5 text-xs font-medium hover:bg-accent">Voir</button>
+          </div>
+        ) : (
+          <div className="mt-2 flex h-16 items-center justify-center rounded-xl border-2 border-dashed text-xs text-muted-foreground/70">Aucun CV déposé</div>
+        )}
+        <input ref={inputRef} type="file" accept="application/pdf" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
+        <div className="mt-3 flex gap-2">
+          <button onClick={() => inputRef.current?.click()} disabled={uploading}
+            className="flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50">
+            {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+            {p.cvFileName ? "Remplacer le CV" : "Télécharger mon CV"}
+          </button>
+          {p.cvFileName && !uploading && (
+            <button onClick={remove} className="flex items-center gap-1.5 rounded-xl border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50">
+              <Trash2 size={12} /> Retirer
+            </button>
+          )}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Ce PDF sera lu par les étudiants et les parents : retirez-en vos coordonnées personnelles (adresse, téléphone privé).
+        </p>
       </div>
     </div>
   );
@@ -424,6 +557,7 @@ function ProfilePage() {
           <div className="grid gap-4 lg:grid-cols-2">
             {/* Organisational chain */}
             <Section title="Cursus et filière" icon={<GraduationCap size={14} />}>
+              <Row label="Mode d'étude" value={studyModeLabel(d.profile.studyMode)} />
               <Row label="Promotion"    value={d.promotion?.name} />
               <Row label="Niveau"       value={d.promotion?.level} />
               <Row label="Mention"      value={d.mention?.name} />
@@ -479,6 +613,7 @@ function ProfilePage() {
       {/* Teacher-specific layout */}
       {isTeacherCtx(d) && (
         <>
+          <AcademicDossier teacher={d} onSaved={() => ctx.refetch()} />
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <StatBadge label="Cours assignés" value={d.courses.length} color="blue" />
             <StatBadge label="Étudiants totaux" value={d.studentCount} color="green" />

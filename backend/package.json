@@ -14,7 +14,10 @@
     "seed": "node prisma/seed.js",
     "seed:cursus": "node prisma/seed-cursus.js",
     "seed:categories": "node prisma/seed-categories.js",
-    "seed:events": "node prisma/seed-events.js"
+    "seed:events": "node prisma/seed-events.js",
+    "seed:news": "node prisma/seed-news.js",
+    "seed:base": "node prisma/seed-base.js && node prisma/seed-maj-ur2.js && node prisma/seed-categories.js",
+    "create:admin": "node prisma/create-admin.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

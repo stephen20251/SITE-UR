@@ -71,8 +71,8 @@ export function useCandidateAction() {
 export function useEnrollCandidate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, promotionId, groupId }: { id: string; promotionId: string; groupId?: string }) =>
-      api<{ matricule: string }>(`/candidates/${id}/enroll`, { method: "POST", body: { promotionId, groupId } }),
+    mutationFn: ({ id, promotionId, groupId, studyMode }: { id: string; promotionId: string; groupId?: string; studyMode: "PRESENTIEL" | "EN_LIGNE" }) =>
+      api<{ matricule: string }>(`/candidates/${id}/enroll`, { method: "POST", body: { promotionId, groupId, studyMode } }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["candidates"] }); qc.invalidateQueries({ queryKey: ["inscriptions"] }); },
   });
 }

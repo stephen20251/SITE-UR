@@ -2,6 +2,8 @@ import { prisma } from '../../database/prisma.js';
 import { HttpError } from '../../utils/asyncHandler.js';
 import { getCourseOwned, isSuperAdmin } from './online.guards.js';
 import { notifyUsers } from '../../utils/notify.js';
+import { cursusAccess } from '../cursus/cursus.access.js';
+import { hasActiveSubscription } from './subscription.service.js';
 
 // ─── Teacher ───
 export async function createSession(courseId, teacherId, input) {
@@ -39,7 +41,11 @@ export async function updateSession(sessionId, teacherId, patch) {
   if (!session) throw new HttpError(404, 'Session not found');
   if (session.teacherId !== teacherId && !await isSuperAdmin(teacherId)) throw new HttpError(403, 'Not your session');
 
-  const { title, description, scheduledAt, durationMin, link, status } = patch;
+  const { title, description, scheduledAt, durationMin, link, status, recordingUrl } = patch;
+  // Affiché comme lien cliquable : uniquement http(s).
+  if (recordingUrl && !/^https?:\/\//i.test(String(recordingUrl).trim())) {
+    throw new HttpError(400, "Le lien de l'enregistrement doit commencer par http:// ou https://");
+  }
   return prisma.liveSession.update({
     where: { id: sessionId },
     data: {
@@ -49,6 +55,7 @@ export async function updateSession(sessionId, teacherId, patch) {
       ...(durationMin !== undefined && { durationMin }),
       ...(link !== undefined && { link: link || null }),
       ...(status !== undefined && { status }),
+      ...(recordingUrl !== undefined && { recordingUrl: String(recordingUrl ?? '').trim() || null }),
     },
     include: { teacher: { select: { firstName: true, lastName: true } } },
   });
@@ -61,12 +68,35 @@ export async function deleteSession(sessionId, teacherId) {
   await prisma.liveSession.delete({ where: { id: sessionId } });
 }
 
-export async function listForCourse(courseId) {
-  return prisma.liveSession.findMany({
-    where: { courseId },
-    orderBy: { scheduledAt: 'asc' },
-    include: { teacher: { select: { firstName: true, lastName: true, avatarUrl: true } } },
+// Enregistrements : l'enseignant du cours et l'admin ; côté étudiant, il faut avoir
+// accès au cours. Dans le cursus, l'étudiant en présentiel n'y a pas droit.
+async function canSeeRecordings(course, user) {
+  if (!course) return false;
+  if (course.teacherId === user.sub || user.systemRole === 'SUPER_ADMIN') return true;
+  const cursus = await cursusAccess(user, course);
+  if (cursus.applies) return Boolean(cursus.accessible && !cursus.videosReserved);
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { studentId_courseId: { studentId: user.sub, courseId: course.id } },
+    select: { viaSubscription: true },
   });
+  if (!enrollment) return false;
+  return !enrollment.viaSubscription || await hasActiveSubscription(user.sub);
+}
+
+export async function listForCourse(courseId, user) {
+  const [sessions, course] = await Promise.all([
+    prisma.liveSession.findMany({
+      where: { courseId },
+      orderBy: { scheduledAt: 'asc' },
+      include: { teacher: { select: { firstName: true, lastName: true, avatarUrl: true } } },
+    }),
+    prisma.onlineCourse.findUnique({
+      where: { id: courseId },
+      select: { id: true, teacherId: true, courseKind: true, cursusLevel: true, cursusMonth: true, mentionId: true, relatedCourseIds: true },
+    }),
+  ]);
+  if (await canSeeRecordings(course, user)) return sessions;
+  return sessions.map((s) => ({ ...s, recordingUrl: null }));
 }
 
 // ─── Student: upcoming sessions across all enrolled courses ───

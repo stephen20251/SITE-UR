@@ -72,6 +72,7 @@ export type CursusOverview = {
   student: {
     id: string; userId: string; matricule: string; level: string | null;
     mention?: { id: string; name: string } | null; promotion?: { id: string; name: string; level: string } | null;
+    studyMode: "PRESENTIEL" | "EN_LIGNE";
   };
   monthlyAmount: number | null; currency: string; currentMonth: number | null;
   months: CursusMonth[]; paidCount: number; completedCount: number;

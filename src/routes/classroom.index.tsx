@@ -1,9 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  GraduationCap, BookOpenCheck, Shield, Users, ArrowLeft, Loader2,
-  FileText, BookOpen, Receipt, UserCheck,
-} from "lucide-react";
+import { GraduationCap, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError, tokenStore } from "@/lib/api";
@@ -11,40 +8,9 @@ import { classroomDashboard } from "@/components/classroom/shared";
 
 export const Route = createFileRoute("/classroom/")({ component: ClassroomLogin });
 
-type RoleTab = {
-  v: string;
-  l: string;
-  icon: React.ReactNode;
-  email: string;
-  group: "student" | "staff" | "admin" | "other";
-};
-
-const ROLES: RoleTab[] = [
-  // --- Étudiants & parents ---
-  { v: "student",       l: "Étudiant",         icon: <GraduationCap className="h-4 w-4" />,  email: "etudiant.rakoto@ur.mg",         group: "student" },
-  { v: "parent",        l: "Parent",            icon: <Users className="h-4 w-4" />,          email: "parent.rakoto@gmail.com",        group: "student" },
-  { v: "candidate",     l: "Candidat",          icon: <FileText className="h-4 w-4" />,       email: "candidat.demo@gmail.com",       group: "student" },
-  // --- Enseignant ---
-  { v: "teacher",       l: "Enseignant",        icon: <BookOpenCheck className="h-4 w-4" />,  email: "prof.andriamananjara@ur.mg",     group: "staff" },
-  // --- Personnel ---
-  { v: "resp-peda",     l: "Resp. Pédagogique", icon: <BookOpen className="h-4 w-4" />,       email: "chef.info@ur.mg",                group: "staff" },
-  { v: "secretaire",    l: "Secrétaire",        icon: <UserCheck className="h-4 w-4" />,      email: "secretaire@ur.mg",              group: "staff" },
-  { v: "comptabilite",  l: "Comptabilité",      icon: <Receipt className="h-4 w-4" />,        email: "finance@ur.mg",                 group: "staff" },
-  // --- Admin ---
-  { v: "admin",         l: "Admin / Super Admin", icon: <Shield className="h-4 w-4" />,       email: "admin@ur.mg",                   group: "admin" },
-];
-
-const GROUP_LABELS: Record<string, string> = {
-  student: "Apprenants",
-  staff:   "Personnels",
-  admin:   "Administration",
-  other:   "Autre",
-};
-
 function ClassroomLogin() {
   const { login } = useAuth();
   const nav = useNavigate();
-  const [selected, setSelected] = useState<RoleTab>(ROLES[0]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
@@ -54,13 +20,6 @@ function ClassroomLogin() {
   useEffect(() => {
     if (new URLSearchParams(window.location.search).has("candidater")) setMode("apply");
   }, []);
-
-  function pickRole(r: RoleTab) {
-    setSelected(r);
-    setEmail(r.email);
-    setPassword("Password123!");
-    setError(null);
-  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,9 +40,6 @@ function ClassroomLogin() {
       setPending(false);
     }
   }
-
-  // Group roles for display
-  const groups = ["student", "staff", "admin"] as const;
 
   const inp = "h-11 w-full rounded-xl border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-classroom/30 transition";
 
@@ -142,39 +98,8 @@ function ClassroomLogin() {
           {mode === "apply" ? <CandidateSignup onBack={() => setMode("login")} /> : (<>
           <h2 className="text-2xl font-bold tracking-tight text-foreground">Connexion</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sélectionnez votre profil pour préremplir les identifiants de démonstration.
+            Entrez vos identifiants pour accéder à votre espace.
           </p>
-
-          {/* Role selector grouped */}
-          <div className="mt-6 space-y-3">
-            {groups.map((g) => {
-              const groupRoles = ROLES.filter((r) => r.group === g);
-              return (
-                <div key={g}>
-                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {GROUP_LABELS[g]}
-                  </p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {groupRoles.map((r) => (
-                      <button
-                        key={r.v}
-                        type="button"
-                        onClick={() => pickRole(r)}
-                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-medium transition-all ${
-                          selected.v === r.v
-                            ? "border-classroom bg-classroom/10 text-classroom shadow-sm"
-                            : "border-transparent bg-muted/50 text-muted-foreground hover:border-muted hover:bg-muted hover:text-foreground"
-                        }`}
-                      >
-                        {r.icon}
-                        <span className="truncate">{r.l}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
 
           {/* Form */}
           <form className="mt-6 space-y-3" onSubmit={onSubmit}>

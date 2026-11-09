@@ -28,7 +28,7 @@ r.get('/live-sessions/my', requireSystem('ONLINE'), asyncHandler(async (req, res
 
 // Get sessions for a course (teacher or enrolled student)
 r.get('/courses/:courseId/live-sessions', requireSystem('ONLINE'), asyncHandler(async (req, res) => {
-  res.json(await svc.listForCourse(req.params.courseId));
+  res.json(await svc.listForCourse(req.params.courseId, req.user));
 }));
 
 // Teacher: create session

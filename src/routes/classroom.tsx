@@ -8,7 +8,7 @@ import {
   CreditCard, FileText, BarChart3, GraduationCap, Megaphone,
   MessageSquare, LogOut, Menu, X, ChevronRight, School, Bell,
   TrendingUp, CalendarDays, FolderOpen, UserCircle, Settings, PenLine,
-  UserPlus, Users, CheckSquare, ListChecks, Wallet, ClipboardCheck, Tag, PartyPopper,
+  UserPlus, Users, CheckSquare, ListChecks, Wallet, ClipboardCheck, Tag, PartyPopper, Award, Newspaper,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notification-bell";
 import { useClearUserCache, useMyContext } from "@/lib/context";
@@ -30,6 +30,7 @@ function buildNav(systemRole: string, roleName: string): NavItem[] {
   const notifs   : NavItem = { label: "Notifications",  path: "notifications",         Icon: Bell };
   const annonces : NavItem = { label: "Annonces",        path: "announcements",          Icon: Megaphone };
   const chat     : NavItem = { label: "Messages",        path: "chat",                   Icon: MessageSquare };
+  const faculty  : NavItem = { label: "Corps enseignant", path: "corps-enseignant",      Icon: Award };
 
   if (systemRole === "STUDENT") return [
     { label: "Tableau de bord", path: "student",   Icon: LayoutDashboard },
@@ -40,19 +41,20 @@ function buildNav(systemRole: string, roleName: string): NavItem[] {
     { label: "Mon bulletin",    path: "bulletin",  Icon: FileText },
     { label: "Documents",       path: "documents", Icon: FolderOpen },
     { label: "Paiements",       path: "finance",   Icon: CreditCard },
-    chat, annonces, notifs,
+    faculty, chat, annonces, notifs,
   ];
   if (systemRole === "TEACHER") return [
     { label: "Tableau de bord",    path: "teacher",                 Icon: LayoutDashboard },
     { label: "Mes cours",          path: "mes-cours",               Icon: BookOpen },
     { label: "Emploi du temps",    path: "timetable",               Icon: Calendar },
     { label: "Mes disponibilités", path: "planning/disponibilites", Icon: UserCheck },
+    { label: "Mon CV et mon profil", path: "profile",               Icon: FileText },
     chat, annonces, notifs,
   ];
   if (systemRole === "PARENT") return [
     { label: "Tableau de bord", path: "parent",  Icon: LayoutDashboard },
     { label: "Paiements",       path: "finance", Icon: CreditCard },
-    chat, annonces, notifs,
+    faculty, chat, annonces, notifs,
   ];
   if (systemRole === "CANDIDATE") return [
     { label: "Ma candidature", path: "candidat", Icon: FileText },
@@ -64,7 +66,9 @@ function buildNav(systemRole: string, roleName: string): NavItem[] {
     { label: "Années universitaires", path: "annees",         Icon: Calendar },
     { label: "Configuration",         path: "config",         Icon: ClipboardList },
     { label: "Candidatures",          path: "candidatures",   Icon: FileText },
+    { label: "Actualités",            path: "actualites",     Icon: Newspaper },
     { label: "Événements",            path: "evenements",     Icon: PartyPopper },
+    { label: "Corps enseignant",      path: "corps-enseignant", Icon: Award },
     { label: "Inscriptions",          path: "inscription",    Icon: UserPlus },
     { label: "Cursus universitaire",  path: "cursus-plan",    Icon: GraduationCap },
     { label: "Validation des cours",  path: "validation-cours", Icon: CheckSquare },

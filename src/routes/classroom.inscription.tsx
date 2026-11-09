@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useRequireClassroom } from "@/components/classroom/shared";
+import { STUDY_MODES, StudyModeBadge, StudyModePicker, type StudyMode } from "@/components/classroom/study-mode";
 
 export const Route = createFileRoute("/classroom/inscription")({ component: InscriptionPage });
 
@@ -19,14 +20,14 @@ type Mention    = { id: string; name: string; code: string };
 type Promotion  = { id: string; name: string; level: string; academicYear?: { id: string; label: string } | null };
 type Group      = { id: string; name: string; _count?: { students: number } };
 type StudentProfile = {
-  id: string; matricule: string; status: string; enrollmentDate: string;
+  id: string; matricule: string; status: string; enrollmentDate: string; studyMode: StudyMode;
   user: { id: string; firstName: string; lastName: string; email: string; phone?: string | null; avatarUrl?: string | null };
   promotion?: { id: string; name: string; level: string; academicYear?: { label: string } | null } | null;
   group?:     { id: string; name: string } | null;
   mention?:   { id: string; name: string; code: string } | null;
 };
 type UnenrolledUser = { id: string; firstName: string; lastName: string; email: string };
-type Stats = { total: number; active: number; byStatus: { status: string; _count: { _all: number } }[] };
+type Stats = { total: number; active: number; online: number; presentiel: number; byStatus: { status: string; _count: { _all: number } }[] };
 
 const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
   ACTIVE:      { label: "Actif",        cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
@@ -38,7 +39,7 @@ const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
 
 // ── API hooks ──────────────────────────────────────────────────────────────────
 
-function useStudents(filters: { academicYearId?: string; mentionId?: string; promotionId?: string; groupId?: string; status?: string; q?: string; page?: number }) {
+function useStudents(filters: { academicYearId?: string; mentionId?: string; promotionId?: string; groupId?: string; status?: string; studyMode?: string; q?: string; page?: number }) {
   const qs = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => { if (v) qs.set(k, String(v)); });
   return useQuery({
@@ -116,6 +117,7 @@ function EnrollModal({ onClose }: { onClose: () => void }) {
   const [proId,   setProId]   = useState("");
   const [grpId,   setGrpId]   = useState("");
   const [scholarship, setScholarship] = useState(false);
+  const [studyMode, setStudyMode] = useState<StudyMode>("PRESENTIEL");
 
   const years  = useAcYears();
   const ments  = useMentions();
@@ -127,14 +129,18 @@ function EnrollModal({ onClose }: { onClose: () => void }) {
   const [selUser, setSelUser] = useState<UnenrolledUser | null>(null);
   const unenrolled = useUnenrolled(existQ);
 
+  // Mot de passe provisoire généré par le serveur : affiché une seule fois.
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+
   const enroll = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api(tab === "new" ? "/inscriptions" : "/inscriptions/existing", { method: "POST", body }),
-    onSuccess: () => {
+      api<{ temporaryPassword?: string }>(tab === "new" ? "/inscriptions" : "/inscriptions/existing", { method: "POST", body }),
+    onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ["inscriptions"] });
       qc.invalidateQueries({ queryKey: ["inscriptions-stats"] });
       toast.success("Inscription créée avec succès");
-      onClose();
+      if (created.temporaryPassword) setTempPassword(created.temporaryPassword);
+      else onClose();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -143,11 +149,28 @@ function EnrollModal({ onClose }: { onClose: () => void }) {
     if (!proId) return toast.error("Sélectionnez une promotion");
     if (tab === "new") {
       if (!form.firstName || !form.lastName || !form.email) return toast.error("Prénom, nom et e-mail requis");
-      enroll.mutate({ ...form, promotionId: proId, groupId: grpId || undefined, mentionId: menId || undefined, scholarship });
+      enroll.mutate({ ...form, promotionId: proId, groupId: grpId || undefined, mentionId: menId || undefined, scholarship, studyMode });
     } else {
       if (!selUser) return toast.error("Sélectionnez un utilisateur");
-      enroll.mutate({ userId: selUser.id, promotionId: proId, groupId: grpId || undefined, mentionId: menId || undefined, scholarship });
+      enroll.mutate({ userId: selUser.id, promotionId: proId, groupId: grpId || undefined, mentionId: menId || undefined, scholarship, studyMode });
     }
+  }
+
+  if (tempPassword) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="w-full max-w-md space-y-4 rounded-2xl border bg-card p-6 shadow-2xl">
+          <h2 className="flex items-center gap-2 font-semibold"><CheckCircle2 size={18} className="text-emerald-600" /> Étudiant inscrit</h2>
+          <p className="text-sm text-muted-foreground">
+            Mot de passe provisoire à transmettre à l'étudiant. Il ne sera plus affiché : notez-le maintenant.
+          </p>
+          <code className="block select-all rounded-xl bg-muted px-4 py-3 text-center font-mono text-base">{tempPassword}</code>
+          <button onClick={onClose} className="w-full rounded-xl grad-classroom py-2.5 text-sm font-semibold text-white hover:opacity-90">
+            C'est noté
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -202,7 +225,7 @@ function EnrollModal({ onClose }: { onClose: () => void }) {
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Mot de passe temporaire</label>
                   <input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-classroom"
-                    placeholder="Etudiant123!" />
+                    placeholder="Vide = généré automatiquement" />
                 </div>
               </div>
             </div>
@@ -253,6 +276,8 @@ function EnrollModal({ onClose }: { onClose: () => void }) {
           <Sel label="Groupe (optionnel)" value={grpId} onChange={setGrpId} disabled={!proId}
             options={(groups.data ?? []).map((g) => ({ value: g.id, label: g.name }))} />
 
+          <StudyModePicker value={studyMode} onChange={setStudyMode} />
+
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input type="checkbox" checked={scholarship} onChange={(e) => setScholarship(e.target.checked)}
               className="h-4 w-4 rounded accent-classroom" />
@@ -277,13 +302,15 @@ function EnrollModal({ onClose }: { onClose: () => void }) {
 function StatusModal({ profile, onClose }: { profile: StudentProfile; onClose: () => void }) {
   const qc = useQueryClient();
   const [status, setStatus] = useState(profile.status);
+  const [studyMode, setStudyMode] = useState<StudyMode>(profile.studyMode);
   const [notes,  setNotes]  = useState("");
 
   const update = useMutation({
-    mutationFn: () => api(`/inscriptions/${profile.id}`, { method: "PATCH", body: { status, notes: notes || undefined } }),
+    mutationFn: () => api(`/inscriptions/${profile.id}`, { method: "PATCH", body: { status, studyMode, notes: notes || undefined } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["inscriptions"] });
-      toast.success("Statut mis à jour");
+      qc.invalidateQueries({ queryKey: ["inscriptions-stats"] });
+      toast.success("Inscription mise à jour");
       onClose();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -291,13 +318,16 @@ function StatusModal({ profile, onClose }: { profile: StudentProfile; onClose: (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-card border shadow-2xl p-5 space-y-4">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-card border shadow-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold">Modifier le statut</h3>
+          <h3 className="font-semibold">Modifier l'inscription</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
         </div>
         <p className="text-sm text-muted-foreground">{profile.user.lastName.toUpperCase()} {profile.user.firstName} — {profile.matricule}</p>
 
+        <StudyModePicker value={studyMode} onChange={setStudyMode} />
+
+        <p className="text-xs font-medium text-muted-foreground">Statut</p>
         <div className="grid grid-cols-1 gap-2">
           {Object.entries(STATUS_LABELS).map(([k, { label, cls }]) => (
             <label key={k} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 transition-all ${status === k ? cls : "hover:bg-accent"}`}>
@@ -337,6 +367,7 @@ export default function InscriptionPage() {
   const [proId,    setProId]    = useState("");
   const [grpId,    setGrpId]    = useState("");
   const [statusF,  setStatusF]  = useState("");
+  const [modeF,    setModeF]    = useState("");
   const [q,        setQ]        = useState("");
   const [page,     setPage]     = useState(1);
   const [showModal,setModal]    = useState(false);
@@ -350,7 +381,7 @@ export default function InscriptionPage() {
 
   const students = useStudents({ academicYearId: yearId || undefined, mentionId: menId || undefined,
     promotionId: proId || undefined, groupId: grpId || undefined, status: statusF || undefined,
-    q: q || undefined, page });
+    studyMode: modeF || undefined, q: q || undefined, page });
 
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { const t = setTimeout(() => setPage(1), 400); return () => clearTimeout(t); }, [q]);
@@ -384,6 +415,14 @@ export default function InscriptionPage() {
           <div className="rounded-2xl border bg-card p-4 shadow-sm">
             <p className="text-xs text-muted-foreground mb-1">Actifs</p>
             <p className="text-3xl font-bold text-emerald-600">{stats.data.active}</p>
+          </div>
+          <div className="rounded-2xl border bg-card p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground mb-1">Présentiel</p>
+            <p className="text-3xl font-bold text-amber-600">{stats.data.presentiel}</p>
+          </div>
+          <div className="rounded-2xl border bg-card p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground mb-1">En ligne</p>
+            <p className="text-3xl font-bold text-sky-600">{stats.data.online}</p>
           </div>
           {stats.data.byStatus.map((s) => {
             if (s.status === "ACTIVE") return null;
@@ -457,6 +496,15 @@ export default function InscriptionPage() {
             </select>
             <ChevronDown size={12} className="pointer-events-none absolute right-2 top-3.5 text-muted-foreground" />
           </div>
+
+          <div className="relative">
+            <select value={modeF} onChange={(e) => { setModeF(e.target.value); setPage(1); }} aria-label="Filtrer par mode d'étude"
+              className="appearance-none rounded-xl border bg-background px-3 py-2.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-classroom">
+              <option value="">Présentiel et en ligne</option>
+              {STUDY_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+            <ChevronDown size={12} className="pointer-events-none absolute right-2 top-3.5 text-muted-foreground" />
+          </div>
         </div>
       </div>
 
@@ -481,6 +529,7 @@ export default function InscriptionPage() {
                   <th className="px-4 py-3">Matricule</th>
                   <th className="px-4 py-3">Mention / Promo</th>
                   <th className="px-4 py-3">Groupe</th>
+                  <th className="px-4 py-3">Mode</th>
                   <th className="px-4 py-3">Statut</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
@@ -507,13 +556,14 @@ export default function InscriptionPage() {
                         <p className="text-xs text-muted-foreground">{s.promotion?.name} {s.promotion?.level ? `· ${s.promotion.level}` : ""}</p>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{s.group?.name ?? <span className="text-muted-foreground/40">—</span>}</td>
+                      <td className="px-4 py-3"><StudyModeBadge mode={s.studyMode} /></td>
                       <td className="px-4 py-3">
                         <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${st?.cls}`}>{st?.label ?? s.status}</span>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => setEdit(s)}
                           className="rounded-lg border px-2.5 py-1.5 text-xs font-medium hover:bg-accent transition-colors">
-                          Modifier statut
+                          Modifier
                         </button>
                       </td>
                     </tr>

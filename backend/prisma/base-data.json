@@ -1,0 +1,621 @@
+{
+  "permissions": [
+    {
+      "code": "ACCEPT_CANDIDATE",
+      "label": "Accepter / Refuser",
+      "description": null,
+      "module": "ADMISSIONS"
+    },
+    {
+      "code": "APPROVE_COURSE",
+      "label": "Valider un cours",
+      "description": null,
+      "module": "COURSES"
+    },
+    {
+      "code": "ASSIGN_ROLE",
+      "label": "Attribuer un rôle",
+      "description": null,
+      "module": "USERS"
+    },
+    {
+      "code": "ASSIGN_TEACHER",
+      "label": "Affecter un enseignant",
+      "description": null,
+      "module": "COURSES"
+    },
+    {
+      "code": "BLOCK_USER",
+      "label": "Bloquer / Réactiver",
+      "description": null,
+      "module": "USERS"
+    },
+    {
+      "code": "CANCEL_PAYMENT",
+      "label": "Annuler un paiement",
+      "description": null,
+      "module": "FINANCE"
+    },
+    {
+      "code": "CREATE_ASSIGNMENT",
+      "label": "Créer des devoirs",
+      "description": null,
+      "module": "GRADES"
+    },
+    {
+      "code": "CREATE_COURSE",
+      "label": "Créer un cours",
+      "description": null,
+      "module": "COURSES"
+    },
+    {
+      "code": "CREATE_EXAM",
+      "label": "Créer des examens",
+      "description": null,
+      "module": "PEDAGOGY"
+    },
+    {
+      "code": "CREATE_FEE",
+      "label": "Créer des frais",
+      "description": null,
+      "module": "FINANCE"
+    },
+    {
+      "code": "CREATE_INVOICE",
+      "label": "Créer des factures",
+      "description": null,
+      "module": "FINANCE"
+    },
+    {
+      "code": "CREATE_QUIZ",
+      "label": "Créer des quiz",
+      "description": null,
+      "module": "GRADES"
+    },
+    {
+      "code": "CREATE_SUBJECT",
+      "label": "Créer une matière",
+      "description": null,
+      "module": "PEDAGOGY"
+    },
+    {
+      "code": "CREATE_USER",
+      "label": "Créer un utilisateur",
+      "description": null,
+      "module": "USERS"
+    },
+    {
+      "code": "DELETE_COURSE",
+      "label": "Supprimer un cours",
+      "description": null,
+      "module": "COURSES"
+    },
+    {
+      "code": "DELETE_USER",
+      "label": "Supprimer un utilisateur",
+      "description": null,
+      "module": "USERS"
+    },
+    {
+      "code": "EDIT_COURSE",
+      "label": "Modifier un cours",
+      "description": null,
+      "module": "COURSES"
+    },
+    {
+      "code": "EDIT_USER",
+      "label": "Modifier un utilisateur",
+      "description": null,
+      "module": "USERS"
+    },
+    {
+      "code": "ENROLL_STUDENT",
+      "label": "Inscrire un étudiant",
+      "description": null,
+      "module": "ADMISSIONS"
+    },
+    {
+      "code": "ENTER_GRADES",
+      "label": "Saisir les notes",
+      "description": null,
+      "module": "GRADES"
+    },
+    {
+      "code": "EXPORT_EXCEL",
+      "label": "Exporter Excel",
+      "description": null,
+      "module": "REPORTS"
+    },
+    {
+      "code": "EXPORT_FINANCE",
+      "label": "Exporter les rapports financiers",
+      "description": null,
+      "module": "FINANCE"
+    },
+    {
+      "code": "EXPORT_PDF",
+      "label": "Exporter PDF",
+      "description": null,
+      "module": "REPORTS"
+    },
+    {
+      "code": "GENERATE_MATRICULE",
+      "label": "Générer un matricule",
+      "description": null,
+      "module": "ADMISSIONS"
+    },
+    {
+      "code": "GENERATE_REPORT",
+      "label": "Générer des rapports",
+      "description": null,
+      "module": "REPORTS"
+    },
+    {
+      "code": "GRADE_SUBMISSION",
+      "label": "Corriger les copies",
+      "description": null,
+      "module": "GRADES"
+    },
+    {
+      "code": "ISSUE_CERTIFICATE",
+      "label": "Délivrer une attestation",
+      "description": null,
+      "module": "ADMISSIONS"
+    },
+    {
+      "code": "MANAGE_ACADEMIC_YEAR",
+      "label": "Gérer les années universitaires",
+      "description": null,
+      "module": "STRUCTURE"
+    },
+    {
+      "code": "MANAGE_CAMPUS",
+      "label": "Gérer les campus",
+      "description": null,
+      "module": "STRUCTURE"
+    },
+    {
+      "code": "MANAGE_CURRICULUM",
+      "label": "Créer / modifier le cursus universitaire",
+      "description": null,
+      "module": "CURSUS"
+    },
+    {
+      "code": "MANAGE_DEPARTMENT",
+      "label": "Gérer les départements",
+      "description": null,
+      "module": "STRUCTURE"
+    },
+    {
+      "code": "MANAGE_EVENTS",
+      "label": "Gérer les événements de l'université",
+      "description": null,
+      "module": "COMMUNICATION"
+    },
+    {
+      "code": "MANAGE_FACULTY",
+      "label": "Gérer les facultés",
+      "description": null,
+      "module": "STRUCTURE"
+    },
+    {
+      "code": "MANAGE_HR",
+      "label": "Gérer le personnel et les salaires",
+      "description": null,
+      "module": "HR"
+    },
+    {
+      "code": "MANAGE_MENTION",
+      "label": "Gérer les mentions",
+      "description": null,
+      "module": "STRUCTURE"
+    },
+    {
+      "code": "MANAGE_PROMOTION",
+      "label": "Gérer les promotions",
+      "description": null,
+      "module": "PEDAGOGY"
+    },
+    {
+      "code": "MANAGE_ROOM",
+      "label": "Gérer les salles",
+      "description": null,
+      "module": "STRUCTURE"
+    },
+    {
+      "code": "MANAGE_SEMESTER",
+      "label": "Gérer les semestres",
+      "description": null,
+      "module": "STRUCTURE"
+    },
+    {
+      "code": "MANAGE_TIMETABLE",
+      "label": "Gérer les emplois du temps",
+      "description": null,
+      "module": "PEDAGOGY"
+    },
+    {
+      "code": "MANAGE_TUITION",
+      "label": "Gérer l'écolage mensuel",
+      "description": null,
+      "module": "FINANCE"
+    },
+    {
+      "code": "PUBLISH_BULLETIN",
+      "label": "Publier les bulletins",
+      "description": null,
+      "module": "PEDAGOGY"
+    },
+    {
+      "code": "PUBLISH_COURSE",
+      "label": "Publier un cours",
+      "description": null,
+      "module": "COURSES"
+    },
+    {
+      "code": "RECORD_PAYMENT",
+      "label": "Enregistrer un paiement",
+      "description": null,
+      "module": "FINANCE"
+    },
+    {
+      "code": "RESET_PASSWORD",
+      "label": "Réinitialiser mot de passe",
+      "description": null,
+      "module": "USERS"
+    },
+    {
+      "code": "REVIEW_CANDIDATE",
+      "label": "Examiner un dossier",
+      "description": null,
+      "module": "ADMISSIONS"
+    },
+    {
+      "code": "SUPERVISE_COURSES",
+      "label": "Superviser le déroulement des cours",
+      "description": null,
+      "module": "CURSUS"
+    },
+    {
+      "code": "TAKE_ATTENDANCE",
+      "label": "Faire l'appel",
+      "description": null,
+      "module": "GRADES"
+    },
+    {
+      "code": "TRACK_COURSES",
+      "label": "Suivi des séances et du syllabus",
+      "description": null,
+      "module": "CURSUS"
+    },
+    {
+      "code": "VALIDATE_GRADES",
+      "label": "Valider les notes",
+      "description": null,
+      "module": "PEDAGOGY"
+    },
+    {
+      "code": "VALIDATE_LEVEL_PASSAGE",
+      "label": "Valider le passage au niveau supérieur",
+      "description": null,
+      "module": "CURSUS"
+    },
+    {
+      "code": "VALIDATE_PAYMENT",
+      "label": "Valider un paiement",
+      "description": null,
+      "module": "FINANCE"
+    },
+    {
+      "code": "VIEW_ALL_USERS",
+      "label": "Voir tous les utilisateurs",
+      "description": null,
+      "module": "USERS"
+    },
+    {
+      "code": "VIEW_CANDIDATES",
+      "label": "Voir les candidatures",
+      "description": null,
+      "module": "ADMISSIONS"
+    },
+    {
+      "code": "VIEW_COURSES",
+      "label": "Voir les cours",
+      "description": null,
+      "module": "COURSES"
+    },
+    {
+      "code": "VIEW_FINANCE",
+      "label": "Voir les finances",
+      "description": null,
+      "module": "FINANCE"
+    },
+    {
+      "code": "VIEW_STATISTICS",
+      "label": "Voir les statistiques",
+      "description": null,
+      "module": "PEDAGOGY"
+    }
+  ],
+  "roles": [
+    {
+      "name": "Comptabilité / Finance",
+      "description": "Gestion financière",
+      "isSystem": false,
+      "color": "#D97706",
+      "permissions": [
+        "CANCEL_PAYMENT",
+        "CREATE_FEE",
+        "CREATE_INVOICE",
+        "EXPORT_EXCEL",
+        "EXPORT_FINANCE",
+        "EXPORT_PDF",
+        "GENERATE_REPORT",
+        "MANAGE_HR",
+        "MANAGE_TUITION",
+        "RECORD_PAYMENT",
+        "VALIDATE_PAYMENT",
+        "VIEW_FINANCE"
+      ]
+    },
+    {
+      "name": "Enseignant",
+      "description": "Gestion des cours attribués",
+      "isSystem": false,
+      "color": "#0891B2",
+      "permissions": [
+        "CREATE_ASSIGNMENT",
+        "CREATE_QUIZ",
+        "ENTER_GRADES",
+        "GRADE_SUBMISSION",
+        "TAKE_ATTENDANCE",
+        "VIEW_COURSES"
+      ]
+    },
+    {
+      "name": "Responsable Gestion",
+      "description": "Responsable de la mention Gestion",
+      "isSystem": false,
+      "color": "#2563EB",
+      "permissions": [
+        "APPROVE_COURSE",
+        "ASSIGN_TEACHER",
+        "CREATE_COURSE",
+        "CREATE_EXAM",
+        "CREATE_SUBJECT",
+        "DELETE_COURSE",
+        "EDIT_COURSE",
+        "EXPORT_EXCEL",
+        "EXPORT_PDF",
+        "GENERATE_REPORT",
+        "MANAGE_CURRICULUM",
+        "MANAGE_PROMOTION",
+        "MANAGE_TIMETABLE",
+        "PUBLISH_BULLETIN",
+        "PUBLISH_COURSE",
+        "SUPERVISE_COURSES",
+        "VALIDATE_GRADES",
+        "VALIDATE_LEVEL_PASSAGE",
+        "VIEW_COURSES",
+        "VIEW_STATISTICS"
+      ]
+    },
+    {
+      "name": "Responsable Info",
+      "description": "Responsable de la mention Informatique",
+      "isSystem": false,
+      "color": "#7C3AED",
+      "permissions": [
+        "APPROVE_COURSE",
+        "ASSIGN_TEACHER",
+        "CREATE_COURSE",
+        "CREATE_EXAM",
+        "CREATE_SUBJECT",
+        "DELETE_COURSE",
+        "EDIT_COURSE",
+        "EXPORT_EXCEL",
+        "EXPORT_PDF",
+        "GENERATE_REPORT",
+        "MANAGE_CURRICULUM",
+        "MANAGE_PROMOTION",
+        "MANAGE_TIMETABLE",
+        "PUBLISH_BULLETIN",
+        "PUBLISH_COURSE",
+        "SUPERVISE_COURSES",
+        "VALIDATE_GRADES",
+        "VALIDATE_LEVEL_PASSAGE",
+        "VIEW_COURSES",
+        "VIEW_STATISTICS"
+      ]
+    },
+    {
+      "name": "Responsable Présence",
+      "description": "Appel et suivi des séances",
+      "isSystem": false,
+      "color": "#0D9488",
+      "permissions": [
+        "SUPERVISE_COURSES",
+        "TAKE_ATTENDANCE",
+        "TRACK_COURSES"
+      ]
+    },
+    {
+      "name": "Secrétaire / Admissions",
+      "description": "Admissions et dossiers",
+      "isSystem": false,
+      "color": "#059669",
+      "permissions": [
+        "ACCEPT_CANDIDATE",
+        "CREATE_USER",
+        "EDIT_USER",
+        "ENROLL_STUDENT",
+        "EXPORT_EXCEL",
+        "EXPORT_PDF",
+        "GENERATE_MATRICULE",
+        "ISSUE_CERTIFICATE",
+        "MANAGE_EVENTS",
+        "REVIEW_CANDIDATE",
+        "SUPERVISE_COURSES",
+        "TAKE_ATTENDANCE",
+        "TRACK_COURSES",
+        "VIEW_ALL_USERS",
+        "VIEW_CANDIDATES"
+      ]
+    },
+    {
+      "name": "Super Administrateur",
+      "description": "Accès complet",
+      "isSystem": true,
+      "color": "#DC2626",
+      "permissions": [
+        "ACCEPT_CANDIDATE",
+        "APPROVE_COURSE",
+        "ASSIGN_ROLE",
+        "ASSIGN_TEACHER",
+        "BLOCK_USER",
+        "CANCEL_PAYMENT",
+        "CREATE_ASSIGNMENT",
+        "CREATE_COURSE",
+        "CREATE_EXAM",
+        "CREATE_FEE",
+        "CREATE_INVOICE",
+        "CREATE_QUIZ",
+        "CREATE_SUBJECT",
+        "CREATE_USER",
+        "DELETE_COURSE",
+        "DELETE_USER",
+        "EDIT_COURSE",
+        "EDIT_USER",
+        "ENROLL_STUDENT",
+        "ENTER_GRADES",
+        "EXPORT_EXCEL",
+        "EXPORT_FINANCE",
+        "EXPORT_PDF",
+        "GENERATE_MATRICULE",
+        "GENERATE_REPORT",
+        "GRADE_SUBMISSION",
+        "ISSUE_CERTIFICATE",
+        "MANAGE_ACADEMIC_YEAR",
+        "MANAGE_CAMPUS",
+        "MANAGE_CURRICULUM",
+        "MANAGE_DEPARTMENT",
+        "MANAGE_EVENTS",
+        "MANAGE_FACULTY",
+        "MANAGE_HR",
+        "MANAGE_MENTION",
+        "MANAGE_PROMOTION",
+        "MANAGE_ROOM",
+        "MANAGE_SEMESTER",
+        "MANAGE_TIMETABLE",
+        "MANAGE_TUITION",
+        "PUBLISH_BULLETIN",
+        "PUBLISH_COURSE",
+        "RECORD_PAYMENT",
+        "RESET_PASSWORD",
+        "REVIEW_CANDIDATE",
+        "SUPERVISE_COURSES",
+        "TAKE_ATTENDANCE",
+        "TRACK_COURSES",
+        "VALIDATE_GRADES",
+        "VALIDATE_LEVEL_PASSAGE",
+        "VALIDATE_PAYMENT",
+        "VIEW_ALL_USERS",
+        "VIEW_CANDIDATES",
+        "VIEW_COURSES",
+        "VIEW_FINANCE",
+        "VIEW_STATISTICS"
+      ]
+    }
+  ],
+  "campuses": [
+    {
+      "name": "Université Références — Antananarivo",
+      "code": "UR-TANA",
+      "address": "Lot II M 85 Antanimena",
+      "city": "Antananarivo",
+      "country": "Madagascar",
+      "phone": null,
+      "email": "contact@ur.mg",
+      "logoUrl": null,
+      "isActive": true
+    }
+  ],
+  "faculties": [
+    {
+      "name": "Faculté des Lettres et Langues",
+      "code": "FAC-LL",
+      "deanName": null,
+      "logoUrl": null,
+      "isActive": true,
+      "campusCode": "UR-TANA"
+    },
+    {
+      "name": "Faculté des Sciences Économiques et de Gestion",
+      "code": "FAC-SEG",
+      "deanName": null,
+      "logoUrl": null,
+      "isActive": true,
+      "campusCode": "UR-TANA"
+    },
+    {
+      "name": "Faculté des Sciences et Technologies",
+      "code": "FAC-ST",
+      "deanName": null,
+      "logoUrl": null,
+      "isActive": true,
+      "campusCode": "UR-TANA"
+    }
+  ],
+  "departments": [
+    {
+      "name": "Département Anglais",
+      "code": "DEPT-ANGL",
+      "headName": null,
+      "isActive": true,
+      "facultyCode": "FAC-LL"
+    },
+    {
+      "name": "Département Gestion",
+      "code": "DEPT-GEST",
+      "headName": null,
+      "isActive": true,
+      "facultyCode": "FAC-SEG"
+    },
+    {
+      "name": "Département Informatique",
+      "code": "DEPT-INFO",
+      "headName": null,
+      "isActive": true,
+      "facultyCode": "FAC-ST"
+    }
+  ],
+  "mentions": [
+    {
+      "name": "Anglais",
+      "code": "M-ANGL",
+      "level": "Licence",
+      "duration": 3,
+      "description": null,
+      "isActive": true,
+      "departmentCode": "DEPT-ANGL"
+    },
+    {
+      "name": "Gestion",
+      "code": "M-GEST",
+      "level": "Licence",
+      "duration": 3,
+      "description": null,
+      "isActive": true,
+      "departmentCode": "DEPT-GEST"
+    },
+    {
+      "name": "Informatique",
+      "code": "M-INFO",
+      "level": "Licence",
+      "duration": 3,
+      "description": "Formation en informatique et développement logiciel",
+      "isActive": true,
+      "departmentCode": "DEPT-INFO"
+    }
+  ]
+}

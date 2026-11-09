@@ -8,7 +8,7 @@ import { hasActiveSubscription } from './subscription.service.js';
 import { isOnlineStudent, isOnlineTeacher } from '../../middlewares/auth.js';
 import { canReviewCourse, courseMentionId } from './course-review.service.js';
 import {
-  cursusAccess, isProtectedCourse, quizAudiences, signMediaUrl, CURSUS_KINDS, CERTIFYING_KINDS,
+  cursusAccess, isProtectedCourse, isReservedVideoLesson, isVideoFile, isVideoLesson, quizAudiences, signMediaUrl, CURSUS_KINDS, CERTIFYING_KINDS,
 } from '../cursus/cursus.access.js';
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -301,10 +301,17 @@ export async function getCourseDetail(courseId, user, { asReviewer = false } = {
   // Cours du cursus : contenu non téléchargeable, servi par liens signés.
   const protectedContent = isProtectedCourse(course);
   const cursusMode = Boolean(cursus.applies && cursus.inCursus);
-  const mediaUrl = (url, kind, id, allowDownload) => {
+  // Étudiant en présentiel : vidéos fermées. Étudiant en ligne : il peut télécharger
+  // les supports autorisés par l'enseignant (jamais les vidéos).
+  const videosReserved = Boolean(!isOwner && cursus.applies && cursus.videosReserved);
+  const onlineCursusStudent = Boolean(!isOwner && cursus.applies && cursus.accessible && cursus.studyMode === 'EN_LIGNE');
+  const canDownload = (allowDownload, isVideo) => (protectedContent
+    ? onlineCursusStudent && allowDownload !== false && !isVideo
+    : (allowDownload ?? true));
+  const mediaUrl = (url, kind, id, allowDownload, isVideo) => {
     if (!url || !url.startsWith('/uploads/')) return url;
     if (!protectedContent && allowDownload !== false) return url;
-    return signMediaUrl(user.sub, kind, id);
+    return signMediaUrl(user.sub, kind, id, { download: canDownload(allowDownload, isVideo) });
   };
 
   // lessonProgress is now OnlineLessonProgress with enrollmentId
@@ -318,8 +325,9 @@ export async function getCourseDetail(courseId, user, { asReviewer = false } = {
   // A module counts as "completed" when all its visible lessons are done.
   const moduleCompleted = new Map(
     course.modules.map((m) => {
-      const visible = m.lessons.filter((l) => !l.isHidden);
-      return [m.id, visible.length > 0 && visible.every((l) => completedByLesson.get(l.id))];
+      // Une vidéo fermée à l'étudiant ne peut pas bloquer le module suivant.
+      const visible = m.lessons.filter((l) => !l.isHidden && !(videosReserved && isReservedVideoLesson(l)));
+      return [m.id, visible.every((l) => completedByLesson.get(l.id)) && (visible.length > 0 || videosReserved)];
     })
   );
 
@@ -359,7 +367,12 @@ export async function getCourseDetail(courseId, user, { asReviewer = false } = {
       lessons: m.lessons.map((l) => {
         // Owner: all unlocked. Accessible (enrolled/subscribed): follows module
         // gate. Otherwise only free-preview lessons are viewable.
-        const lessonUnlocked = isOwner ? true : accessible ? !gate.locked : Boolean(l.isPreview);
+        const reservedVideo = videosReserved && isReservedVideoLesson(l);
+        const files = (l.files ?? []).filter((f) => !(videosReserved && !l.isPreview && isVideoFile(f)));
+        // Vidéo fermée : la leçon reste ouverte si elle contient aussi un texte ou un document.
+        const onlineOnly = reservedVideo && files.length === 0 && !l.body;
+        const lessonUnlocked = !onlineOnly && (isOwner ? true : accessible ? !gate.locked : Boolean(l.isPreview));
+        const videoLesson = isVideoLesson(l);
         return {
           id: l.id,
           title: l.title,
@@ -368,13 +381,14 @@ export async function getCourseDetail(courseId, user, { asReviewer = false } = {
           order: l.order,
           isPreview: l.isPreview ?? false,
           locked: !lessonUnlocked,
-          contentUrl: lessonUnlocked ? mediaUrl(l.contentUrl, 'l', l.id, l.allowDownload) : null,
+          onlineOnly: reservedVideo,
+          contentUrl: lessonUnlocked && !reservedVideo ? mediaUrl(l.contentUrl, 'l', l.id, l.allowDownload, videoLesson) : null,
           body: lessonUnlocked ? l.body : null,
-          allowDownload: protectedContent ? false : (l.allowDownload ?? true),
-          files: lessonUnlocked ? (l.files ?? []).map(f => ({
+          allowDownload: canDownload(l.allowDownload, videoLesson),
+          files: lessonUnlocked ? files.map(f => ({
             id: f.id, name: f.name, mimeType: f.mimeType, size: f.size,
-            url: mediaUrl(f.url, 'f', f.id, f.allowDownload),
-            allowDownload: protectedContent ? false : (f.allowDownload ?? true),
+            url: mediaUrl(f.url, 'f', f.id, f.allowDownload, isVideoFile(f)),
+            allowDownload: canDownload(f.allowDownload, isVideoFile(f)),
           })) : [],
           completed: completedByLesson.get(l.id) ?? false,
           watchedSec: watchedByLesson.get(l.id) ?? 0,
@@ -390,7 +404,7 @@ export async function getCourseDetail(courseId, user, { asReviewer = false } = {
     slug: course.slug,
     description: course.description,
     thumbnail: course.thumbnail,
-    previewVideoUrl: course.previewVideoUrl,
+    previewVideoUrl: videosReserved ? null : course.previewVideoUrl,
     status: course.status,
     publishedAt: course.publishedAt,
     level: course.level,
@@ -411,8 +425,10 @@ export async function getCourseDetail(courseId, user, { asReviewer = false } = {
     totalHours: course.totalHours,
     relatedCourseIds: course.relatedCourseIds,
     protectedContent,
+    videosReserved,
+    canDownloadSupports: onlineCursusStudent,
     cursus: cursus.applies
-      ? { inCursus: Boolean(cursus.inCursus), accessible: cursus.accessible, reason: cursus.reason ?? null, month: cursus.month ?? null, level: cursus.level ?? null }
+      ? { inCursus: Boolean(cursus.inCursus), accessible: cursus.accessible, reason: cursus.reason ?? null, month: cursus.month ?? null, level: cursus.level ?? null, studyMode: cursus.studyMode ?? null }
       : null,
     isFeatured: course.isFeatured,
     category: course.category,

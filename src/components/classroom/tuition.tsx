@@ -65,7 +65,7 @@ export function CashDesk() {
                 </button>
               ))}
             </div>
-            {!student.nextPayableMonth && <p className="text-xs text-amber-600">Aucun mois payable : le mois précédent doit être payé et ses cours terminés à 100 %.</p>}
+            {!student.nextPayableMonth && <p className="text-xs text-amber-600">Aucun mois payable : le mois précédent doit être payé (et, pour un étudiant en ligne, ses cours terminés à 100 %).</p>}
             <label className="block text-xs text-muted-foreground">Montant (MGA)
               <input type="number" min={1} className={`${inputCls} mt-1 w-full`} value={amount} onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))} />
             </label>

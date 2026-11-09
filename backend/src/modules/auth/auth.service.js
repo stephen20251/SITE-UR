@@ -117,6 +117,32 @@ export async function me(userId) {
   return { user: sanitize(user), roles: buildRolesPayload(user.userRoles) };
 }
 
+// Inscription libre : uniquement les comptes UR Online. Les comptes de l'université
+// sont créés par l'administration ; une candidature passe par registerCandidate.
+const SELF_REGISTER_ROLES = ['STUDENT_ONLINE', 'TEACHER_ONLINE'];
+
+export async function register(input) {
+  if (!SELF_REGISTER_ROLES.includes(input.role)) throw new HttpError(403, 'Ce type de compte est créé par l\'administration');
+  const existing = await prisma.user.findUnique({ where: { email: input.email } });
+  if (existing) throw new HttpError(409, 'Email déjà utilisé');
+
+  const user = await prisma.user.create({
+    data: {
+      email: input.email,
+      passwordHash: await hashPassword(input.password),
+      firstName: input.firstName,
+      lastName: input.lastName,
+      phone: input.phone,
+      systemRole: input.role,
+    },
+  });
+
+  const full = await loadUserWithRoles(user.id);
+  const tokens = tokensFor(user);
+  await persistRefreshToken(user.id, tokens.refreshToken);
+  return { user: sanitize(full), roles: [], ...tokens };
+}
+
 export async function registerCandidate(input) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw new HttpError(409, 'Email déjà utilisé');

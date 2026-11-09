@@ -1,6 +1,8 @@
 import { prisma } from '../../database/prisma.js';
 import { HttpError } from '../../utils/asyncHandler.js';
 import bcrypt from 'bcrypt';
+import { STUDY_MODES } from '../cursus/cursus.access.js';
+import { generateTempPassword } from '../../utils/password.js';
 
 const STUDENT_INCLUDE = {
   user: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true, phone: true, isActive: true } },
@@ -24,14 +26,22 @@ export async function generateMatricule(mentionCode, academicYearLabel) {
   }
 }
 
+// Mode d'étude : obligatoirement PRESENTIEL ou EN_LIGNE.
+function parseStudyMode(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (!STUDY_MODES.includes(value)) throw new HttpError(400, "Mode d'étude invalide (PRESENTIEL ou EN_LIGNE)");
+  return value;
+}
+
 // ── List enrolled students ────────────────────────────────────────────────────
 
-export async function listStudents({ academicYearId, mentionId, promotionId, groupId, status, q, page = 1, limit = 30 }) {
+export async function listStudents({ academicYearId, mentionId, promotionId, groupId, status, studyMode, q, page = 1, limit = 30 }) {
   const where = {};
   if (mentionId)   where.mentionId   = mentionId;
   if (promotionId) where.promotionId = promotionId;
   if (groupId)     where.groupId     = groupId;
   if (status)      where.status      = status;
+  if (studyMode)   where.studyMode   = parseStudyMode(studyMode);
   if (academicYearId) {
     where.promotion = { academicYearId };
   }
@@ -69,7 +79,8 @@ export async function listStudents({ academicYearId, mentionId, promotionId, gro
 
 // ── Enroll a new student (create user + profile) ─────────────────────────────
 
-export async function enrollStudent({ firstName, lastName, email, phone, password, promotionId, groupId, mentionId, scholarship }) {
+export async function enrollStudent({ firstName, lastName, email, phone, password, promotionId, groupId, mentionId, scholarship, studyMode }) {
+  const mode = parseStudyMode(studyMode);
   // Validate promotion + mention exist
   const promo = await prisma.promotion.findUnique({
     where: { id: promotionId },
@@ -85,7 +96,10 @@ export async function enrollStudent({ firstName, lastName, email, phone, passwor
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new HttpError(409, 'Un utilisateur avec cet e-mail existe déjà');
 
-  const hash = await bcrypt.hash(password ?? 'Etudiant123!', 12);
+  if (password && password.length < 8) throw new HttpError(400, 'Mot de passe trop court (8 caractères minimum)');
+  // Sans mot de passe saisi : un mot de passe provisoire, renvoyé une seule fois.
+  const temporaryPassword = password ? undefined : generateTempPassword();
+  const hash = await bcrypt.hash(password || temporaryPassword, 12);
   const matricule = await generateMatricule(mention.code, promo.academicYear?.label);
 
   const profile = await prisma.$transaction(async (tx) => {
@@ -108,17 +122,19 @@ export async function enrollStudent({ firstName, lastName, email, phone, passwor
         matricule,
         scholarship: scholarship ?? false,
         status: 'ACTIVE',
+        ...(mode && { studyMode: mode }),
       },
       include: STUDENT_INCLUDE,
     });
   });
 
-  return profile;
+  return { ...profile, ...(temporaryPassword && { temporaryPassword }) };
 }
 
 // ── Enroll existing user (user already exists, create profile) ────────────────
 
-export async function enrollExistingUser({ userId, promotionId, groupId, mentionId, scholarship }) {
+export async function enrollExistingUser({ userId, promotionId, groupId, mentionId, scholarship, studyMode }) {
+  const mode = parseStudyMode(studyMode);
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new HttpError(404, 'Utilisateur introuvable');
 
@@ -148,6 +164,7 @@ export async function enrollExistingUser({ userId, promotionId, groupId, mention
       matricule,
       scholarship: scholarship ?? false,
       status: 'ACTIVE',
+      ...(mode && { studyMode: mode }),
     },
     include: STUDENT_INCLUDE,
   });
@@ -159,8 +176,9 @@ export async function updateEnrollment(profileId, patch) {
   const profile = await prisma.studentProfile.findUnique({ where: { id: profileId } });
   if (!profile) throw new HttpError(404, 'Inscription introuvable');
 
-  const allowed = ['promotionId', 'groupId', 'mentionId', 'status', 'scholarship', 'notes'];
+  const allowed = ['promotionId', 'groupId', 'mentionId', 'status', 'scholarship', 'notes', 'studyMode'];
   const data = Object.fromEntries(Object.entries(patch).filter(([k]) => allowed.includes(k)));
+  if (data.studyMode !== undefined) data.studyMode = parseStudyMode(data.studyMode);
 
   return prisma.studentProfile.update({
     where: { id: profileId },
@@ -210,10 +228,11 @@ export async function listUnenrolledUsers({ q = '' } = {}) {
 
 export async function getInscriptionStats(academicYearId) {
   const where = academicYearId ? { promotion: { academicYearId } } : {};
-  const [total, active, byStatus] = await Promise.all([
+  const [total, active, byStatus, online] = await Promise.all([
     prisma.studentProfile.count({ where }),
     prisma.studentProfile.count({ where: { ...where, status: 'ACTIVE' } }),
     prisma.studentProfile.groupBy({ by: ['status'], where, _count: { _all: true } }),
+    prisma.studentProfile.count({ where: { ...where, studyMode: 'EN_LIGNE' } }),
   ]);
-  return { total, active, byStatus };
+  return { total, active, byStatus, online, presentiel: total - online };
 }

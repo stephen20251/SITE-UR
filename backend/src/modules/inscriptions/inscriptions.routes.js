@@ -13,8 +13,8 @@ r.use((req, res, next) => (req.method === 'GET'
 
 // GET /api/inscriptions — list enrolled students
 r.get('/', asyncHandler(async (req, res) => {
-  const { academicYearId, mentionId, promotionId, groupId, status, q, page, limit } = req.query;
-  res.json(await svc.listStudents({ academicYearId, mentionId, promotionId, groupId, status, q, page: Number(page ?? 1), limit: Number(limit ?? 30) }));
+  const { academicYearId, mentionId, promotionId, groupId, status, studyMode, q, page, limit } = req.query;
+  res.json(await svc.listStudents({ academicYearId, mentionId, promotionId, groupId, status, studyMode, q, page: Number(page ?? 1), limit: Number(limit ?? 30) }));
 }));
 
 // GET /api/inscriptions/stats

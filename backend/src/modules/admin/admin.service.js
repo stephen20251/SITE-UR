@@ -1,6 +1,7 @@
 import { prisma } from '../../database/prisma.js'
 import { HttpError } from '../../utils/asyncHandler.js'
 import { hashPassword } from '../../utils/hash.js'
+import { generateTempPassword } from '../../utils/password.js'
 import { ensureProfile } from '../me/ensure-profile.js'
 
 const USER_INCLUDE = {
@@ -51,11 +52,14 @@ export const createUser = async (req, res) => {
   const { email, password, firstName, lastName, phone, systemRole, avatarUrl } = req.body
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) throw new HttpError(409, 'Email déjà utilisé')
+  if (password && password.length < 8) throw new HttpError(400, 'Mot de passe trop court (8 caractères minimum)')
+  // Sans mot de passe saisi : un mot de passe provisoire, renvoyé une seule fois.
+  const temporaryPassword = password ? undefined : generateTempPassword()
 
   const user = await prisma.user.create({
     data: {
       email, firstName, lastName, phone, systemRole, avatarUrl,
-      passwordHash: await hashPassword(password ?? 'Password123!'),
+      passwordHash: await hashPassword(password || temporaryPassword),
       emailVerified: true,
       isActive: true,
     },
@@ -64,7 +68,7 @@ export const createUser = async (req, res) => {
   // Fiche de profil du rôle (enseignant, personnel, parent…) pour la page « Mon profil »
   await ensureProfile(user.id, user.systemRole)
   const full = await prisma.user.findUnique({ where: { id: user.id }, include: USER_INCLUDE })
-  res.status(201).json(sanitize(full))
+  res.status(201).json({ ...sanitize(full), ...(temporaryPassword && { temporaryPassword }) })
 }
 
 export const updateUser = async (req, res) => {
@@ -89,9 +93,17 @@ export const unblockUser = async (req, res) => {
 }
 
 export const resetPassword = async (req, res) => {
-  const newPw = req.body.password ?? 'Password123!'
-  await prisma.user.update({ where: { id: req.params.id }, data: { passwordHash: await hashPassword(newPw) } })
-  res.json({ ok: true, temporaryPassword: newPw })
+  // L'écran d'administration envoie « newPassword ».
+  const chosen = req.body?.newPassword ?? req.body?.password
+  if (chosen && String(chosen).length < 8) throw new HttpError(400, 'Mot de passe trop court (8 caractères minimum)')
+  const temporaryPassword = chosen ? undefined : generateTempPassword()
+  await prisma.user.update({
+    where: { id: req.params.id },
+    data: { passwordHash: await hashPassword(chosen ? String(chosen) : temporaryPassword) },
+  })
+  // Un changement de mot de passe ferme les sessions ouvertes du compte.
+  await prisma.refreshToken.deleteMany({ where: { userId: req.params.id } })
+  res.json({ ok: true, ...(temporaryPassword && { temporaryPassword }) })
 }
 
 export const assignRole = async (req, res) => {

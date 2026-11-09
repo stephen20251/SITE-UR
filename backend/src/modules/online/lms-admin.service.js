@@ -2,6 +2,7 @@ import { prisma } from '../../database/prisma.js';
 import { HttpError } from '../../utils/asyncHandler.js';
 import { uniqueSlug } from '../../utils/slug.js';
 import { hashPassword } from '../../utils/hash.js';
+import { generateTempPassword } from '../../utils/password.js';
 import { ensureProfile } from '../me/ensure-profile.js';
 
 // ── LMS Settings ──────────────────────────────────────────────────────────────
@@ -555,9 +556,7 @@ export async function adminCreateUser({ firstName, lastName, email, systemRole }
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new HttpError(409, 'Email déjà utilisé');
 
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let temp = 'Init-';
-  for (let i = 0; i < 8; i++) temp += chars[Math.floor(Math.random() * chars.length)];
+  const temp = generateTempPassword();
 
   const user = await prisma.user.create({
     data: { firstName, lastName, email, passwordHash: await hashPassword(temp), systemRole },
@@ -586,9 +585,7 @@ export async function adminToggleActive(id) {
 }
 
 export async function adminResetPassword(id) {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let temp = 'Temp-';
-  for (let i = 0; i < 8; i++) temp += chars[Math.floor(Math.random() * chars.length)];
+  const temp = generateTempPassword();
   await prisma.user.update({ where: { id }, data: { passwordHash: await hashPassword(temp) } });
   return { tempPassword: temp };
 }

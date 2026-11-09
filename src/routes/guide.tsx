@@ -124,6 +124,7 @@ const GUIDES: RoleGuide[] = [
           "Le « Tableau de bord » présente chaque enfant : moyenne, assiduité et factures en attente.",
           "Consultez la progression dans le cursus mois par mois et les cours terminés.",
           "« Paiements » : situation de l'écolage de chaque enfant et paiements restants.",
+          "« Corps enseignant » : les professeurs et docteurs de l'université, leur parcours et leur CV.",
         ],
       },
       COMMS,
@@ -144,6 +145,14 @@ const GUIDES: RoleGuide[] = [
           "Ouvrez « Mon profil » et ajoutez votre photo.",
           "« Mes informations » → « Modifier » : choisissez votre mention de rattachement (le département et la faculté se remplissent automatiquement), votre spécialisation, votre bureau et une courte présentation.",
           "Votre mention détermine le Responsable qui validera vos cours en ligne.",
+        ],
+      },
+      {
+        title: "Mon CV et mon dossier académique",
+        steps: [
+          "« Mon CV et mon profil » : indiquez votre titre (Professeur ou Docteur), votre diplôme le plus élevé et vos années d'expérience.",
+          "Déposez votre CV en PDF (10 Mo maximum) ; « Remplacer le CV » met en ligne une nouvelle version et retire l'ancienne.",
+          "Avec un titre et un CV, votre fiche apparaît dans « Corps enseignant », visible uniquement par les étudiants inscrits et leurs parents.",
         ],
       },
       {
@@ -223,6 +232,7 @@ const GUIDES: RoleGuide[] = [
         steps: [
           "« Candidatures » : examinez les dossiers soumis, puis acceptez ou refusez.",
           "« Inscriptions » : inscrivez un candidat accepté ou un nouvel étudiant directement (mention, niveau, promotion).",
+          "Choisissez le mode d'étude : Présentiel ou En ligne (modifiable ensuite avec le bouton « Modifier »). Les vidéos et les enregistrements du cursus sont réservés aux étudiants en ligne.",
           "« Cartes » : générez les cartes d'étudiant.",
         ],
       },
@@ -328,6 +338,15 @@ const GUIDES: RoleGuide[] = [
         steps: [
           "Vous avez accès à tous les menus des responsables : cursus, affectation, validation des cours, notes, bulletins.",
           "UR Online → « Administration » : paramètres du site, logo, page d'accueil, catégories, cours, paiements, codes promo, abonnements, certificats et utilisateurs en ligne.",
+        ],
+      },
+      {
+        title: "Page Actualités du site",
+        steps: [
+          "« Actualités » : cliquez sur « Nouvelle actualité », choisissez la rubrique (actualité, annonce officielle, conférence, soutenance, publication, résultats, activités) et ajoutez une image.",
+          "« À la une » choisit la grande actualité en tête de page. « Masquer » la retire du site.",
+          "Une publication passe seule aux archives après 12 mois ; « Archiver » l'y place plus tôt.",
+          "Les événements créés dans « Événements » apparaissent aussi sur cette page.",
         ],
       },
       {

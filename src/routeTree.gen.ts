@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnlineIndexRouteImport } from './routes/online.index'
 import { Route as ErpIndexRouteImport } from './routes/erp.index'
 import { Route as ClassroomIndexRouteImport } from './routes/classroom.index'
+import { Route as ActualitesIndexRouteImport } from './routes/actualites.index'
 import { Route as OnlineTeacherRouteImport } from './routes/online.teacher'
 import { Route as OnlineSubscriptionRouteImport } from './routes/online.subscription'
 import { Route as OnlineRegisterRouteImport } from './routes/online.register'
@@ -67,6 +68,7 @@ import { Route as ClassroomDocumentsRouteImport } from './routes/classroom.docum
 import { Route as ClassroomDesignerRouteImport } from './routes/classroom.designer'
 import { Route as ClassroomCursusPlanRouteImport } from './routes/classroom.cursus-plan'
 import { Route as ClassroomCursusRouteImport } from './routes/classroom.cursus'
+import { Route as ClassroomCorpsEnseignantRouteImport } from './routes/classroom.corps-enseignant'
 import { Route as ClassroomConfigRouteImport } from './routes/classroom.config'
 import { Route as ClassroomComptabiliteRouteImport } from './routes/classroom.comptabilite'
 import { Route as ClassroomChefMentionRouteImport } from './routes/classroom.chef-mention'
@@ -80,6 +82,9 @@ import { Route as ClassroomAnnouncementsRouteImport } from './routes/classroom.a
 import { Route as ClassroomAnneesRouteImport } from './routes/classroom.annees'
 import { Route as ClassroomAffectationRouteImport } from './routes/classroom.affectation'
 import { Route as ClassroomAdminRouteImport } from './routes/classroom.admin'
+import { Route as ClassroomActualitesRouteImport } from './routes/classroom.actualites'
+import { Route as ActualitesArchivesRouteImport } from './routes/actualites.archives'
+import { Route as ActualitesSlugRouteImport } from './routes/actualites.$slug'
 import { Route as ErpPlanningIndexRouteImport } from './routes/erp.planning.index'
 import { Route as ErpChatIndexRouteImport } from './routes/erp.chat.index'
 import { Route as ErpAnnoncesIndexRouteImport } from './routes/erp.annonces.index'
@@ -153,6 +158,11 @@ const ClassroomIndexRoute = ClassroomIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ClassroomRoute,
+} as any)
+const ActualitesIndexRoute = ActualitesIndexRouteImport.update({
+  id: '/actualites/',
+  path: '/actualites/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OnlineTeacherRoute = OnlineTeacherRouteImport.update({
   id: '/teacher',
@@ -400,6 +410,12 @@ const ClassroomCursusRoute = ClassroomCursusRouteImport.update({
   path: '/cursus',
   getParentRoute: () => ClassroomRoute,
 } as any)
+const ClassroomCorpsEnseignantRoute =
+  ClassroomCorpsEnseignantRouteImport.update({
+    id: '/corps-enseignant',
+    path: '/corps-enseignant',
+    getParentRoute: () => ClassroomRoute,
+  } as any)
 const ClassroomConfigRoute = ClassroomConfigRouteImport.update({
   id: '/config',
   path: '/config',
@@ -464,6 +480,21 @@ const ClassroomAdminRoute = ClassroomAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => ClassroomRoute,
+} as any)
+const ClassroomActualitesRoute = ClassroomActualitesRouteImport.update({
+  id: '/actualites',
+  path: '/actualites',
+  getParentRoute: () => ClassroomRoute,
+} as any)
+const ActualitesArchivesRoute = ActualitesArchivesRouteImport.update({
+  id: '/actualites/archives',
+  path: '/actualites/archives',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActualitesSlugRoute = ActualitesSlugRouteImport.update({
+  id: '/actualites/$slug',
+  path: '/actualites/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ErpPlanningIndexRoute = ErpPlanningIndexRouteImport.update({
   id: '/',
@@ -619,6 +650,9 @@ export interface FileRoutesByFullPath {
   '/erp': typeof ErpRouteWithChildren
   '/guide': typeof GuideRoute
   '/online': typeof OnlineRouteWithChildren
+  '/actualites/$slug': typeof ActualitesSlugRoute
+  '/actualites/archives': typeof ActualitesArchivesRoute
+  '/classroom/actualites': typeof ClassroomActualitesRoute
   '/classroom/admin': typeof ClassroomAdminRoute
   '/classroom/affectation': typeof ClassroomAffectationRoute
   '/classroom/annees': typeof ClassroomAnneesRouteWithChildren
@@ -632,6 +666,7 @@ export interface FileRoutesByFullPath {
   '/classroom/chef-mention': typeof ClassroomChefMentionRoute
   '/classroom/comptabilite': typeof ClassroomComptabiliteRoute
   '/classroom/config': typeof ClassroomConfigRouteWithChildren
+  '/classroom/corps-enseignant': typeof ClassroomCorpsEnseignantRoute
   '/classroom/cursus': typeof ClassroomCursusRoute
   '/classroom/cursus-plan': typeof ClassroomCursusPlanRoute
   '/classroom/designer': typeof ClassroomDesignerRoute
@@ -681,6 +716,7 @@ export interface FileRoutesByFullPath {
   '/online/register': typeof OnlineRegisterRoute
   '/online/subscription': typeof OnlineSubscriptionRoute
   '/online/teacher': typeof OnlineTeacherRoute
+  '/actualites/': typeof ActualitesIndexRoute
   '/classroom/': typeof ClassroomIndexRoute
   '/erp/': typeof ErpIndexRoute
   '/online/': typeof OnlineIndexRoute
@@ -717,6 +753,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/choice': typeof ChoiceRoute
   '/guide': typeof GuideRoute
+  '/actualites/$slug': typeof ActualitesSlugRoute
+  '/actualites/archives': typeof ActualitesArchivesRoute
+  '/classroom/actualites': typeof ClassroomActualitesRoute
   '/classroom/admin': typeof ClassroomAdminRoute
   '/classroom/affectation': typeof ClassroomAffectationRoute
   '/classroom/announcements': typeof ClassroomAnnouncementsRoute
@@ -728,6 +767,7 @@ export interface FileRoutesByTo {
   '/classroom/chat': typeof ClassroomChatRoute
   '/classroom/chef-mention': typeof ClassroomChefMentionRoute
   '/classroom/comptabilite': typeof ClassroomComptabiliteRoute
+  '/classroom/corps-enseignant': typeof ClassroomCorpsEnseignantRoute
   '/classroom/cursus': typeof ClassroomCursusRoute
   '/classroom/cursus-plan': typeof ClassroomCursusPlanRoute
   '/classroom/designer': typeof ClassroomDesignerRoute
@@ -773,6 +813,7 @@ export interface FileRoutesByTo {
   '/online/register': typeof OnlineRegisterRoute
   '/online/subscription': typeof OnlineSubscriptionRoute
   '/online/teacher': typeof OnlineTeacherRoute
+  '/actualites': typeof ActualitesIndexRoute
   '/classroom': typeof ClassroomIndexRoute
   '/erp': typeof ErpIndexRoute
   '/online': typeof OnlineIndexRoute
@@ -813,6 +854,9 @@ export interface FileRoutesById {
   '/erp': typeof ErpRouteWithChildren
   '/guide': typeof GuideRoute
   '/online': typeof OnlineRouteWithChildren
+  '/actualites/$slug': typeof ActualitesSlugRoute
+  '/actualites/archives': typeof ActualitesArchivesRoute
+  '/classroom/actualites': typeof ClassroomActualitesRoute
   '/classroom/admin': typeof ClassroomAdminRoute
   '/classroom/affectation': typeof ClassroomAffectationRoute
   '/classroom/annees': typeof ClassroomAnneesRouteWithChildren
@@ -826,6 +870,7 @@ export interface FileRoutesById {
   '/classroom/chef-mention': typeof ClassroomChefMentionRoute
   '/classroom/comptabilite': typeof ClassroomComptabiliteRoute
   '/classroom/config': typeof ClassroomConfigRouteWithChildren
+  '/classroom/corps-enseignant': typeof ClassroomCorpsEnseignantRoute
   '/classroom/cursus': typeof ClassroomCursusRoute
   '/classroom/cursus-plan': typeof ClassroomCursusPlanRoute
   '/classroom/designer': typeof ClassroomDesignerRoute
@@ -875,6 +920,7 @@ export interface FileRoutesById {
   '/online/register': typeof OnlineRegisterRoute
   '/online/subscription': typeof OnlineSubscriptionRoute
   '/online/teacher': typeof OnlineTeacherRoute
+  '/actualites/': typeof ActualitesIndexRoute
   '/classroom/': typeof ClassroomIndexRoute
   '/erp/': typeof ErpIndexRoute
   '/online/': typeof OnlineIndexRoute
@@ -916,6 +962,9 @@ export interface FileRouteTypes {
     | '/erp'
     | '/guide'
     | '/online'
+    | '/actualites/$slug'
+    | '/actualites/archives'
+    | '/classroom/actualites'
     | '/classroom/admin'
     | '/classroom/affectation'
     | '/classroom/annees'
@@ -929,6 +978,7 @@ export interface FileRouteTypes {
     | '/classroom/chef-mention'
     | '/classroom/comptabilite'
     | '/classroom/config'
+    | '/classroom/corps-enseignant'
     | '/classroom/cursus'
     | '/classroom/cursus-plan'
     | '/classroom/designer'
@@ -978,6 +1028,7 @@ export interface FileRouteTypes {
     | '/online/register'
     | '/online/subscription'
     | '/online/teacher'
+    | '/actualites/'
     | '/classroom/'
     | '/erp/'
     | '/online/'
@@ -1014,6 +1065,9 @@ export interface FileRouteTypes {
     | '/'
     | '/choice'
     | '/guide'
+    | '/actualites/$slug'
+    | '/actualites/archives'
+    | '/classroom/actualites'
     | '/classroom/admin'
     | '/classroom/affectation'
     | '/classroom/announcements'
@@ -1025,6 +1079,7 @@ export interface FileRouteTypes {
     | '/classroom/chat'
     | '/classroom/chef-mention'
     | '/classroom/comptabilite'
+    | '/classroom/corps-enseignant'
     | '/classroom/cursus'
     | '/classroom/cursus-plan'
     | '/classroom/designer'
@@ -1070,6 +1125,7 @@ export interface FileRouteTypes {
     | '/online/register'
     | '/online/subscription'
     | '/online/teacher'
+    | '/actualites'
     | '/classroom'
     | '/erp'
     | '/online'
@@ -1109,6 +1165,9 @@ export interface FileRouteTypes {
     | '/erp'
     | '/guide'
     | '/online'
+    | '/actualites/$slug'
+    | '/actualites/archives'
+    | '/classroom/actualites'
     | '/classroom/admin'
     | '/classroom/affectation'
     | '/classroom/annees'
@@ -1122,6 +1181,7 @@ export interface FileRouteTypes {
     | '/classroom/chef-mention'
     | '/classroom/comptabilite'
     | '/classroom/config'
+    | '/classroom/corps-enseignant'
     | '/classroom/cursus'
     | '/classroom/cursus-plan'
     | '/classroom/designer'
@@ -1171,6 +1231,7 @@ export interface FileRouteTypes {
     | '/online/register'
     | '/online/subscription'
     | '/online/teacher'
+    | '/actualites/'
     | '/classroom/'
     | '/erp/'
     | '/online/'
@@ -1211,6 +1272,9 @@ export interface RootRouteChildren {
   ErpRoute: typeof ErpRouteWithChildren
   GuideRoute: typeof GuideRoute
   OnlineRoute: typeof OnlineRouteWithChildren
+  ActualitesSlugRoute: typeof ActualitesSlugRoute
+  ActualitesArchivesRoute: typeof ActualitesArchivesRoute
+  ActualitesIndexRoute: typeof ActualitesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1277,6 +1341,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/classroom/'
       preLoaderRoute: typeof ClassroomIndexRouteImport
       parentRoute: typeof ClassroomRoute
+    }
+    '/actualites/': {
+      id: '/actualites/'
+      path: '/actualites'
+      fullPath: '/actualites/'
+      preLoaderRoute: typeof ActualitesIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/online/teacher': {
       id: '/online/teacher'
@@ -1621,6 +1692,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClassroomCursusRouteImport
       parentRoute: typeof ClassroomRoute
     }
+    '/classroom/corps-enseignant': {
+      id: '/classroom/corps-enseignant'
+      path: '/corps-enseignant'
+      fullPath: '/classroom/corps-enseignant'
+      preLoaderRoute: typeof ClassroomCorpsEnseignantRouteImport
+      parentRoute: typeof ClassroomRoute
+    }
     '/classroom/config': {
       id: '/classroom/config'
       path: '/config'
@@ -1711,6 +1789,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/classroom/admin'
       preLoaderRoute: typeof ClassroomAdminRouteImport
       parentRoute: typeof ClassroomRoute
+    }
+    '/classroom/actualites': {
+      id: '/classroom/actualites'
+      path: '/actualites'
+      fullPath: '/classroom/actualites'
+      preLoaderRoute: typeof ClassroomActualitesRouteImport
+      parentRoute: typeof ClassroomRoute
+    }
+    '/actualites/archives': {
+      id: '/actualites/archives'
+      path: '/actualites/archives'
+      fullPath: '/actualites/archives'
+      preLoaderRoute: typeof ActualitesArchivesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/actualites/$slug': {
+      id: '/actualites/$slug'
+      path: '/actualites/$slug'
+      fullPath: '/actualites/$slug'
+      preLoaderRoute: typeof ActualitesSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/erp/planning/': {
       id: '/erp/planning/'
@@ -1978,6 +2077,7 @@ const ClassroomPlanningRouteWithChildren =
   ClassroomPlanningRoute._addFileChildren(ClassroomPlanningRouteChildren)
 
 interface ClassroomRouteChildren {
+  ClassroomActualitesRoute: typeof ClassroomActualitesRoute
   ClassroomAdminRoute: typeof ClassroomAdminRoute
   ClassroomAffectationRoute: typeof ClassroomAffectationRoute
   ClassroomAnneesRoute: typeof ClassroomAnneesRouteWithChildren
@@ -1991,6 +2091,7 @@ interface ClassroomRouteChildren {
   ClassroomChefMentionRoute: typeof ClassroomChefMentionRoute
   ClassroomComptabiliteRoute: typeof ClassroomComptabiliteRoute
   ClassroomConfigRoute: typeof ClassroomConfigRouteWithChildren
+  ClassroomCorpsEnseignantRoute: typeof ClassroomCorpsEnseignantRoute
   ClassroomCursusRoute: typeof ClassroomCursusRoute
   ClassroomCursusPlanRoute: typeof ClassroomCursusPlanRoute
   ClassroomDesignerRoute: typeof ClassroomDesignerRoute
@@ -2023,6 +2124,7 @@ interface ClassroomRouteChildren {
 }
 
 const ClassroomRouteChildren: ClassroomRouteChildren = {
+  ClassroomActualitesRoute: ClassroomActualitesRoute,
   ClassroomAdminRoute: ClassroomAdminRoute,
   ClassroomAffectationRoute: ClassroomAffectationRoute,
   ClassroomAnneesRoute: ClassroomAnneesRouteWithChildren,
@@ -2036,6 +2138,7 @@ const ClassroomRouteChildren: ClassroomRouteChildren = {
   ClassroomChefMentionRoute: ClassroomChefMentionRoute,
   ClassroomComptabiliteRoute: ClassroomComptabiliteRoute,
   ClassroomConfigRoute: ClassroomConfigRouteWithChildren,
+  ClassroomCorpsEnseignantRoute: ClassroomCorpsEnseignantRoute,
   ClassroomCursusRoute: ClassroomCursusRoute,
   ClassroomCursusPlanRoute: ClassroomCursusPlanRoute,
   ClassroomDesignerRoute: ClassroomDesignerRoute,
@@ -2198,6 +2301,9 @@ const rootRouteChildren: RootRouteChildren = {
   ErpRoute: ErpRouteWithChildren,
   GuideRoute: GuideRoute,
   OnlineRoute: OnlineRouteWithChildren,
+  ActualitesSlugRoute: ActualitesSlugRoute,
+  ActualitesArchivesRoute: ActualitesArchivesRoute,
+  ActualitesIndexRoute: ActualitesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -71,11 +71,13 @@ export function ProtectedArea({ enabled, children }: { enabled: boolean; childre
   );
 }
 
-export function ProtectedNotice() {
+export function ProtectedNotice({ canDownload = false }: { canDownload?: boolean }) {
   return (
     <div className="flex items-center gap-2 border-b bg-amber-500/10 px-5 py-2 text-xs text-amber-800 dark:text-amber-300">
       <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-      Contenu du cursus universitaire — consultation en ligne uniquement (ni téléchargement, ni partage).
+      {canDownload
+        ? "Contenu du cursus universitaire — vidéos en lecture sur la plateforme ; seuls les supports autorisés par l'enseignant se téléchargent. Partage interdit."
+        : "Contenu du cursus universitaire — consultation en ligne uniquement (ni téléchargement, ni partage)."}
     </div>
   );
 }

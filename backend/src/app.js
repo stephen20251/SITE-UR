@@ -39,6 +39,8 @@ import erpChatRoutes from './modules/chat/erp-chat.routes.js';
 import meContextRoutes from './modules/me/me.context.routes.js';
 import meUploadRoutes from './modules/me/me.upload.routes.js';
 import eventsRoutes from './modules/events/events.routes.js';
+import newsRoutes from './modules/news/news.routes.js';
+import facultyRoutes from './modules/faculty/faculty.routes.js';
 import brandingRoutes from './modules/branding/branding.routes.js';
 import inscriptionsRoutes from './modules/inscriptions/inscriptions.routes.js';
 import affectationRoutes from './modules/affectation/affectation.routes.js';
@@ -120,6 +122,8 @@ export function createApp() {
   // Communication
   app.use('/api/announcements', announcementsRoutes);
   app.use('/api/events', eventsRoutes);
+  app.use('/api/news', newsRoutes);
+  app.use('/api/faculty', facultyRoutes);
   app.use('/api/schedule', scheduleRoutes);
   app.use('/api/chat', chatRoutes);
   app.use('/api/erp-chat', erpChatRoutes);

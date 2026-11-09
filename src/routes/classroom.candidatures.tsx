@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Check, Eye, FileText, Loader2, RotateCcw, Search, UserPlus, X } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
+import { StudyModePicker, type StudyMode } from "@/components/classroom/study-mode";
 import { Card, Empty, Loading, PageHeader, Tabs, btnGhost, btnPrimary, inputCls } from "@/components/classroom/cursus-ui";
 import { REVIEW_BADGE } from "@/components/classroom/candidate-docs";
 import {
@@ -295,12 +296,13 @@ function EnrollDialog({ c, onClose }: { c: Candidate; onClose: () => void }) {
   const list = options.length ? options : promos.data ?? [];
   const [promotionId, setPromotionId] = useState("");
   const [groupId, setGroupId] = useState("");
+  const [studyMode, setStudyMode] = useState<StudyMode>("PRESENTIEL");
   const groups = useGroupOptions(promotionId || undefined);
   useEffect(() => { if (!promotionId && list[0]) setPromotionId(list[0].id); }, [list, promotionId]);
 
   async function submit() {
     try {
-      const r = await enroll.mutateAsync({ id: c.id, promotionId, groupId: groupId || undefined });
+      const r = await enroll.mutateAsync({ id: c.id, promotionId, groupId: groupId || undefined, studyMode });
       toast.success(`${c.user.firstName} est désormais étudiant(e) de l'UR — matricule ${r.matricule}`);
       onClose();
     } catch (err) { toast.error(err instanceof ApiError ? err.message : "Inscription impossible"); }
@@ -326,6 +328,7 @@ function EnrollDialog({ c, onClose }: { c: Candidate; onClose: () => void }) {
             {(groups.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </label>
+        <StudyModePicker value={studyMode} onChange={setStudyMode} />
         <button onClick={submit} disabled={!promotionId || enroll.isPending} className={`${btnPrimary} w-full justify-center`}>
           <UserPlus className="h-4 w-4" /> Confirmer : devient étudiant(e)
         </button>

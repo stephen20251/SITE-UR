@@ -113,12 +113,39 @@ credentials in production.
 ```bash
 cd backend
 npm install
-cp .env.example .env          # DATABASE_URL and JWT secrets
+cp .env.example .env          # DATABASE_URL, JWT secrets, SMTP (Gmail)
 npx prisma migrate deploy     # apply the schema
-npx prisma db seed            # optional seed data
-node prisma/seed-online.js    # optional: online courses demo
-node prisma/seed-cursus.js    # roles, monthly tuition, cursus L1 demo (re-runnable)
+npm run seed:base             # permissions, roles, university structure, finance settings (no accounts)
+npm run create:admin          # first Super Admin: asks for e-mail and password in the terminal
 npm run dev
+```
+
+The other users are then created by the Super Admin in « Utilisateurs ».
+
+Check the e-mail configuration with `node prisma/test-email.js you@gmail.com`.
+
+#### Demo data (development only)
+
+These scripts create accounts sharing a publicly known password. Never run them on a real
+installation.
+
+```bash
+node prisma/seed.js           # demo university, accounts and grades
+node prisma/seed-online.js    # online courses demo
+node prisma/seed-cursus.js    # monthly tuition, cursus L1 demo (re-runnable)
+node prisma/seed-news.js      # sample news (--remove to delete them)
+```
+
+#### Backup and restore (local Docker database)
+
+`backend/uploads` and `backend/private-uploads` hold the uploaded files: back them up too.
+
+```bash
+mkdir -p backend/backups && docker exec ur3-db-1 sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner -Fc' > backend/backups/backup.dump
+```
+
+```bash
+docker exec -i ur3-db-1 sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --clean --if-exists' < backend/backups/backup.dump
 ```
 
 ### Frontend

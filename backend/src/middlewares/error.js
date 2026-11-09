@@ -16,6 +16,9 @@ export function errorMiddleware(err, req, res, next) {
   if (err?.name === 'JsonWebTokenError' || err?.name === 'TokenExpiredError') {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
+  if (err?.name === 'MulterError') {
+    return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Fichier trop volumineux' : err.message });
+  }
   // Prisma known errors
   if (err?.code === 'P2002') {
     return res.status(409).json({ error: 'Unique constraint violation', details: err.meta });

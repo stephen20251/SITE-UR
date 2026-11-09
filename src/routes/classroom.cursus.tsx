@@ -1,23 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Award, CheckCircle2, GraduationCap, Lock, PlayCircle, Wallet, X } from "lucide-react";
+import { Award, Building2, CheckCircle2, GraduationCap, History, Lock, MonitorPlay, PlayCircle, Wallet } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { PayDialog } from "@/components/classroom/tuition";
+import { useMyEnrollments } from "@/lib/online";
 import {
   Bar, Card, Empty, Loading, PageHeader, TuitionBadge, btnPrimary, inputCls,
 } from "@/components/classroom/cursus-ui";
-import {
-  PAY_METHODS, fmtMGA, methodLabel, useDeclareTuition, useMyCursus, type CursusMonth,
-} from "@/lib/cursus";
-import { ApiError } from "@/lib/api";
+import { fmtMGA, methodLabel, useMyCursus, type CursusMonth } from "@/lib/cursus";
 import { semesterLabel } from "@/lib/cursus";
 
 export const Route = createFileRoute("/classroom/cursus")({ component: MyCursus });
 
 function MyCursus() {
   const { user, ready } = useRequireClassroom(["STUDENT"]);
-  const [part, setPart] = useState<"UNIVERSITY" | "CERTIFYING">("UNIVERSITY");
+  const [part, setPart] = useState<"UNIVERSITY" | "CERTIFYING" | "HISTORY">("UNIVERSITY");
   const cursus = useMyCursus(ready && !!user);
   const [payMonth, setPayMonth] = useState<CursusMonth | null>(null);
 
@@ -28,10 +26,11 @@ function MyCursus() {
       <PageHeader title="Mes cours" subtitle="Choisissez votre parcours : cursus universitaire ou cours certifiants." />
 
       {/* Deux choix */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-3 sm:grid-cols-2">
         {([
           { v: "UNIVERSITY", title: "Cursus universitaire", sub: "Délivre un diplôme", Icon: GraduationCap },
           { v: "CERTIFYING", title: "Cours certifiants", sub: "Délivrent un certificat ou une attestation", Icon: Award },
+          { v: "HISTORY", title: "Historique", sub: "Les cours que vous avez suivis", Icon: History },
         ] as const).map(({ v, title, sub, Icon }) => (
           <button
             key={v}
@@ -47,7 +46,9 @@ function MyCursus() {
         ))}
       </div>
 
-      {part === "CERTIFYING" ? (
+      {part === "HISTORY" ? (
+        <CourseHistory />
+      ) : part === "CERTIFYING" ? (
         <Card className="text-center">
           <Award className="mx-auto h-10 w-10 text-classroom" />
           <h2 className="mt-2 text-lg font-semibold">Cours certifiants</h2>
@@ -72,15 +73,58 @@ function MyCursus() {
   );
 }
 
+// Historique : tous les cours ouverts par l'étudiant, du plus récent au plus ancien.
+function CourseHistory() {
+  const enrollments = useMyEnrollments();
+  if (enrollments.isLoading) return <Loading />;
+  if (enrollments.isError) return <Empty>Impossible de charger votre historique.</Empty>;
+  const items = enrollments.data?.items ?? [];
+  if (items.length === 0) return <Card><Empty>Vous n'avez encore suivi aucun cours.</Empty></Card>;
+  const fmt = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return (
+    <div className="space-y-2">
+      {items.map((e) => (
+        <Card key={e.id} className="!p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium">{e.course?.title ?? "Cours"}</div>
+              <div className="text-xs text-muted-foreground">
+                {e.lastVisitedAt ? `Dernière visite le ${fmt(e.lastVisitedAt)}` : `Commencé le ${fmt(e.createdAt)}`}
+                {e.completedAt && ` · terminé le ${fmt(e.completedAt)}`}
+              </div>
+            </div>
+            <div className="flex w-40 items-center gap-2"><Bar value={e.progress} className="flex-1" /><span className="w-9 text-right text-[11px] text-muted-foreground">{Math.round(e.progress)}%</span></div>
+            <Link to="/online/course/$id" params={{ id: e.courseId }} className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-classroom hover:underline">
+              <PlayCircle className="h-4 w-4" /> Ouvrir
+            </Link>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 function CursusView({ data, onPay }: { data: NonNullable<ReturnType<typeof useMyCursus>["data"]>; onPay: (m: CursusMonth) => void }) {
   const totalCourses = data.months.reduce((s, m) => s + m.courses.length, 0);
+  const presentiel = data.student.studyMode === "PRESENTIEL";
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className={`flex items-start gap-3 rounded-2xl border p-4 text-sm ${presentiel ? "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200" : "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-200"}`}>
+        {presentiel ? <Building2 className="mt-0.5 h-5 w-5 shrink-0" /> : <MonitorPlay className="mt-0.5 h-5 w-5 shrink-0" />}
+        <div>
+          <p className="font-semibold">Vous êtes inscrit(e) {presentiel ? "en présentiel" : "en ligne"}</p>
+          <p className="mt-0.5 text-xs opacity-90">
+            {presentiel
+              ? "Vos cours ont lieu en salle. Vous gardez ici les documents et les tests ; les vidéos et les enregistrements sont réservés aux étudiants en ligne."
+              : "Vous suivez vos cours sur la plateforme : vidéos, PDF, Word et PowerPoint, supports téléchargeables autorisés, devoirs, tests, enregistrements et suivi de progression."}
+          </p>
+        </div>
+      </div>
+      <div className={`grid gap-3 ${presentiel ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
         <Card><div className="text-xs text-muted-foreground">Niveau</div><div className="mt-1 text-xl font-semibold">{data.student.level ?? "—"}</div><div className="text-xs text-muted-foreground">{data.student.mention?.name}</div></Card>
         <Card><div className="text-xs text-muted-foreground">Écolage mensuel</div><div className="mt-1 text-xl font-semibold">{fmtMGA(data.monthlyAmount, data.currency)}</div><div className="text-xs text-muted-foreground">8 mois par an</div></Card>
         <Card><div className="text-xs text-muted-foreground">Mois payés</div><div className="mt-1 text-xl font-semibold">{data.paidCount} / 8</div><Bar value={(data.paidCount / 8) * 100} className="mt-2" /></Card>
-        <Card><div className="text-xs text-muted-foreground">Mois terminés à 100 %</div><div className="mt-1 text-xl font-semibold">{data.completedCount} / 8</div><Bar value={(data.completedCount / 8) * 100} className="mt-2" /></Card>
+        {!presentiel && <Card><div className="text-xs text-muted-foreground">Mois terminés à 100 %</div><div className="mt-1 text-xl font-semibold">{data.completedCount} / 8</div><Bar value={(data.completedCount / 8) * 100} className="mt-2" /></Card>}
       </div>
 
       {data.eligibleForPassage && (
@@ -91,8 +135,9 @@ function CursusView({ data, onPay }: { data: NonNullable<ReturnType<typeof useMy
       )}
 
       <p className="text-sm text-muted-foreground">
-        Règle : payez l'écolage d'un mois pour débloquer ses cours. Le mois suivant ne peut être payé qu'une fois
-        tous les cours du mois terminés à 100 % (leçons + test).
+        {presentiel
+          ? "Règle : payez l'écolage d'un mois pour débloquer ses documents et ses tests."
+          : "Règle : payez l'écolage d'un mois pour débloquer ses cours. Le mois suivant ne peut être payé qu'une fois tous les cours du mois terminés à 100 % (leçons + test)."}
         {totalCourses === 0 && " Aucun cours n'est encore publié pour votre niveau."}
       </p>
 

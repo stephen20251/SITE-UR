@@ -134,8 +134,11 @@ export const enrollStudent = async (req, res) => {
     throw new HttpError(400, "Le candidat n'a pas encore envoyé son dossier d'inscription (fiche, engagement parental, paiement)")
   }
 
-  const { promotionId, groupId } = req.body
+  const { promotionId, groupId, studyMode } = req.body
   if (!promotionId) throw new HttpError(400, 'Choisissez la promotion d\'accueil')
+  if (studyMode !== undefined && !['PRESENTIEL', 'EN_LIGNE'].includes(studyMode)) {
+    throw new HttpError(400, 'Mode d\'étude invalide (PRESENTIEL ou EN_LIGNE)')
+  }
   const promo = await prisma.promotion.findUnique({
     where: { id: promotionId },
     include: { mention: true, academicYear: true },
@@ -150,6 +153,7 @@ export const enrollStudent = async (req, res) => {
         userId: candidate.userId, matricule, promotionId, groupId: groupId || null,
         mentionId,
         status: 'ACTIVE', enrollmentDate: new Date(),
+        ...(studyMode && { studyMode }),
       },
     }),
     prisma.user.update({ where: { id: candidate.userId }, data: { systemRole: 'STUDENT' } }),

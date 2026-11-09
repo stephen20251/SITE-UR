@@ -41,7 +41,7 @@ export type AccountCtx = { phone: string | null; createdAt: string | null; lastL
 export type StudentCtx = {
   role: "STUDENT";
   user: { id: string; firstName: string; lastName: string; email: string; phone?: string | null; avatarUrl?: string | null };
-  profile: { id: string; matricule: string | null; enrollmentDate?: string | null; status: string; scholarship?: boolean | null };
+  profile: { id: string; matricule: string | null; enrollmentDate?: string | null; status: string; scholarship?: boolean | null; studyMode?: "PRESENTIEL" | "EN_LIGNE" };
   campus: CampusCtx | null;
   faculty: FacultyCtx | null;
   department: DeptCtx | null;
@@ -72,7 +72,11 @@ export type TeacherCourseCtx = {
 export type TeacherCtx = {
   role: "TEACHER";
   user: { id: string; firstName: string; lastName: string; email: string; phone?: string | null; avatarUrl?: string | null };
-  profile: { id: string; employeeId?: string | null; specialization?: string | null; bio?: string | null; office?: string | null };
+  profile: {
+    id: string; employeeId?: string | null; specialization?: string | null; bio?: string | null; office?: string | null;
+    academicTitle?: "PROFESSEUR" | "DOCTEUR" | null; highestDegree?: string | null; yearsExperience?: number | null;
+    cvFileName?: string | null; cvUpdatedAt?: string | null;
+  };
   campus: CampusCtx | null;
   faculty: FacultyCtx | null;
   department: DeptCtx | null;

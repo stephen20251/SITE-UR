@@ -44,6 +44,9 @@ function mediaUrl(path?: string | null): string | undefined {
   return `${API_BASE}${path}`;
 }
 
+// Lien de téléchargement : les liens signés du cursus demandent `dl=1`.
+const downloadHref = (url: string) => (url.includes("/api/media/") ? `${url}&dl=1` : url);
+
 function mimeToType(mime: string): LessonFile["mimeType"] extends string ? CourseLesson["type"] : never {
   if (mime.startsWith("video/")) return "VIDEO" as any;
   if (mime === "application/pdf") return "PDF" as any;
@@ -215,7 +218,7 @@ function CourseView({ course }: { course: CourseDetail }) {
     // Enrolled/owner: first unfinished (or first) lesson. Anonymous: first
     // free-preview lesson so the preview is visible without hunting for it.
     const first = unlocked
-      ? (lessons.find((l) => !l.completed) ?? lessons[0])
+      ? (lessons.find((l) => !l.completed && !l.locked) ?? lessons.find((l) => !l.locked) ?? lessons[0])
       : lessons.find((l) => !l.locked);
     setSelectedId(first?.id ?? null);
   }, [lessons, selectedId, unlocked]);
@@ -223,8 +226,10 @@ function CourseView({ course }: { course: CourseDetail }) {
   const selected = lessons.find((l) => l.id === selectedId) ?? null;
   const previewSelected = !unlocked && selected != null && !selected.locked;
   const selectedIdx = lessons.findIndex((l) => l.id === selectedId);
-  const prevLesson = selectedIdx > 0 ? lessons[selectedIdx - 1] : null;
-  const nextLesson = selectedIdx >= 0 && selectedIdx < lessons.length - 1 ? lessons[selectedIdx + 1] : null;
+  // « Précédente / Suivante » saute les vidéos fermées à l'étudiant en présentiel.
+  const openable = (l: CourseLesson) => !(l.onlineOnly && l.locked);
+  const prevLesson = selectedIdx > 0 ? lessons.slice(0, selectedIdx).reverse().find(openable) ?? null : null;
+  const nextLesson = selectedIdx >= 0 ? lessons.slice(selectedIdx + 1).find(openable) ?? null : null;
 
   async function onEnroll() {
     try {
@@ -337,7 +342,13 @@ function CourseView({ course }: { course: CourseDetail }) {
         </div>
       </header>
 
-      {protectedMode && unlocked && <ProtectedNotice />}
+      {protectedMode && unlocked && <ProtectedNotice canDownload={course.canDownloadSupports} />}
+      {course.videosReserved && unlocked && (
+        <div className="flex items-center gap-2 border-b bg-sky-500/10 px-5 py-2 text-xs text-sky-800 dark:text-sky-300">
+          <Lock className="h-3.5 w-3.5 shrink-0" />
+          Vous êtes inscrit(e) en présentiel : les vidéos et les enregistrements de ce cours sont réservés aux étudiants en ligne.
+        </div>
+      )}
 
       {/* ── Body: content + sidebar ── */}
       <div className="mx-auto grid w-full max-w-screen-xl flex-1 md:grid-cols-[1fr_390px]">
@@ -743,9 +754,11 @@ function CurriculumSidebar({
     }
   }, [activeModuleId]);
 
-  const totalLessons = course.modules.reduce((s, m) => s + m.lessons.length, 0);
+  // Mêmes leçons que l'avancement du serveur : sans les vidéos fermées à l'étudiant.
+  const counted = (l: CourseLesson) => !l.onlineOnly;
+  const totalLessons = course.modules.reduce((s, m) => s + m.lessons.filter(counted).length, 0);
   const doneLessons = course.modules.reduce(
-    (s, m) => s + m.lessons.filter((l) => l.completed).length, 0
+    (s, m) => s + m.lessons.filter((l) => counted(l) && l.completed).length, 0
   );
 
   function toggle(id: string) {
@@ -779,8 +792,8 @@ function CurriculumSidebar({
         )}
         {course.modules.map((m, idx) => {
           const isOpen = expanded.has(m.id);
-          const modDone = m.lessons.filter((l) => l.completed).length;
-          const modTotal = m.lessons.length;
+          const modDone = m.lessons.filter((l) => counted(l) && l.completed).length;
+          const modTotal = m.lessons.filter(counted).length;
           const modPct = modTotal > 0 ? Math.round((modDone / modTotal) * 100) : 0;
           const dur = moduleDurationLabel(m);
           const allDone = modTotal > 0 && modDone === modTotal;
@@ -849,6 +862,7 @@ function CurriculumSidebar({
                       <li key={l.id} className="border-b last:border-b-0">
                         <button
                           disabled={!clickable}
+                          title={l.onlineOnly ? "Vidéo réservée aux étudiants en ligne" : undefined}
                           onClick={() => onSelect(l.id)}
                           className={`flex w-full items-center gap-3 py-2.5 pl-9 pr-4 text-left transition ${
                             active
@@ -884,6 +898,12 @@ function CurriculumSidebar({
                           }`}>
                             {l.title}
                           </span>
+
+                          {l.onlineOnly && (
+                            <span className="shrink-0 rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-400">
+                              En ligne
+                            </span>
+                          )}
 
                           {/* Free-preview badge */}
                           {l.isPreview && !course.enrolled && !course.isOwner && (
@@ -955,6 +975,12 @@ function LiveSessionsCard({ liveSessions }: { liveSessions: ReturnType<typeof us
                 <a href={s.link} target="_blank" rel="noreferrer"
                   className="inline-flex items-center gap-1 rounded-lg grad-online px-2.5 py-1.5 text-xs font-medium text-white">
                   <ExternalLink className="h-3 w-3" /> Rejoindre
+                </a>
+              )}
+              {s.recordingUrl && (
+                <a href={s.recordingUrl} target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium hover:bg-accent">
+                  <Film className="h-3 w-3" /> Enregistrement
                 </a>
               )}
               <Link
@@ -1411,7 +1437,7 @@ function buildResources(mod: CourseModule): ReaderResource[] {
   const out: ReaderResource[] = [];
   for (const l of mod.lessons) {
     if (l.locked) continue;
-    const dl = (url: string | null | undefined) => (l.allowDownload && url ? mediaUrl(url) ?? null : null);
+    const dl = (url: string | null | undefined, allowed: boolean = l.allowDownload) => (allowed && url ? downloadHref(mediaUrl(url) ?? "") || null : null);
     const base = { lessonId: l.id, subtitle: null as string | null, text: null as string | null };
 
     // Contenu principal de la leçon
@@ -1439,8 +1465,8 @@ function buildResources(mod: CourseModule): ReaderResource[] {
       const cfg = TYPE_CFG[t] ?? TYPE_CFG.DOCUMENT;
       out.push({
         ...base, key: `${l.id}:${f.id}`, kind, title: f.name, subtitle: l.title,
-        lesson: { ...l, contentUrl: null, type: t, files: [f] },
-        downloadUrl: dl(f.url), tag: cfg.label, Icon: cfg.icon,
+        lesson: { ...l, contentUrl: null, type: t, files: [f], allowDownload: f.allowDownload },
+        downloadUrl: dl(f.url, f.allowDownload), tag: cfg.label, Icon: cfg.icon,
       });
     }
   }
@@ -1504,6 +1530,7 @@ function ModuleReader({ lesson, modules, courseTitle, onNavigate }: {
   const current = items.find((r) => r.key === resKey) ?? null;
   const showList = items.length > 1 || (tab === "autre" && items.length > 0);
   const tabCfg = READER_TABS.find((t) => t.kind === tab)!;
+  const videosReserved = mod?.lessons.some((l) => l.onlineOnly) ?? false;
 
   return (
     <div className="border-b bg-background">
@@ -1595,8 +1622,10 @@ function ModuleReader({ lesson, modules, courseTitle, onNavigate }: {
             ) : (
               <Placeholder
                 icon={<tabCfg.Icon className="h-10 w-10 opacity-60" />}
-                label={items.length === 0 ? tabCfg.empty : "Choisissez un fichier dans la liste"}
-                sub={lesson.locked ? "Cette leçon est verrouillée pour le moment." : " "}
+                label={items.length === 0
+                  ? (tab === "video" && videosReserved ? "Les vidéos sont réservées aux étudiants inscrits en ligne." : tabCfg.empty)
+                  : "Choisissez un fichier dans la liste"}
+                sub={lesson.onlineOnly ? "Consultez les onglets Word et Autre pour les documents du module." : lesson.locked ? "Cette leçon est verrouillée pour le moment." : " "}
               />
             )}
           </div>
@@ -1634,17 +1663,16 @@ function LessonMedia({ lesson, allowDownload = true, tall = false }: { lesson: C
   if (effectiveType === "PDF" || effectiveType === "DOCUMENT") {
     if (!url) return <Placeholder icon={<FileText className="h-10 w-10 opacity-60" />} label="Aucun document" />;
     const isPdf = effectiveType === "PDF" || primaryFile?.mimeType === "application/pdf" || /\.pdf($|\?)/i.test(effectiveUrl ?? "");
-    if (protectedMode) {
-      return isPdf ? <ProtectedPdf url={url} height={tall ? 720 : undefined} /> : <UnviewableDocument name={primaryFile?.name ?? lesson.title} />;
-    }
-    // Word & co : le navigateur ne sait pas les afficher, on propose le fichier
+    if (protectedMode && isPdf) return <ProtectedPdf url={url} height={tall ? 720 : undefined} />;
+    if (protectedMode && !allowDownload) return <UnviewableDocument name={primaryFile?.name ?? lesson.title} />;
+    // Word, PowerPoint & co : le navigateur ne sait pas les afficher, on propose le fichier
     if (!isPdf) {
       return (
         <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
           <FileText className="h-12 w-12 text-indigo-500" />
           <p className="max-w-md truncate text-sm font-medium">{primaryFile?.name ?? lesson.title}</p>
           {allowDownload
-            ? <a href={url} download className="inline-flex items-center gap-2 rounded-xl grad-online px-5 py-2.5 text-sm font-medium text-white"><FileDown className="h-4 w-4" /> Ouvrir / télécharger</a>
+            ? <a href={downloadHref(url)} download className="inline-flex items-center gap-2 rounded-xl grad-online px-5 py-2.5 text-sm font-medium text-white"><FileDown className="h-4 w-4" /> Ouvrir / télécharger</a>
             : <p className="text-xs text-muted-foreground">Ce document n'est pas affichable dans le navigateur.</p>}
         </div>
       );
@@ -1709,7 +1737,7 @@ function LessonMedia({ lesson, allowDownload = true, tall = false }: { lesson: C
         <p className="text-sm opacity-70">Fichier compressé</p>
         {allowDownload && (
           <a
-            href={url}
+            href={downloadHref(url)}
             download
             className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-6 py-3 text-sm font-medium hover:bg-white/30 transition"
           >

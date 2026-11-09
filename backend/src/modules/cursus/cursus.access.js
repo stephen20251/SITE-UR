@@ -9,6 +9,11 @@
  * candidatent à l'UR. Un cours « les deux » reste achetable comme cours certifiant. Il ne peut payer
  * le mois N+1 que lorsque le mois N est payé ET que tous ses cours sont terminés
  * à 100 % (leçons + test).
+ *
+ * Mode d'étude : les vidéos du cursus sont réservées aux étudiants EN_LIGNE.
+ * L'étudiant PRESENTIEL suit le cours en salle : il garde les documents et les
+ * tests, mais ni les vidéos ni les enregistrements. Son avancement en ligne ne
+ * conditionne donc ni le paiement du mois suivant ni le passage de niveau.
  */
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../database/prisma.js';
@@ -26,6 +31,15 @@ export const isCursusCourse = (course) => CURSUS_KINDS.includes(course?.courseKi
 // Contenu protégé (non téléchargeable / non partageable) : tout cours du cursus.
 export const isProtectedCourse = (course) => isCursusCourse(course);
 
+export const STUDY_MODES = ['PRESENTIEL', 'EN_LIGNE'];
+
+// Vidéo : leçon de type VIDEO, ou lien / fichier vidéo déposé sous un autre type.
+const VIDEO_LINK = /(youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|drive\.google\.com\/file)|\.(mp4|webm|mov|m4v|mkv|avi)(\?|$)/i;
+export const isVideoLesson = (lesson) => lesson?.type === 'VIDEO' || VIDEO_LINK.test(lesson?.contentUrl ?? '');
+export const isVideoFile = (file) => Boolean(file?.mimeType?.startsWith('video/'));
+// Une leçon en « aperçu gratuit » est publique : elle n'est donc pas réservée.
+export const isReservedVideoLesson = (lesson) => isVideoLesson(lesson) && !lesson.isPreview;
+
 export const semesterOfMonth = (month) => (month <= 4 ? 1 : 2);
 // Numéro de semestre sur l'ensemble du cursus : L1 → S1/S2, L2 → S3/S4…
 export const semesterNumber = (level, month) =>
@@ -37,7 +51,7 @@ export async function getStudentCursusProfile(userId) {
   const sp = await prisma.studentProfile.findUnique({
     where: { userId },
     select: {
-      id: true, userId: true, mentionId: true, status: true, matricule: true,
+      id: true, userId: true, mentionId: true, status: true, matricule: true, studyMode: true,
       promotion: { select: { id: true, name: true, level: true, mentionId: true, academicYearId: true } },
       mention: { select: { id: true, name: true, code: true } },
     },
@@ -84,7 +98,8 @@ export async function monthCompleted(userId, mentionId, level, month) {
 
 /**
  * Peut-on payer le mois `month` ?
- * → mois 1 toujours ; sinon mois précédent VALIDÉ + tous ses cours à 100 %.
+ * → mois 1 toujours ; sinon mois précédent VALIDÉ + tous ses cours à 100 %
+ *   (en présentiel, le mois précédent VALIDÉ suffit : le cours se suit en salle).
  */
 export async function canPayMonth(profile, month) {
   if (!profile?.level) return { ok: false, reason: "Aucune promotion (niveau) n'est associée à votre dossier." };
@@ -93,6 +108,7 @@ export async function canPayMonth(profile, month) {
   if (paid.has(month)) return { ok: false, reason: 'Ce mois est déjà payé.' };
   if (month === 1) return { ok: true };
   if (!paid.has(month - 1)) return { ok: false, reason: `Le mois ${month - 1} doit d'abord être payé.` };
+  if (profile.studyMode === 'PRESENTIEL') return { ok: true };
   const done = await monthCompleted(profile.userId, profile.mentionId, profile.level, month - 1);
   if (!done) return { ok: false, reason: `Terminez d'abord à 100 % tous les cours du mois ${month - 1}.` };
   return { ok: true };
@@ -100,7 +116,8 @@ export async function canPayMonth(profile, month) {
 
 /**
  * Accès d'un utilisateur à un cours du cursus.
- * Retourne { applies, accessible, reason, month, level }.
+ * Retourne { applies, accessible, reason, month, level, studyMode, videosReserved }.
+ *  - videosReserved=true : étudiant en présentiel, les vidéos du cours lui sont fermées
  *  - applies=false : le cursus ne concerne pas ce couple (cours certifiant, cours
  *    « les deux » hors cursus) → accès comme un cours en ligne (gratuit ou payant)
  *  - reason : 'not_student' | 'not_in_cursus' | 'tuition_unpaid' | 'related_incomplete'
@@ -118,6 +135,8 @@ export async function cursusAccess(user, course) {
   const inCursus = profile
     && course.cursusLevel === profile.level
     && (!course.mentionId || course.mentionId === profile.mentionId);
+  const studyMode = profile?.studyMode ?? null;
+  const presentiel = studyMode === 'PRESENTIEL';
 
   if (!inCursus) {
     // Cours d'un niveau déjà terminé : l'étudiant garde l'accès s'il y était inscrit.
@@ -125,26 +144,29 @@ export async function cursusAccess(user, course) {
       where: { studentId_courseId: { studentId: user.sub, courseId: course.id } },
       select: { id: true },
     });
-    if (past) return { applies: true, accessible: true, inCursus: false };
+    // Un cours « les deux » hors cursus a pu être acheté comme cours certifiant :
+    // il reste entier, vidéos comprises.
+    if (past) return { applies: true, accessible: true, inCursus: false, studyMode, videosReserved: presentiel && course.courseKind === 'UNIVERSITY' };
     if (course.courseKind === 'BOTH') return { applies: false };
     return { applies: true, accessible: false, reason: 'not_in_cursus', month: course.cursusMonth, level: course.cursusLevel };
   }
 
   const paid = await validatedMonths(profile.id, profile.level);
   if (!paid.has(course.cursusMonth)) {
-    return { applies: true, accessible: false, reason: 'tuition_unpaid', month: course.cursusMonth, level: profile.level, inCursus: true };
+    return { applies: true, accessible: false, reason: 'tuition_unpaid', month: course.cursusMonth, level: profile.level, inCursus: true, studyMode, videosReserved: presentiel };
   }
 
-  if (course.relatedCourseIds?.length) {
+  // Cours liés à terminer d'abord : règle du parcours en ligne uniquement.
+  if (!presentiel && course.relatedCourseIds?.length) {
     const done = await prisma.enrollment.count({
       where: { studentId: user.sub, courseId: { in: course.relatedCourseIds }, completedAt: { not: null } },
     });
     if (done < course.relatedCourseIds.length) {
-      return { applies: true, accessible: false, reason: 'related_incomplete', month: course.cursusMonth, level: profile.level, inCursus: true };
+      return { applies: true, accessible: false, reason: 'related_incomplete', month: course.cursusMonth, level: profile.level, inCursus: true, studyMode, videosReserved: false };
     }
   }
 
-  return { applies: true, accessible: true, month: course.cursusMonth, level: profile.level, inCursus: true };
+  return { applies: true, accessible: true, month: course.cursusMonth, level: profile.level, inCursus: true, studyMode, videosReserved: presentiel };
 }
 
 // Inscription « cursus » d'un étudiant : seuil 100 % + tests réservés aux étudiants.
@@ -170,9 +192,11 @@ export const quizAudiences = (cursus, existing) => {
 // ─── Liens média signés (contenu non téléchargeable) ─────────────────────────
 // <video>/<iframe> ne peuvent pas envoyer d'en-tête Authorization : on signe
 // une URL courte durée liée à l'utilisateur et au fichier.
+// `download` autorise en plus le téléchargement (?dl=1) : support autorisé par
+// l'enseignant, pour un étudiant en ligne.
 const MEDIA_TTL = '3h';
-export function signMediaUrl(userId, kind, id) {
-  const t = jwt.sign({ sub: userId, k: kind, id, typ: 'media' }, env.JWT_ACCESS_SECRET, { expiresIn: MEDIA_TTL });
+export function signMediaUrl(userId, kind, id, { download = false } = {}) {
+  const t = jwt.sign({ sub: userId, k: kind, id, typ: 'media', ...(download && { dl: true }) }, env.JWT_ACCESS_SECRET, { expiresIn: MEDIA_TTL });
   return `/api/media/${kind}/${id}?t=${t}`;
 }
 export function verifyMediaToken(token, kind, id) {

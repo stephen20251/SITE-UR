@@ -26,7 +26,8 @@ const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !=
 
 // PATCH /api/me/profile — l'utilisateur complète ses propres informations.
 //   Tous      : phone
-//   Enseignant: specialization, bio, office, mentionId (le département suit la mention)
+//   Enseignant: specialization, bio, office, mentionId (le département suit la mention),
+//               academicTitle, highestDegree, yearsExperience
 //   Personnel : office
 //   Parent    : occupation, relationship
 r.patch('/profile', asyncHandler(async (req, res) => {
@@ -38,7 +39,16 @@ r.patch('/profile', asyncHandler(async (req, res) => {
   if (phone !== undefined) await prisma.user.update({ where: { id: userId }, data: { phone } });
 
   if (systemRole === 'TEACHER') {
-    const data = clean({ specialization: text(b.specialization, 120), bio: text(b.bio, 1500), office: text(b.office, 80) });
+    const data = clean({ specialization: text(b.specialization, 120), bio: text(b.bio, 1500), office: text(b.office, 80), highestDegree: text(b.highestDegree, 200) });
+    if (b.academicTitle !== undefined) {
+      if (b.academicTitle && !['PROFESSEUR', 'DOCTEUR'].includes(b.academicTitle)) throw new HttpError(400, 'Titre académique invalide');
+      data.academicTitle = b.academicTitle || null;
+    }
+    if (b.yearsExperience !== undefined) {
+      const years = b.yearsExperience === null || b.yearsExperience === '' ? null : Number(b.yearsExperience);
+      if (years !== null && (!Number.isInteger(years) || years < 0 || years > 70)) throw new HttpError(400, "Années d'expérience invalides");
+      data.yearsExperience = years;
+    }
     if (b.mentionId !== undefined) {
       if (b.mentionId) {
         const m = await prisma.mention.findUnique({ where: { id: String(b.mentionId) }, select: { id: true, departmentId: true } });

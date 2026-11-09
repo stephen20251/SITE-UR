@@ -1,9 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  Mail, Lock, Loader2, GraduationCap, BookOpen, Video,
-  CheckCircle2, Star, BadgeCheck, ShieldCheck,
-} from "lucide-react";
+import { Mail, Lock, Loader2, GraduationCap, CheckCircle2, Star, BadgeCheck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
@@ -12,59 +9,6 @@ import { usePublicStats, usePublicReviewHighlights } from "@/lib/online";
 export const Route = createFileRoute("/online/login")({
   component: Login,
 });
-
-const DEMOS = [
-  {
-    email: "student.online@ur.mg",
-    password: "Password123!",
-    name: "Stephen Online",
-    role: "Étudiant",
-    detail: "2 cours · 40% progression",
-    icon: BookOpen,
-    color: "text-online",
-    bg: "bg-online/10",
-  },
-  {
-    email: "student.online1@ur.mg",
-    password: "Password123!",
-    name: "Anjara RAKOTO",
-    role: "Étudiant certifié",
-    detail: "JS Avancé ✓ · 3 cours",
-    icon: GraduationCap,
-    color: "text-success",
-    bg: "bg-success/10",
-  },
-  {
-    email: "student.online11@ur.mg",
-    password: "Password123!",
-    name: "Kanto ANDRIAMASIMANANA",
-    role: "Étudiant",
-    detail: "4 cours en cours",
-    icon: BookOpen,
-    color: "text-online",
-    bg: "bg-online/10",
-  },
-  {
-    email: "teacher.online1@ur.mg",
-    password: "Password123!",
-    name: "Thierry ANDRIANINA",
-    role: "Enseignant",
-    detail: "3 cours publiés",
-    icon: Video,
-    color: "text-purple-500",
-    bg: "bg-purple-500/10",
-  },
-  {
-    email: "lms.admin@ur.mg",
-    password: "Password123!",
-    name: "Admin LMS",
-    role: "Super Administrateur",
-    detail: "Gestion de la plateforme",
-    icon: GraduationCap,
-    color: "text-red-500",
-    bg: "bg-red-500/10",
-  },
-] as const;
 
 function Login() {
   const { login } = useAuth();
@@ -75,7 +19,6 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
-  const [quickPending, setQuickPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function doLogin(e: string, p: string) {
@@ -106,14 +49,6 @@ function Login() {
     setPending(true);
     await doLogin(email, password);
     setPending(false);
-  }
-
-  async function quickLogin(demo: (typeof DEMOS)[number]) {
-    setQuickPending(demo.email);
-    setEmail(demo.email);
-    setPassword(demo.password);
-    await doLogin(demo.email, demo.password);
-    setQuickPending(null);
   }
 
   return (
@@ -211,53 +146,12 @@ function Login() {
 
             {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
-            <button type="submit" disabled={pending || !!quickPending}
+            <button type="submit" disabled={pending}
               className="flex w-full items-center justify-center gap-2 rounded-lg grad-online py-2.5 text-sm font-medium text-white disabled:opacity-60">
               {pending && <Loader2 className="h-4 w-4 animate-spin" />}
               {pending ? "Connexion…" : "Se connecter"}
             </button>
           </form>
-
-          {/* Demo accounts */}
-          <div className="mt-6">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Comptes de démonstration
-            </p>
-            <div className="space-y-2">
-              {DEMOS.map((demo) => {
-                const Icon = demo.icon;
-                const isLoading = quickPending === demo.email;
-                return (
-                  <button
-                    key={demo.email}
-                    type="button"
-                    disabled={!!quickPending || pending}
-                    onClick={() => quickLogin(demo)}
-                    className="flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition hover:border-online/40 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <div className={`shrink-0 rounded-lg p-1.5 ${demo.bg}`}>
-                      {isLoading
-                        ? <Loader2 className={`h-4 w-4 animate-spin ${demo.color}`} />
-                        : <Icon className={`h-4 w-4 ${demo.color}`} />
-                      }
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium">{demo.name}</div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{demo.role}</span>
-                        <span className="text-xs text-muted-foreground">·</span>
-                        <span className="text-xs text-muted-foreground">{demo.detail}</span>
-                      </div>
-                    </div>
-                    <span className="shrink-0 text-xs text-muted-foreground">→</span>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-2 text-center text-xs text-muted-foreground">
-              Mot de passe : <code className="rounded bg-muted px-1">Password123!</code>
-            </p>
-          </div>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Nouveau ? <Link to="/online/register" className="font-medium text-foreground hover:underline">Créer un compte</Link>
