@@ -51,6 +51,14 @@ export function useFacebookUrl() {
 // Un changement dans un composant (bouton du menu) prévient les autres (mise en page).
 const THEME_KEY = "ur-site-theme";
 const THEME_EVENT = "ur-site-theme";
+
+// Pages publiques qui suivent le thème choisi (les espaces de gestion restent clairs).
+export const isThemedPath = (p: string) =>
+  p === "/" || p === "/choice" || p.startsWith("/actualites") || p.startsWith("/online");
+
+// Script exécuté dans <head> avant l'affichage : évite que la page apparaisse
+// d'abord en clair puis bascule en sombre.
+export const THEME_BOOT_SCRIPT = `(function(){try{var p=location.pathname;var t=(p==="/"||p==="/choice"||p.indexOf("/actualites")===0||p.indexOf("/online")===0)&&localStorage.getItem("${THEME_KEY}")==="dark";if(t)document.documentElement.classList.add("dark")}catch(e){}})();`;
 export function useSiteTheme() {
   const [dark, setDark] = useState(false);
   useEffect(() => {

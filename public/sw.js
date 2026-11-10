@@ -6,7 +6,8 @@
  *    first with background refresh (stale-while-revalidate)
  *  - /api/ and socket traffic → network only (never cached)
  */
-const VERSION = 'ur-online-v1';
+// Changer VERSION vide les anciens caches à l'activation.
+const VERSION = 'ur-online-v2';
 const PRECACHE = [
   '/offline.html',
   '/manifest.webmanifest',
@@ -57,8 +58,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Static assets & media: cache first, refresh in the background.
+  // Scripts et styles : seulement les fichiers versionnés du build (nom avec empreinte,
+  // dossier /assets/), pour ne jamais servir une ancienne version du code.
   const isMedia = url.pathname.startsWith('/uploads/') || url.pathname.startsWith('/icons/');
-  if (CACHEABLE_DEST.has(req.destination) || isMedia) {
+  const isCode = req.destination === 'script' || req.destination === 'style';
+  const versioned = url.pathname.includes('/assets/');
+  if ((CACHEABLE_DEST.has(req.destination) && (!isCode || versioned)) || isMedia) {
     event.respondWith(
       caches.match(req).then((hit) => {
         const refresh = fetch(req)

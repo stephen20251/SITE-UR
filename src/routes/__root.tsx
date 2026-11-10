@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -14,15 +15,16 @@ import { reportClientError } from "../lib/error-reporting";
 import { AuthProvider } from "../lib/auth";
 import { SocketManager } from "../components/socket-manager";
 import { Toaster } from "../components/ui/sonner";
+import { isThemedPath, THEME_BOOT_SCRIPT, useSiteTheme } from "../components/site-layout";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold tracking-tight">404</h1>
-        <p className="mt-4 text-muted-foreground">This page doesn't exist.</p>
+        <p className="mt-4 text-muted-foreground">Cette page n'existe pas.</p>
         <Link to="/" className="mt-6 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-          Go home
+          Retour à l'accueil
         </Link>
       </div>
     </div>
@@ -35,12 +37,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold">Something went wrong</h1>
+        <h1 className="text-xl font-semibold">Une erreur est survenue</h1>
         <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
         <button
           onClick={() => { router.invalidate(); reset(); }}
           className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-        >Try again</button>
+        >Réessayer</button>
       </div>
     </div>
   );
@@ -61,6 +63,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "UR Online" },
     ],
+    scripts: [{ children: THEME_BOOT_SCRIPT }],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
@@ -78,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="fr" suppressHydrationWarning>
       <head><HeadContent /></head>
       <body>{children}<Scripts /></body>
     </html>
@@ -88,12 +91,25 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
-  // PWA: register the offline service worker (client only, best effort).
+  // Service worker (hors connexion) : seulement en production. En développement il
+  // servirait d'anciennes versions du code ; on retire celui qui serait déjà installé.
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    if (!("serviceWorker" in navigator)) return;
+    if (import.meta.env.DEV) {
+      navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});
+      caches?.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
+      return;
     }
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
+
+  // Thème clair / sombre des pages publiques (accueil, actualités, cours en ligne…),
+  // posé sur <html> pour que les fenêtres et notifications suivent aussi.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { dark } = useSiteTheme();
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark && isThemedPath(pathname));
+  }, [dark, pathname]);
 
   return (
     <QueryClientProvider client={queryClient}>

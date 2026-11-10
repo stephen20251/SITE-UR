@@ -152,8 +152,9 @@
   --warning: oklch(0.82 0.15 75);
   --warning-foreground: oklch(0.14 0.02 265);
 
-  --online: oklch(0.7 0.2 260);
-  --online-foreground: oklch(0.14 0.02 265);
+  /* Violet lisible sur fond sombre, avec texte blanc lisible dessus */
+  --online: oklch(0.6 0.2 285);
+  --online-foreground: oklch(0.99 0 0);
 
   --classroom: oklch(0.78 0.16 60);
   --classroom-foreground: oklch(0.14 0.02 265);
