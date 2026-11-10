@@ -23,8 +23,23 @@ if (SMTP_HOST) {
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
       : undefined,
+    // Connexion réutilisée entre les envois, et délais courts : un serveur de messagerie
+    // lent ne doit jamais bloquer l'écran (par défaut, nodemailer attend jusqu'à 2 minutes).
+    pool: true,
+    maxConnections: 2,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 30_000,
   });
+  // Diagnostic visible dans les journaux de l'API, sans bloquer le démarrage.
+  transport.verify()
+    .then(() => console.log(`📧 Messagerie prête (${SMTP_HOST}:${SMTP_PORT})`))
+    .catch((e) => console.error(`📧 Messagerie injoignable (${SMTP_HOST}:${SMTP_PORT}) : ${e.code ?? ''} ${e.message}`));
 }
+
+// Temps maximum d'attente d'un envoi avant de répondre à l'écran : au-delà, l'envoi
+// continue en arrière-plan et l'écran affiche le mot de passe provisoire à transmettre.
+const WAIT_MS = 12_000;
 
 const LOG_DIR = path.resolve('logs/emails');
 
@@ -67,8 +82,17 @@ export function renderEmail({ title, greeting, body, ctaLabel, ctaUrl, footer })
 export async function sendEmail({ to, subject, html }) {
   try {
     if (transport) {
-      await transport.sendMail({ from: FROM, to, subject, html });
-      return { sent: true, via: 'smtp' };
+      const sending = transport.sendMail({ from: FROM, to, subject, html })
+        .then(() => { console.log(`📧 [mail:smtp] envoyé à ${to} — "${subject}"`); return { sent: true, via: 'smtp' }; })
+        .catch((e) => { console.error(`📧 échec d'envoi à ${to} : ${e.code ?? ''} ${e.message}`); return { sent: false, error: e.message }; });
+      const late = new Promise((resolve) => {
+        const t = setTimeout(() => {
+          console.warn(`📧 envoi à ${to} toujours en cours après ${WAIT_MS / 1000} s : il continue en arrière-plan`);
+          resolve({ sent: false, pending: true });
+        }, WAIT_MS);
+        t.unref?.();
+      });
+      return Promise.race([sending, late]);
     }
     if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
     const safe = String(to).replace(/[^a-z0-9@._-]/gi, '_');
