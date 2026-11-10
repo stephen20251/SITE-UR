@@ -5,6 +5,7 @@ import { CONTACT } from "@/lib/contact";
 import { api } from "@/lib/api";
 import { eventImage, type UniversityEvent } from "@/lib/events";
 import { MAP, SITE_FONTS, SitePage, UI, fmtDate, serif, useFacebookUrl } from "@/components/site-layout";
+import { HomeHero } from "@/components/home-hero";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,8 +30,7 @@ const MAP_ROUTE = `https://www.google.com/maps/dir/?api=1&destination=${MAP.lat}
 // Photos de l'université (originaux dans image-UR/, réduites pour le web dans public/images/accueil/)
 const PHOTO = "/images/accueil";
 const IMG = {
-  hero: `${PHOTO}/banniere.jpg`,
-  about: `${PHOTO}/universite.jpg`,
+  about: `${PHOTO}/universite-etudiante.jpg`,
   admissions: `${PHOTO}/admissions.jpg`,
   campus: [
     { title: "Vie étudiante", img: `${PHOTO}/campus-vie-etudiante.jpg` },
@@ -123,36 +123,14 @@ function Home() {
   return (
     <SitePage>
 
-      {/* ── BANNIÈRE ────────────────────────────────────────────────────── */}
-      <section className="relative isolate flex min-h-[calc(100svh-80px)] items-end overflow-hidden bg-black dark:bg-[#0b1120]">
-        <img src={IMG.hero} alt="" className={`absolute inset-0 -z-10 h-full w-full object-cover ${gray} opacity-70`} />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black via-black/40 to-black/10 dark:from-[#0b1120] dark:via-[#0b1120]/50" />
-        <div className="mx-auto w-full max-w-7xl px-4 pb-20 pt-32 sm:px-6 sm:pb-28 lg:px-8">
-          <p className={`${label} text-neutral-300 dark:text-[#f87171]`}>Université Références · Antananarivo</p>
-          <h1 className="mt-6 max-w-4xl text-5xl font-semibold leading-[1.02] text-white sm:text-7xl lg:text-8xl" style={serif}>
-            Apprendre,<br />réussir, s'engager.
-          </h1>
-          <p className="mt-8 max-w-xl text-lg leading-relaxed text-neutral-300">
-            Établissement d'enseignement supérieur à Antananarivo, l'Université Références forme en Gestion, en
-            Informatique et en Anglais des étudiants compétents, responsables et innovants, prêts pour le marché du
-            travail national et international.
-          </p>
-          <div className="mt-10 flex flex-wrap gap-4">
-            <a href="#formations" className="inline-flex items-center gap-2 bg-white px-7 py-3.5 text-sm font-medium tracking-wide text-black transition hover:bg-neutral-200 dark:bg-[#e3262b] dark:text-white dark:hover:bg-[#c81e23]">
-              Découvrir nos formations <ArrowRight className="h-4 w-4" />
-            </a>
-            <a href="/classroom?candidater=1" className="inline-flex items-center gap-2 border border-white/70 px-7 py-3.5 text-sm font-medium tracking-wide text-white transition hover:bg-white hover:text-black">
-              Déposer ma candidature
-            </a>
-          </div>
-        </div>
-      </section>
+      {/* ── BANNIÈRE : trois photos (voir home-hero) ─────────────────────── */}
+      <HomeHero />
 
       {/* ── L'UNIVERSITÉ ────────────────────────────────────────────────── */}
       <section id="universite" className="scroll-mt-20">
         <div className="mx-auto grid max-w-7xl items-center gap-16 px-4 py-28 sm:px-6 lg:grid-cols-2 lg:px-8">
           <div className="relative pb-12">
-            <img src={IMG.about} alt="Étudiants de l'Université Références" className={`aspect-[4/3] w-full object-cover lg:aspect-[5/6] ${gray}`} />
+            <img src={IMG.about} alt="Étudiants de l'Université Références" className={`aspect-[4/3] w-full object-cover object-[75%_center] lg:aspect-[5/6] ${gray}`} />
             <figure className="absolute bottom-0 right-0 max-w-xs bg-black p-7 dark:bg-[#e3262b] sm:-right-8">
               <blockquote className="text-lg italic leading-snug text-white" style={serif}>
                 « Former aujourd'hui les compétences dont Madagascar a besoin demain. »
