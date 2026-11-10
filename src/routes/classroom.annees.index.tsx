@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import {
   Calendar, Plus, ChevronRight, Loader2, Star, Archive,
   Clock, CheckCircle2, BookOpen, Users, GraduationCap,
@@ -229,6 +231,13 @@ function CreateYearDialog({ campusId, onClose }: { campusId: string; onClose: ()
 function AnneesPage() {
   const { user, ready } = useRequireClassroom(["SUPER_ADMIN", "STAFF"]);
   const { data: years, isLoading } = useAcademicYears();
+  // Campus de l'université : nécessaire pour créer la toute première année (aucune année
+  // existante dont on pourrait le reprendre sur une installation neuve).
+  const { data: campuses } = useQuery({
+    queryKey: ["academic", "campuses"],
+    queryFn: () => api<{ id: string; name: string }[]>("/structure/campuses"),
+    staleTime: 5 * 60_000,
+  });
   const [creating, setCreating] = useState(false);
 
   if (!ready || !user) {
@@ -236,7 +245,7 @@ function AnneesPage() {
   }
 
   const activeYear = years?.find((y) => y.isCurrent);
-  const campusId   = years?.[0]?.campusId ?? "";
+  const campusId   = years?.[0]?.campusId ?? campuses?.[0]?.id ?? "";
 
   // Sort: active first, then by startDate desc
   const sorted = [...(years ?? [])].sort((a, b) => {
