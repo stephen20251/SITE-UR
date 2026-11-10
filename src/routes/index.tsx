@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { eventImage, type UniversityEvent } from "@/lib/events";
 import { FACEBOOK_URL, MAP, SITE_FONTS, SitePage, UI, fmtDate, serif, useFacebookUrl } from "@/components/site-layout";
 import { HomeHero } from "@/components/home-hero";
+import { CampusGallery, FaqSection, FinalCta, KeyFacts, Testimonials } from "@/components/home-sections";
 import { MentionPanel } from "@/components/mention-panel";
 import { mediaUrl } from "@/components/online/mooc-card";
 
@@ -61,11 +62,6 @@ const PHOTO = "/images/accueil";
 const IMG = {
   about: `${PHOTO}/universite-etudiante.jpg`,
   admissions: `${PHOTO}/admissions.jpg`,
-  campus: [
-    { title: "Vie étudiante", img: `${PHOTO}/campus-vie-etudiante.jpg` },
-    { title: "Travaux pratiques", img: `${PHOTO}/campus-travaux-pratiques.jpg` },
-    { title: "Esprit d'équipe", img: `${PHOTO}/campus-esprit-equipe.jpg` },
-  ],
 };
 // Photo par faculté (selon son code), sinon la photo générale de l'université.
 const FACULTY_IMG: Record<string, string> = {
@@ -156,6 +152,7 @@ function Home() {
 
       {/* ── BANNIÈRE : trois photos (voir home-hero) ─────────────────────── */}
       <HomeHero />
+      <KeyFacts domains={faculties.length} mentions={faculties.reduce((n, fac) => n + fac.mentions.length, 0)} years={3} />
 
       {/* ── L'UNIVERSITÉ ────────────────────────────────────────────────── */}
       <section id="universite" className="scroll-mt-20">
@@ -313,26 +310,9 @@ function Home() {
         </div>
       </section>
 
-      {/* ── VIE AU CAMPUS ───────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-[#0b1430] to-[#14204a] dark:from-[#0f172a] dark:to-[#0f172a]">
-        <div className="mx-auto max-w-7xl px-4 py-28 sm:px-6 lg:px-8">
-          <div className="grid items-end gap-8 lg:grid-cols-2">
-            <SectionTitle eyebrow="Vie au campus" title="Plus qu'un lieu d'étude." light />
-            <p className="text-lg leading-relaxed text-slate-400">
-              Associations, culture, sport et entraide : ici, chacun trouve sa place et construit son réseau.
-            </p>
-          </div>
-          <div className="mt-16 grid gap-6 md:grid-cols-3">
-            {IMG.campus.map((c) => (
-              <div key={c.title} className="group relative overflow-hidden">
-                <img src={c.img} alt="" className={`aspect-[4/5] w-full object-cover ${gray} opacity-80 transition duration-700 group-hover:scale-[1.03] group-hover:opacity-100`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b1430]/80 via-transparent to-transparent" />
-                <h3 className="absolute bottom-6 left-6 text-2xl font-semibold text-white" style={serif}>{c.title}</h3>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── VIE AU CAMPUS (galerie) et TÉMOIGNAGES (administration) ──────── */}
+      <CampusGallery />
+      <Testimonials />
 
       {/* ── PAR OÙ COMMENCER ────────────────────────────────────────────── */}
       <section id="contact" className="scroll-mt-20">
@@ -356,6 +336,9 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── QUESTIONS FRÉQUENTES (administration, masquée si vide) ───────── */}
+      <FaqSection />
 
       {/* ── ADRESSE ─────────────────────────────────────────────────────── */}
       <section id="adresse" className="scroll-mt-20 bg-slate-50 dark:bg-[#0f172a]">
@@ -387,6 +370,8 @@ function Home() {
         </div>
       </section>
 
+      {/* ── APPEL FINAL ─────────────────────────────────────────────────── */}
+      <FinalCta />
     </SitePage>
   );
 }

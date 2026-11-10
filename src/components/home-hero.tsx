@@ -94,7 +94,7 @@ export function HomeHero() {
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0b1430] via-[#0b1430]/40 to-[#0b1430]/20 dark:from-[#0b1120] dark:via-[#0b1120]/50" />
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#0b1430]/50 to-transparent" />
 
-      <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-32 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl px-4 pb-24 pt-32 sm:px-6 lg:px-8">
         {/* Texte de la photo affichée (réanimé à chaque changement) */}
         <div key={`texte-${index}`} className="max-w-4xl" aria-live="polite">
           <p className={`${UI.label} text-[#fca5a5] motion-safe:animate-[hero-rise_0.9s_ease-out_both]`}>{slide.eyebrow}</p>
