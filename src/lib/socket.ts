@@ -23,7 +23,9 @@ export function getSocket(): Socket | null {
   if (!socket) {
     socket = io(SOCKET_URL, {
       auth: { token },
-      transports: ["websocket", "polling"],
+      // HTTP (polling) d'abord, puis WebSocket si l'hébergeur l'accepte : Hostinger
+      // (applications Node.js) refuse les WebSocket entrants, le polling fonctionne partout.
+      transports: ["polling", "websocket"],
       autoConnect: true,
     });
     socket.on("connect", () => setConnected(true));
