@@ -298,6 +298,16 @@ model Mention {
   level        String?  @db.Text
   duration     Int?
   description  String?  @db.Text
+  // Présentation publique (fenêtre de détail sur l'accueil), remplie par l'administration.
+  // Listes : un élément par ligne.
+  tagline      String?  @db.Text // phrase d'accroche
+  imageUrl     String?  @db.Text // photo de la mention
+  diploma      String?  @db.Text // diplôme délivré
+  studyModes   String?  @db.Text // modalités (ex. présentiel et en ligne)
+  objectives   String?  @db.Text // objectifs de la formation
+  skills       String?  @db.Text // compétences acquises
+  careers      String?  @db.Text // débouchés
+  admission    String?  @db.Text // conditions d'admission
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

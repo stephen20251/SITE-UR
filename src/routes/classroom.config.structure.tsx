@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Loader2, ChevronRight, Building2, BookOpen, GraduationCap, X, AlertCircle } from "lucide-react";
+import { Plus, Loader2, ChevronRight, Building2, BookOpen, GraduationCap, X, AlertCircle, Pencil, ImageIcon } from "lucide-react";
+import { MentionEditor } from "@/components/classroom/mention-editor";
 import { toast } from "sonner";
 import {
   useFaculties, useDepartments, useMentions, useParcours,
@@ -219,9 +220,12 @@ function MentionsSection() {
   const { data: mentions, isLoading } = useMentions();
   const create = useCreateMention();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Mention | null>(null);
   const [filterDeptId, setFilterDeptId] = useState<string>("all");
 
   const filtered = mentions?.filter((m) => filterDeptId === "all" || m.departmentId === filterDeptId) ?? [];
+  // Présentation publique renseignée ? (fenêtre de détail de l'accueil)
+  const presented = (m: Mention) => [m.tagline, m.description, m.objectives, m.skills, m.careers, m.admission].filter((v) => v?.trim()).length;
 
   const LEVELS = ["Licence", "Master", "Doctorat"];
 
@@ -259,11 +263,19 @@ function MentionsSection() {
                 <p className="font-medium truncate">{m.name}</p>
                 <p className="text-xs text-muted-foreground">{m.code} · {m.level} · {m.duration} an{m.duration > 1 ? "s" : ""}</p>
               </div>
-              <span className="shrink-0 text-xs text-muted-foreground">{m.department?.name}</span>
+              <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{m.department?.name}</span>
+              <span className={`hidden shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium md:inline-flex ${presented(m) >= 3 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" : "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"}`}
+                title="Contenu affiché sur la page d'accueil au clic sur la mention">
+                {m.imageUrl && <ImageIcon size={11} />} {presented(m) >= 3 ? "Présentation complète" : "Présentation à compléter"}
+              </span>
+              <button onClick={() => setEditing(m)} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium hover:bg-accent">
+                <Pencil size={12} /> Modifier
+              </button>
             </div>
           ))
         )}
       </div>
+      {editing && <MentionEditor mention={editing} onClose={() => setEditing(null)} />}
       {open && (
         <AddDialog
           title="Nouvelle mention"

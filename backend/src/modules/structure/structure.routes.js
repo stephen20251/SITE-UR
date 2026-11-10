@@ -1,10 +1,37 @@
 import { Router } from 'express'
+import path from 'path'
+import fs from 'fs'
+import multer from 'multer'
 import { authenticate } from '../../middlewares/auth.js'
 import { requirePermission } from '../../middlewares/rbac.js'
-import { asyncHandler } from '../../utils/asyncHandler.js'
+import { asyncHandler, HttpError } from '../../utils/asyncHandler.js'
+import { prisma } from '../../database/prisma.js'
+import { uploadsPath, fileFromUploadUrl } from '../../config/paths.js'
 import * as svc from './structure.service.js'
 
 const r = Router()
+
+// Photo d'une mention (fenêtre de détail de l'accueil)
+const MENTION_DIR = uploadsPath('mentions')
+const mentionUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => { fs.mkdirSync(MENTION_DIR, { recursive: true }); cb(null, MENTION_DIR) },
+    filename: (req, file, cb) => cb(null, `${req.params.id}-${Date.now()}${path.extname(file.originalname).toLowerCase() || '.jpg'}`),
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) cb(null, true)
+    else cb(new HttpError(400, 'Image JPEG, PNG ou WebP uniquement'))
+  },
+})
+const removeMentionImage = (url) => {
+  if (url?.startsWith('/uploads/mentions/')) fs.unlink(fileFromUploadUrl(url) ?? '', () => {})
+}
+async function findMention(id) {
+  const m = await prisma.mention.findUnique({ where: { id } })
+  if (!m) throw new HttpError(404, 'Mention introuvable')
+  return m
+}
 r.use(authenticate)
 
 // Campus
@@ -27,6 +54,20 @@ r.get('/mentions',                   asyncHandler(svc.listMentions))
 r.post('/mentions',                  requirePermission('MANAGE_MENTION'), asyncHandler(svc.createMention))
 r.put('/mentions/:id',               requirePermission('MANAGE_MENTION'), asyncHandler(svc.updateMention))
 r.delete('/mentions/:id',            requirePermission('MANAGE_MENTION'), asyncHandler(svc.deleteMention))
+r.post('/mentions/:id/image', requirePermission('MANAGE_MENTION'), asyncHandler(async (req, res, next) => {
+  await findMention(req.params.id)
+  next()
+}), mentionUpload.single('image'), asyncHandler(async (req, res) => {
+  if (!req.file) throw new HttpError(400, 'Aucune image fournie')
+  const current = await findMention(req.params.id)
+  removeMentionImage(current.imageUrl)
+  res.json(await prisma.mention.update({ where: { id: current.id }, data: { imageUrl: `/uploads/mentions/${req.file.filename}` } }))
+}))
+r.delete('/mentions/:id/image', requirePermission('MANAGE_MENTION'), asyncHandler(async (req, res) => {
+  const current = await findMention(req.params.id)
+  removeMentionImage(current.imageUrl)
+  res.json(await prisma.mention.update({ where: { id: current.id }, data: { imageUrl: null } }))
+}))
 
 // Parcours
 r.get('/parcours',                   asyncHandler(svc.listParcours))

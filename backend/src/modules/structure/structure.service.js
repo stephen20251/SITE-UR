@@ -60,12 +60,33 @@ export const listMentions = async (req, res) => {
   })
   res.json(data)
 }
+// Champs modifiables d'une mention, dont sa présentation publique (fenêtre de détail de l'accueil).
+const MENTION_TEXT_FIELDS = ['name', 'code', 'level', 'description', 'tagline', 'diploma', 'studyModes', 'objectives', 'skills', 'careers', 'admission']
+function mentionInput(b = {}, { create = false } = {}) {
+  const data = {}
+  for (const k of MENTION_TEXT_FIELDS) {
+    if (b[k] === undefined) continue
+    const v = b[k] === null ? null : String(b[k]).trim().slice(0, 8000)
+    data[k] = v || null
+  }
+  if (b.duration !== undefined) {
+    const n = Number(b.duration)
+    if (!Number.isInteger(n) || n < 1 || n > 10) throw new HttpError(400, 'Durée invalide (1 à 10 ans)')
+    data.duration = n
+  }
+  if (b.departmentId !== undefined) data.departmentId = String(b.departmentId)
+  if (b.isActive !== undefined) data.isActive = Boolean(b.isActive)
+  if ('name' in data && !data.name) throw new HttpError(400, 'Le nom de la mention est obligatoire')
+  if ('code' in data && !data.code) throw new HttpError(400, 'Le code de la mention est obligatoire')
+  if (create && (!data.name || !data.code || !data.departmentId)) throw new HttpError(400, 'Nom, code et département sont obligatoires')
+  return data
+}
 export const createMention = async (req, res) => {
-  const mention = await prisma.mention.create({ data: req.body })
+  const mention = await prisma.mention.create({ data: mentionInput(req.body, { create: true }) })
   res.status(201).json(mention)
 }
 export const updateMention = async (req, res) => {
-  const mention = await prisma.mention.update({ where: { id: req.params.id }, data: req.body })
+  const mention = await prisma.mention.update({ where: { id: req.params.id }, data: mentionInput(req.body) })
   res.json(mention)
 }
 export const deleteMention = async (req, res) => {

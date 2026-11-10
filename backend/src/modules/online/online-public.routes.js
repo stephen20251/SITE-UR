@@ -51,7 +51,7 @@ r.get('/home', asyncHandler(async (req, res) => {
       orderBy: { name: 'asc' },
       select: {
         id: true, name: true, code: true,
-        departments: { select: { name: true, mentions: { where: { isActive: true }, select: { id: true, name: true, description: true } } } },
+        departments: { select: { name: true, mentions: { where: { isActive: true }, select: { id: true, name: true, description: true, tagline: true, imageUrl: true } } } },
       },
     }),
     prisma.announcement.findMany({
@@ -72,6 +72,45 @@ r.get('/home', asyncHandler(async (req, res) => {
     faculties: faculties.map((f) => ({ id: f.id, name: f.name, code: f.code, mentions: f.departments.flatMap((d) => d.mentions) })),
     news: news.map((n) => ({ ...n, content: n.content.slice(0, 220) })),
     latestCourses: latest,
+  });
+}));
+
+// Détail public d'une mention (fenêtre de l'accueil) : présentation saisie par
+// l'administration, parcours, et programme par année (plan de cursus).
+const LEVEL_ORDER = ['L1', 'L2', 'L3', 'M1', 'M2'];
+r.get('/mentions/:id', asyncHandler(async (req, res) => {
+  const m = await prisma.mention.findFirst({
+    where: { id: req.params.id, isActive: true },
+    select: {
+      id: true, name: true, code: true, level: true, duration: true, description: true,
+      tagline: true, imageUrl: true, diploma: true, studyModes: true,
+      objectives: true, skills: true, careers: true, admission: true,
+      department: { select: { faculty: { select: { name: true, code: true } } } },
+      parcours: { where: { isActive: true }, select: { id: true, name: true, description: true }, orderBy: { name: 'asc' } },
+      curriculumEntries: { select: { level: true, month: true, title: true, order: true }, orderBy: [{ month: 'asc' }, { order: 'asc' }] },
+    },
+  });
+  if (!m) return res.status(404).json({ error: 'Mention introuvable' });
+  const lines = (s) => (s ?? '').split(/\r?\n/).map((x) => x.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
+  const byLevel = new Map();
+  for (const e of m.curriculumEntries) {
+    const semester = e.month <= 4 ? 1 : 2;
+    const key = e.level;
+    if (!byLevel.has(key)) byLevel.set(key, { level: key, semesters: { 1: [], 2: [] } });
+    const list = byLevel.get(key).semesters[semester];
+    if (!list.includes(e.title)) list.push(e.title);
+  }
+  const program = [...byLevel.values()]
+    .sort((a, b) => LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level))
+    .map((y) => ({ level: y.level, semesters: [1, 2].map((s) => ({ semester: s, courses: y.semesters[s] })).filter((s) => s.courses.length) }));
+  res.json({
+    id: m.id, name: m.name, code: m.code, level: m.level, duration: m.duration,
+    description: m.description, tagline: m.tagline, imageUrl: m.imageUrl,
+    diploma: m.diploma, studyModes: m.studyModes, admission: m.admission,
+    objectives: lines(m.objectives), skills: lines(m.skills), careers: lines(m.careers),
+    domain: m.department?.faculty ?? null,
+    parcours: m.parcours,
+    program,
   });
 }));
 

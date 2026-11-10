@@ -47,6 +47,15 @@ export type Mention = {
   duration: number;
   isActive: boolean;
   description?: string | null;
+  // Présentation publique (fenêtre de détail de l'accueil) ; listes : une ligne par élément
+  tagline?: string | null;
+  imageUrl?: string | null;
+  diploma?: string | null;
+  studyModes?: string | null;
+  objectives?: string | null;
+  skills?: string | null;
+  careers?: string | null;
+  admission?: string | null;
   department?: {
     id: string;
     name: string;
@@ -269,6 +278,18 @@ export function useCreateMention() {
   return useMutation({
     mutationFn: (data: { name: string; code: string; departmentId: string; level: string; duration: number; description?: string }) =>
       api<Mention>("/structure/mentions", { method: "POST", body: data }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: yk.mentions }),
+  });
+}
+
+export type MentionInput = Partial<Pick<Mention,
+  "name" | "code" | "level" | "duration" | "description" | "tagline" | "diploma" | "studyModes" | "objectives" | "skills" | "careers" | "admission">>;
+
+export function useUpdateMention() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: MentionInput }) =>
+      api<Mention>(`/structure/mentions/${id}`, { method: "PUT", body: data }),
     onSuccess: () => qc.invalidateQueries({ queryKey: yk.mentions }),
   });
 }

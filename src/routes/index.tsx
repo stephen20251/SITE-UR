@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, ArrowUpRight, Building2, Facebook, GraduationCap, Handshake, Lightbulb, Mail, MapPin, MonitorPlay, Navigation, Phone, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { CONTACT } from "@/lib/contact";
@@ -6,6 +7,8 @@ import { api } from "@/lib/api";
 import { eventImage, type UniversityEvent } from "@/lib/events";
 import { MAP, SITE_FONTS, SitePage, UI, fmtDate, serif, useFacebookUrl } from "@/components/site-layout";
 import { HomeHero } from "@/components/home-hero";
+import { MentionPanel } from "@/components/mention-panel";
+import { mediaUrl } from "@/components/online/mooc-card";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,7 +24,7 @@ export const Route = createFileRoute("/")({
 // Page d'accueil. Thème clair (noir et blanc) ou sombre (bleu nuit et rouge) : voir SitePage.
 
 type HomeData = {
-  faculties: { id: string; name: string; code: string; mentions: { id: string; name: string; description: string | null }[] }[];
+  faculties: { id: string; name: string; code: string; mentions: { id: string; name: string; description: string | null; tagline: string | null; imageUrl: string | null }[] }[];
 };
 
 const MAP_EMBED = `https://www.google.com/maps?q=${MAP.lat},${MAP.lng}&hl=fr&z=17&output=embed`;
@@ -119,6 +122,8 @@ function Home() {
   });
   const faculties = [...(data?.faculties ?? [])].sort((a, b) => facultyRank(a.code) - facultyRank(b.code) || a.name.localeCompare(b.name));
   const eventList = (events.data ?? []).slice(0, 3);
+  // Mention ouverte dans la fenêtre de détail
+  const [openMention, setOpenMention] = useState<{ id: string; image: string } | null>(null);
 
   return (
     <SitePage>
@@ -171,23 +176,36 @@ function Home() {
             <p className={`max-w-md ${textColor}`}>Trois mentions, accessibles en présentiel ou en ligne.</p>
           </div>
           <div className="mt-16 grid gap-px bg-neutral-200 dark:bg-white/10 md:grid-cols-3">
-            {faculties.map((f) => (
-              <article key={f.id} className="group flex flex-col bg-white dark:bg-[#162036]">
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img src={FACULTY_IMG[f.code] ?? FACULTY_FALLBACK} alt="" className={`h-full w-full object-cover ${gray} transition duration-700 group-hover:scale-[1.03]`} />
-                </div>
-                <div className="flex flex-1 flex-col p-8">
-                  <p className={`${label} text-neutral-400 dark:text-[#f87171]`}>{f.name}</p>
-                  {f.mentions.length === 0 && <p className="mt-4 text-sm italic text-neutral-500 dark:text-slate-400">Mentions en préparation.</p>}
-                  {f.mentions.map((m) => (
-                    <div key={m.id} className="mt-4">
-                      <h3 className={`text-2xl font-semibold ${titleColor}`} style={serif}>{m.name}</h3>
-                      <p className={`mt-3 text-sm leading-relaxed ${textColor}`}>{MENTION_TEXT[m.name] ?? m.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            ))}
+            {faculties.map((f) => {
+              // Photo : celle de la mention (administration), sinon celle du domaine.
+              const first = f.mentions[0];
+              const image = (first?.imageUrl && mediaUrl(first.imageUrl)) || FACULTY_IMG[f.code] || FACULTY_FALLBACK;
+              const open = (id: string) => setOpenMention({ id, image });
+              return (
+                <article key={f.id} className="group flex flex-col bg-white dark:bg-[#162036]">
+                  <button type="button" disabled={!first} onClick={() => first && open(first.id)} tabIndex={-1} aria-hidden
+                    className="relative aspect-[4/3] overflow-hidden enabled:cursor-pointer">
+                    <img src={image} alt="" className={`h-full w-full object-cover ${gray} transition duration-700 group-hover:scale-[1.03]`} />
+                    <span className="absolute inset-0 bg-black/0 transition duration-500 group-hover:bg-black/10" />
+                  </button>
+                  <div className="flex flex-1 flex-col p-8">
+                    <p className={`${label} text-neutral-400 dark:text-[#f87171]`}>{f.name}</p>
+                    {f.mentions.length === 0 && <p className="mt-4 text-sm italic text-neutral-500 dark:text-slate-400">Mentions en préparation.</p>}
+                    {f.mentions.map((m) => (
+                      <button key={m.id} type="button" onClick={() => open(m.id)} aria-haspopup="dialog"
+                        className="group/m mt-4 flex flex-1 flex-col text-left">
+                        <h3 className={`text-2xl font-semibold ${titleColor}`} style={serif}>{m.name}</h3>
+                        <p className={`mt-3 line-clamp-4 text-sm leading-relaxed ${textColor}`}>{m.tagline || MENTION_TEXT[m.name] || m.description}</p>
+                        <span className={`mt-auto inline-flex items-center gap-2 pt-6 ${label} !text-[10px] text-black dark:text-[#f87171]`}>
+                          <span className="border-b border-transparent pb-0.5 transition group-hover/m:border-current">Découvrir la mention</span>
+                          <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/m:translate-x-1" />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </article>
+              );
+            })}
           </div>
           <div className="mt-14 flex flex-wrap gap-4">
             <a href="/classroom?candidater=1" className={btnDark}><UserPlus className="h-4 w-4" /> Déposer ma candidature</a>
@@ -244,6 +262,10 @@ function Home() {
           <img src={IMG.admissions} alt="Étudiante de l'Université Références" className={`aspect-[4/5] w-full object-cover object-[70%_center] ${gray}`} />
         </div>
       </section>
+
+      {openMention && (
+        <MentionPanel mentionId={openMention.id} fallbackImage={openMention.image} onClose={() => setOpenMention(null)} />
+      )}
 
       {/* ── AGENDA ──────────────────────────────────────────────────────── */}
       <section id="actualites" className={`scroll-mt-20 ${UI.altBg}`}>
