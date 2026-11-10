@@ -45,3 +45,6 @@ backend/private-uploads/
 
 # Sauvegardes de la base (contiennent les comptes et les mots de passe hachés)
 backend/backups/
+
+# Photos originales (lourdes) : seules les versions réduites de public/images/ sont publiées
+image-UR/

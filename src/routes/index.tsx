@@ -29,22 +29,24 @@ type HomeData = {
 const MAP_EMBED = `https://www.google.com/maps?q=${MAP.lat},${MAP.lng}&hl=fr&z=17&output=embed`;
 const MAP_ROUTE = `https://www.google.com/maps/dir/?api=1&destination=${MAP.lat},${MAP.lng}`;
 
+// Photos de l'université (originaux dans image-UR/, réduites pour le web dans public/images/accueil/)
+const PHOTO = "/images/accueil";
 const IMG = {
-  hero: "/hero-diplomes.png",
-  about: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1000&auto=format&fit=crop&q=85",
+  hero: `${PHOTO}/banniere.jpg`,
+  about: `${PHOTO}/universite.jpg`,
   campus: [
-    { title: "Vie étudiante", img: "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=900&auto=format&fit=crop&q=85" },
-    { title: "Culture", img: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=900&auto=format&fit=crop&q=85" },
-    { title: "Sport", img: "https://images.unsplash.com/photo-1562774053-701939374585?w=900&auto=format&fit=crop&q=85" },
+    { title: "Vie étudiante", img: `${PHOTO}/campus-vie-etudiante.jpg` },
+    { title: "Travaux pratiques", img: `${PHOTO}/campus-travaux-pratiques.jpg` },
+    { title: "Esprit d'équipe", img: `${PHOTO}/campus-esprit-equipe.jpg` },
   ],
 };
-// Visuel par faculté (selon son code), sinon visuel générique.
+// Photo par faculté (selon son code), sinon la photo générale de l'université.
 const FACULTY_IMG: Record<string, string> = {
-  "FAC-ST": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=900&auto=format&fit=crop&q=85",
-  "FAC-SEG": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=900&auto=format&fit=crop&q=85",
-  "FAC-LL": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=900&auto=format&fit=crop&q=85",
+  "FAC-SEG": `${PHOTO}/mention-gestion.jpg`,
+  "FAC-ST": `${PHOTO}/mention-informatique.jpg`,
+  "FAC-LL": `${PHOTO}/mention-anglais.jpg`,
 };
-const FACULTY_FALLBACK = "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=900&auto=format&fit=crop&q=85";
+const FACULTY_FALLBACK = IMG.about;
 // Ordre d'affichage : Gestion, Informatique, puis Langues (Anglais) ; les autres ensuite.
 const FACULTY_ORDER = ["FAC-SEG", "FAC-ST", "FAC-LL"];
 const facultyRank = (code: string) => { const i = FACULTY_ORDER.indexOf(code); return i === -1 ? FACULTY_ORDER.length : i; };
