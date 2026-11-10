@@ -13,7 +13,7 @@ export const Route = createFileRoute("/actualites/")({
       { title: "Actualités — Université Références" },
       { name: "description", content: "Annonces officielles, événements, conférences, soutenances, publications scientifiques et vie de l'Université Références." },
     ],
-    links: [{ rel: "stylesheet", href: SITE_FONTS }],
+    links: [{ rel: "stylesheet", href: SITE_FONTS }, { rel: "canonical", href: "https://univreference.com/actualites" }],
   }),
   component: NewsHome,
 });

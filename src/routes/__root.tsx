@@ -17,6 +17,9 @@ import { SocketManager } from "../components/socket-manager";
 import { Toaster } from "../components/ui/sonner";
 import { isThemedPath, THEME_BOOT_SCRIPT, useSiteTheme } from "../components/site-layout";
 
+// Adresse officielle du site (référencement, aperçus de partage)
+const SITE_URL = "https://univreference.com";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -58,7 +61,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Université Références" },
       { property: "og:description", content: "Étudier à Antananarivo ou en ligne : Gestion, Informatique et Anglais." },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Université Références" },
+      { property: "og:locale", content: "fr_FR" },
+      { property: "og:image", content: `${SITE_URL}/images/partage.jpg` },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: `${SITE_URL}/images/partage.jpg` },
       { name: "theme-color", content: "#3b2d8f" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "UR Online" },
@@ -67,6 +76,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
+      { rel: "icon", type: "image/png", sizes: "96x96", href: "/icons/favicon-96.png" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/icon-192.png" },
       { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },

@@ -1,7 +1,7 @@
 {
-  "name": "UR Online — Université Références",
-  "short_name": "UR Online",
-  "description": "Plateforme d'apprentissage en ligne : cours, sessions live, quiz et certificats vérifiables.",
+  "name": "Université Références",
+  "short_name": "Univ. Références",
+  "description": "Université Références, Antananarivo : Gestion, Informatique et Anglais, en présentiel et en ligne.",
   "lang": "fr",
   "start_url": "/online",
   "scope": "/",

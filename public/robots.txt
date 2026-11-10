@@ -1,0 +1,14 @@
+# Université Références — https://univreference.com
+User-agent: *
+Allow: /
+# Espaces privés (connexion requise) : inutile de les indexer
+Disallow: /classroom/
+Disallow: /erp/
+Disallow: /online/dashboard
+Disallow: /online/teacher
+Disallow: /online/admin
+Disallow: /online/profile
+Disallow: /online/chat
+Disallow: /reinitialiser-mot-de-passe
+
+Sitemap: https://univreference.com/sitemap.xml

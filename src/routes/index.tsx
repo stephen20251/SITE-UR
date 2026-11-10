@@ -5,7 +5,7 @@ import { ArrowRight, ArrowUpRight, Building2, Facebook, GraduationCap, Handshake
 import { CONTACT } from "@/lib/contact";
 import { api } from "@/lib/api";
 import { eventImage, type UniversityEvent } from "@/lib/events";
-import { MAP, SITE_FONTS, SitePage, UI, fmtDate, serif, useFacebookUrl } from "@/components/site-layout";
+import { FACEBOOK_URL, MAP, SITE_FONTS, SitePage, UI, fmtDate, serif, useFacebookUrl } from "@/components/site-layout";
 import { HomeHero } from "@/components/home-hero";
 import { MentionPanel } from "@/components/mention-panel";
 import { mediaUrl } from "@/components/online/mooc-card";
@@ -15,11 +15,37 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Université Références — Antananarivo" },
       { name: "description", content: "Université Références, à Antananarivo : formations en Gestion, en Informatique et en Anglais, en présentiel et en ligne." },
+      { property: "og:url", content: "https://univreference.com/" },
     ],
-    links: [{ rel: "stylesheet", href: SITE_FONTS }],
+    links: [
+      { rel: "stylesheet", href: SITE_FONTS },
+      { rel: "canonical", href: "https://univreference.com/" },
+    ],
+    // Fiche d'identité lue par Google (nom, logo, adresse, contact, réseaux)
+    scripts: [{ type: "application/ld+json", children: JSON.stringify(ORGANIZATION_LD) }],
   }),
   component: Home,
 });
+
+const ORGANIZATION_LD = {
+  "@context": "https://schema.org",
+  "@type": "CollegeOrUniversity",
+  name: "Université Références",
+  alternateName: ["University Reference", "University Références", "UR"],
+  url: "https://univreference.com/",
+  logo: "https://univreference.com/icons/icon-512.png",
+  image: "https://univreference.com/images/partage.jpg",
+  description: "Établissement d'enseignement supérieur à Antananarivo : Gestion, Informatique et Anglais, en présentiel et en ligne.",
+  email: CONTACT.email,
+  telephone: CONTACT.phone,
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: CONTACT.address,
+    addressLocality: "Antananarivo",
+    addressCountry: "MG",
+  },
+  sameAs: [FACEBOOK_URL],
+};
 
 // Page d'accueil. Thème clair (noir et blanc) ou sombre (bleu nuit et rouge) : voir SitePage.
 
