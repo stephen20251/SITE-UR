@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ArrowUpRight, Building2, Facebook, Mail, MapPin, MonitorPlay, Navigation, Phone, UserPlus } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Building2, Facebook, GraduationCap, Handshake, Lightbulb, Mail, MapPin, MonitorPlay, Navigation, Phone, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { CONTACT } from "@/lib/contact";
 import { api } from "@/lib/api";
 import { eventImage, type UniversityEvent } from "@/lib/events";
@@ -31,6 +31,7 @@ const PHOTO = "/images/accueil";
 const IMG = {
   hero: `${PHOTO}/banniere.jpg`,
   about: `${PHOTO}/universite.jpg`,
+  admissions: `${PHOTO}/admissions.jpg`,
   campus: [
     { title: "Vie étudiante", img: `${PHOTO}/campus-vie-etudiante.jpg` },
     { title: "Travaux pratiques", img: `${PHOTO}/campus-travaux-pratiques.jpg` },
@@ -53,6 +54,21 @@ const MENTION_TEXT: Record<string, string> = {
   Informatique: "Programmation, développement web, bases de données et réseaux : une formation pratique, projet après projet.",
   Anglais: "Langue, communication et culture anglophones : pour l'enseignement, la traduction, le tourisme et les échanges internationaux.",
 };
+
+// Valeurs de l'université (dépliant officiel)
+const VALUES = [
+  { Icon: GraduationCap, t: "Excellence académique", d: "Des exigences élevées, au service de la réussite." },
+  { Icon: ShieldCheck, t: "Intégrité", d: "L'honnêteté et la rigueur dans chaque travail." },
+  { Icon: Lightbulb, t: "Innovation", d: "Des méthodes et des outils tournés vers l'avenir." },
+  { Icon: Handshake, t: "Respect", d: "Une communauté où chacun trouve sa place." },
+  { Icon: Users, t: "Esprit d'équipe", d: "Apprendre ensemble, réussir ensemble." },
+];
+// Étapes de la candidature
+const STEPS = [
+  { t: "Candidature en ligne", d: "Créez votre dossier et choisissez votre mention, en quelques minutes." },
+  { t: "Étude du dossier", d: "Le secrétariat des admissions examine votre candidature et vous répond." },
+  { t: "Inscription", d: "Une fois admis, finalisez votre inscription et préparez votre rentrée." },
+];
 
 // Classes de style partagées avec les autres pages publiques (voir site-layout).
 const { photo: gray, label, eyebrow: eyebrowColor, title: titleColor, text: textColor, btnDark, btnLine } = UI;
@@ -117,9 +133,9 @@ function Home() {
             Apprendre,<br />réussir, s'engager.
           </h1>
           <p className="mt-8 max-w-xl text-lg leading-relaxed text-neutral-300">
-            L'Université Références forme ses étudiants en Gestion, en Informatique et en Anglais, en présentiel à
-            Antananarivo ou à distance. Chaque étudiant est suivi de près : cours, notes, présences et écolage, avec ses
-            parents informés à chaque étape.
+            Établissement d'enseignement supérieur à Antananarivo, l'Université Références forme en Gestion, en
+            Informatique et en Anglais des étudiants compétents, responsables et innovants, prêts pour le marché du
+            travail national et international.
           </p>
           <div className="mt-10 flex flex-wrap gap-4">
             <a href="#formations" className="inline-flex items-center gap-2 bg-white px-7 py-3.5 text-sm font-medium tracking-wide text-black transition hover:bg-neutral-200 dark:bg-[#e3262b] dark:text-white dark:hover:bg-[#c81e23]">
@@ -144,17 +160,17 @@ function Home() {
             </figure>
           </div>
           <div>
-            <SectionTitle eyebrow="L'Université" title="Une université exigeante et proche de ses étudiants" />
+            <SectionTitle eyebrow="L'Université" title="Une formation exigeante, tournée vers l'emploi" />
             <p className={`mt-8 text-lg leading-relaxed ${textColor}`}>
-              Installée à Antananarivo, l'Université Références réunit trois facultés : Sciences Économiques et de
-              Gestion, Sciences et Technologies, Lettres et Langues. Nos enseignants, docteurs et professeurs,
-              accompagnent chaque promotion du premier semestre jusqu'au diplôme.
+              Notre ambition : offrir un enseignement moderne, pratique et accessible, qui permet à chaque étudiant de
+              développer pleinement son potentiel académique et professionnel. L'université réunit trois facultés :
+              Sciences Économiques et de Gestion, Sciences et Technologies, Lettres et Langues.
             </p>
             <dl className="mt-10 divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-white/10 dark:border-white/10">
               {[
-                ["01", "Deux façons d'étudier", "En salle sur le campus, ou en ligne avec vidéos, documents et tests."],
-                ["02", "Un corps enseignant qualifié", "Étudiants et parents consultent les titres et les CV des enseignants."],
-                ["03", "Une scolarité transparente", "Notes, présences et écolage consultables en ligne, par l'étudiant comme par ses parents."],
+                ["01", "Une pédagogie innovante", "Projets, travaux pratiques et études de cas : on apprend en faisant."],
+                ["02", "Des enseignants expérimentés", "Ils allient exigence académique et connaissance du monde professionnel."],
+                ["03", "Des diplômés prêts pour l'emploi", "Des compétences recherchées, au niveau national comme à l'international."],
               ].map(([n, t, d]) => (
                 <div key={n} className="flex gap-6 py-5">
                   <dt className="text-sm text-neutral-400 dark:text-[#f87171]" style={serif}>{n}</dt>
@@ -202,8 +218,57 @@ function Home() {
         </div>
       </section>
 
+      {/* ── POURQUOI NOUS CHOISIR : devise et valeurs ───────────────────── */}
+      <section className="bg-black dark:bg-[#0f172a]">
+        <div className="mx-auto max-w-7xl px-4 py-28 sm:px-6 lg:px-8">
+          <p className={`${label} text-neutral-400 dark:text-[#f87171]`}>Pourquoi l'Université Références</p>
+          <blockquote className="mt-6 max-w-4xl text-4xl font-semibold leading-[1.1] text-white sm:text-6xl" style={serif}>
+            « Investir le présent, gagner l'avenir. »
+          </blockquote>
+          <p className="mt-8 max-w-2xl text-lg leading-relaxed text-neutral-400">
+            Former des professionnels qualifiés grâce à une pédagogie innovante, des enseignants expérimentés et un
+            accompagnement personnalisé.
+          </p>
+          <div className="mt-16 grid gap-px bg-white/10 sm:grid-cols-2 lg:grid-cols-5">
+            {VALUES.map(({ Icon, t, d }) => (
+              <div key={t} className="bg-black p-8 dark:bg-[#0f172a] sm:last:col-span-2 lg:last:col-span-1">
+                <Icon className="h-7 w-7 text-white dark:text-[#f87171]" strokeWidth={1.25} />
+                <h3 className="mt-6 text-xl font-semibold text-white" style={serif}>{t}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-neutral-400">{d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── ADMISSIONS : la candidature en trois étapes ─────────────────── */}
+      <section id="admissions" className="scroll-mt-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-16 px-4 py-28 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:px-8">
+          <div>
+            <SectionTitle eyebrow="Admissions" title="Rejoindre l'Université Références" />
+            <p className={`mt-8 max-w-xl text-lg leading-relaxed ${textColor}`}>La candidature se fait entièrement en ligne, en trois étapes.</p>
+            <ol className="mt-12 space-y-10">
+              {STEPS.map((s, i) => (
+                <li key={s.t} className="flex gap-8">
+                  <span className="w-12 shrink-0 text-5xl font-semibold leading-none text-neutral-300 dark:text-[#e3262b]" style={serif}>{i + 1}</span>
+                  <div className="border-t border-neutral-200 pt-4 dark:border-white/10">
+                    <h3 className={`text-xl font-semibold ${titleColor}`} style={serif}>{s.t}</h3>
+                    <p className={`mt-2 text-sm leading-relaxed ${textColor}`}>{s.d}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-12 flex flex-wrap gap-4">
+              <a href="/classroom?candidater=1" className={btnDark}><UserPlus className="h-4 w-4" /> Déposer ma candidature</a>
+              <a href="#adresse" className={btnLine}>Une question ? Contactez-nous</a>
+            </div>
+          </div>
+          <img src={IMG.admissions} alt="Étudiante de l'Université Références" className={`aspect-[4/5] w-full object-cover object-[70%_center] ${gray}`} />
+        </div>
+      </section>
+
       {/* ── AGENDA ──────────────────────────────────────────────────────── */}
-      <section id="actualites" className="scroll-mt-20">
+      <section id="actualites" className={`scroll-mt-20 ${UI.altBg}`}>
         <div className="mx-auto max-w-7xl px-4 py-28 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
@@ -270,7 +335,7 @@ function Home() {
       <section id="adresse" className="scroll-mt-20 bg-neutral-50 dark:bg-[#0f172a]">
         <div className="mx-auto grid max-w-7xl gap-12 px-4 py-28 sm:px-6 lg:grid-cols-[1fr_1.6fr] lg:px-8">
           <div className="flex flex-col justify-center">
-            <SectionTitle eyebrow="Adresse" title="Nous trouver" />
+            <SectionTitle eyebrow="Contact" title="Nous trouver" />
             <ul className="mt-8 space-y-4 text-neutral-700 dark:text-slate-300">
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.5} />

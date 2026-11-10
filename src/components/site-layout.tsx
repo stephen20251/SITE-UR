@@ -64,10 +64,10 @@ export function useSiteTheme() {
 
 export const NAV = [
   { href: "/#universite", label: "L'Université" },
-  { href: "/#formations", label: "Formation" },
+  { href: "/#formations", label: "Formations" },
+  { href: "/#admissions", label: "Admissions" },
   { href: "/actualites", label: "Actualités" },
-  { href: "/#contact", label: "Contact" },
-  { href: "/#adresse", label: "Adresse" },
+  { href: "/#adresse", label: "Contact" },
 ];
 
 export const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "");
