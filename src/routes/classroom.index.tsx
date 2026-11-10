@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { api, ApiError, tokenStore } from "@/lib/api";
 import { classroomDashboard } from "@/components/classroom/shared";
 import { LogoMark, LogoOnPhoto, serif } from "@/components/site-layout";
+import { FIELD, FIELD_LABEL, PasswordInput } from "@/components/form-fields";
 
 export const Route = createFileRoute("/classroom/")({ component: ClassroomLogin });
 
@@ -42,7 +43,7 @@ function ClassroomLogin() {
     }
   }
 
-  const inp = "h-11 w-full rounded-xl border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-classroom/30 transition";
+  const inp = FIELD;
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -81,16 +82,17 @@ function ClassroomLogin() {
           </div>
 
           {mode === "apply" ? <CandidateSignup onBack={() => setMode("login")} /> : (<>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Connexion</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="text-3xl font-semibold tracking-tight text-[#14204a] dark:text-white" style={serif}>Connexion</h2>
+          <p className="mt-2 text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
             Entrez vos identifiants pour accéder à votre espace.
           </p>
 
           {/* Form */}
-          <form className="mt-6 space-y-3" onSubmit={onSubmit}>
+          <form className="mt-8 space-y-5" onSubmit={onSubmit}>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Adresse e-mail</label>
+              <label className={FIELD_LABEL} htmlFor="email">Adresse e-mail</label>
               <input
+                id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="votre@email.mg"
@@ -101,17 +103,16 @@ function ClassroomLogin() {
               />
             </div>
             <div>
-              <div className="mb-1 flex items-center justify-between">
-                <label className="block text-xs font-medium text-muted-foreground">Mot de passe</label>
-                <a href="/mot-de-passe-oublie" className="text-xs text-classroom hover:underline">Mot de passe oublié ?</a>
+              <div className="flex items-center justify-between">
+                <label className={FIELD_LABEL} htmlFor="password">Mot de passe</label>
+                <a href="/mot-de-passe-oublie" className="mb-1.5 text-sm font-medium text-[#e3262b] hover:underline">Mot de passe oublié ?</a>
               </div>
-              <input
+              <PasswordInput
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                type="password"
                 autoComplete="current-password"
-                className={inp}
                 required
               />
             </div>
@@ -157,7 +158,7 @@ function CandidateSignup({ onBack }: { onBack: () => void }) {
   const [mentions, setMentions] = useState<{ id: string; name: string }[]>([]);
   const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", password: "", confirm: "", mentionId: "", level: "L1" });
   const [pending, setPending] = useState(false);
-  const inp = "h-11 w-full rounded-xl border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-classroom/30 transition";
+  const inp = FIELD;
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
 
   useEffect(() => {
@@ -188,8 +189,8 @@ function CandidateSignup({ onBack }: { onBack: () => void }) {
       <button type="button" onClick={onBack} className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> J'ai déjà un compte
       </button>
-      <h2 className="text-2xl font-bold tracking-tight text-foreground">Candidater</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <h2 className="text-3xl font-semibold tracking-tight text-[#14204a] dark:text-white" style={serif}>Candidater</h2>
+      <p className="mt-2 text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
         Créez votre compte candidat, puis déposez votre pré-inscription (CIN ou acte de naissance, photo 4x4, BACC, questionnaire de motivation). Une fois acceptée, vous complétez votre inscription et le secrétariat la valide.
       </p>
       <form onSubmit={submit} className="mt-6 space-y-3">
@@ -209,8 +210,8 @@ function CandidateSignup({ onBack }: { onBack: () => void }) {
           </select>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <input className={inp} type="password" placeholder="Mot de passe (8 car. min.)" minLength={8} value={f.password} onChange={set("password")} required autoComplete="new-password" />
-          <input className={inp} type="password" placeholder="Confirmer" minLength={8} value={f.confirm} onChange={set("confirm")} required autoComplete="new-password" />
+          <PasswordInput placeholder="Mot de passe (8 car. min.)" minLength={8} value={f.password} onChange={set("password")} required autoComplete="new-password" />
+          <PasswordInput placeholder="Confirmer" minLength={8} value={f.confirm} onChange={set("confirm")} required autoComplete="new-password" />
         </div>
         <button type="submit" disabled={pending}
           className="flex w-full items-center justify-center gap-2 rounded-xl grad-classroom py-3 text-sm font-semibold text-white shadow-elegant disabled:opacity-60">

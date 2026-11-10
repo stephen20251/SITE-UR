@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, GraduationCap, Loader2, MailCheck } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
+import { FIELD } from "@/components/form-fields";
 
 export const Route = createFileRoute("/mot-de-passe-oublie")({
   head: () => ({ meta: [{ title: "Mot de passe oublié — Université Références" }] }),
@@ -39,11 +40,11 @@ function ForgotPassword() {
         </div>
       ) : (
         <>
-          <h1 className="text-2xl font-bold tracking-tight">Mot de passe oublié</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-[#14204a]" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Mot de passe oublié</h1>
           <p className="mt-1 text-sm text-muted-foreground">Indiquez l'adresse e-mail de votre compte : vous recevrez un lien pour choisir un nouveau mot de passe.</p>
           <form onSubmit={submit} className="mt-6 space-y-3">
             <input type="email" required autoComplete="email" placeholder="votre@email.com" value={email} onChange={(e) => setEmail(e.target.value)}
-              className="h-11 w-full rounded-xl border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-classroom/30" />
+              className={FIELD} />
             {error && <p className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
             <button type="submit" disabled={pending} className="flex w-full items-center justify-center gap-2 rounded-xl grad-classroom py-3 text-sm font-semibold text-white disabled:opacity-60">
               {pending && <Loader2 className="h-4 w-4 animate-spin" />} Envoyer le lien

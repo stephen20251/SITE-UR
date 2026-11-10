@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, KeyRound, Loader2, Mail, MailWarning } from "lucide-react";
 import { api, ApiError, tokenStore } from "@/lib/api";
+import { PasswordInput } from "@/components/form-fields";
 
 export function ChangePasswordCard() {
   const [current, setCurrent] = useState("");
@@ -35,13 +36,13 @@ export function ChangePasswordCard() {
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="text-xs font-medium text-muted-foreground">Mot de passe actuel
-          <input type="password" autoComplete="current-password" required className={`${input} mt-1`} value={current} onChange={(e) => setCurrent(e.target.value)} />
+          <span className="mt-1 block"><PasswordInput autoComplete="current-password" required className={input} value={current} onChange={(e) => setCurrent(e.target.value)} /></span>
         </label>
         <label className="text-xs font-medium text-muted-foreground">Nouveau (8 caractères min.)
-          <input type="password" autoComplete="new-password" required minLength={8} className={`${input} mt-1`} value={next} onChange={(e) => setNext(e.target.value)} />
+          <span className="mt-1 block"><PasswordInput autoComplete="new-password" required minLength={8} className={input} value={next} onChange={(e) => setNext(e.target.value)} /></span>
         </label>
         <label className="text-xs font-medium text-muted-foreground">Confirmer
-          <input type="password" autoComplete="new-password" required minLength={8} className={`${input} mt-1`} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          <span className="mt-1 block"><PasswordInput autoComplete="new-password" required minLength={8} className={input} value={confirm} onChange={(e) => setConfirm(e.target.value)} /></span>
         </label>
       </div>
       <p className="mt-2 text-xs text-muted-foreground">Vos autres appareils seront déconnectés.</p>

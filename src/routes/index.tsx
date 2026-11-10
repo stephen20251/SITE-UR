@@ -60,7 +60,7 @@ const MAP_ROUTE = `https://www.google.com/maps/dir/?api=1&destination=${MAP.lat}
 // Photos de l'université (originaux dans image-UR/, réduites pour le web dans public/images/accueil/)
 const PHOTO = "/images/accueil";
 const IMG = {
-  about: `${PHOTO}/universite-etudiante.jpg`,
+  about: `${PHOTO}/portrait-universite.jpg`, // « Portrait promotionnel dans un cercle bleu en pointillés »
   admissions: `${PHOTO}/admissions.jpg`,
 };
 // Photo par faculté (selon son code), sinon la photo générale de l'université.
@@ -69,7 +69,7 @@ const FACULTY_IMG: Record<string, string> = {
   "FAC-ST": `${PHOTO}/mention-informatique.jpg`,
   "FAC-LL": `${PHOTO}/mention-anglais.jpg`,
 };
-const FACULTY_FALLBACK = IMG.about;
+const FACULTY_FALLBACK = `${PHOTO}/universite-etudiante.jpg`;
 // Ordre d'affichage : Gestion, Informatique, puis Langues (Anglais) ; les autres ensuite.
 const FACULTY_ORDER = ["FAC-SEG", "FAC-ST", "FAC-LL"];
 const facultyRank = (code: string) => { const i = FACULTY_ORDER.indexOf(code); return i === -1 ? FACULTY_ORDER.length : i; };
@@ -158,7 +158,7 @@ function Home() {
       <section id="universite" className="scroll-mt-20">
         <div className="mx-auto grid max-w-7xl items-center gap-16 px-4 py-28 sm:px-6 lg:grid-cols-2 lg:px-8">
           <div className="relative pb-12">
-            <img src={IMG.about} alt="Étudiants de l'Université Références" className={`aspect-[4/3] w-full object-cover object-[75%_center] lg:aspect-[5/6] ${gray}`} />
+            <img src={IMG.about} alt="Étudiante de l'Université Références" className={`aspect-[4/5] w-full rounded-2xl object-cover object-top shadow-[0_30px_60px_-30px_rgba(20,32,74,0.6)] sm:aspect-[3/4] lg:aspect-[2/3] ${gray}`} />
             <figure className="absolute bottom-0 right-0 max-w-xs bg-[#e3262b] p-7 shadow-xl sm:-right-8">
               <blockquote className="text-lg italic leading-snug text-white" style={serif}>
                 « Former aujourd'hui les compétences dont Madagascar a besoin demain. »

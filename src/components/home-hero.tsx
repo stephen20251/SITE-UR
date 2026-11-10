@@ -1,17 +1,16 @@
-// Bannière de l'accueil : une vidéo faite à partir de trois photos de l'université
-// (zoom lent et fondus, en boucle sans coupure ; voir scripts/banniere-video.sh).
-// Le titre, le texte et les onglets numérotés suivent la vidéo : chaque photo
-// occupe SEGMENT secondes. Un clic sur un onglet ou une flèche avance la vidéo.
-// - Pause quand la souris est sur la bannière.
-// - Si le visiteur a demandé à réduire les animations : vidéo arrêtée sur la photo choisie.
+// Bannière de l'accueil : vidéo du campus en boucle (sans son) et trois messages qui
+// se succèdent toutes les SEGMENT secondes, avec des onglets numérotés qui montrent
+// la progression. Un clic sur un onglet ou une flèche change de message.
+// - Pause (vidéo et messages) quand la souris est sur la bannière.
+// - Si le visiteur a demandé à réduire les animations : vidéo arrêtée, pas de défilement.
+// Vidéo d'origine : image-UR/video_banneur_home.mp4 (passage de 3,0 s à 29,9 s, réencodé
+// en H.264 pour le web : campus-video.mp4 et campus-video-mobile.mp4).
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { UI, serif } from "@/components/site-layout";
 
 const PHOTO = "/images/accueil";
-const SEGMENT = 7; // secondes par photo dans la vidéo
-// Le changement de texte se fait au milieu du fondu entre deux photos.
-const OFFSET = 0.6;
+const SEGMENT = 7; // secondes par message
 
 const SLIDES = [
   {
@@ -38,22 +37,32 @@ export function HomeHero() {
   const video = useRef<HTMLVideoElement>(null);
   const bar = useRef<HTMLSpanElement | null>(null); // barre de l'onglet actif
   const reduced = useRef(false);
+  const paused = useRef(false);
+  const elapsed = useRef(0); // temps écoulé (ms) sur le message affiché
   const [index, setIndex] = useState(0);
 
-  // Suit la lecture : photo affichée et remplissage de la barre de progression.
+  // Défilement des messages (indépendant de la vidéo) et barre de progression.
   useEffect(() => {
     const v = video.current;
-    if (!v) return;
     reduced.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    v.muted = true; // nécessaire pour la lecture automatique
-    if (reduced.current) v.pause();
-    else v.play().catch(() => { /* lecture automatique refusée : la première image reste affichée */ });
+    if (v) {
+      v.muted = true; // nécessaire pour la lecture automatique
+      if (reduced.current) v.pause();
+      else v.play().catch(() => { /* lecture automatique refusée : l'image d'attente reste affichée */ });
+    }
     let frame = 0;
-    const tick = () => {
-      const t = v.currentTime + OFFSET;
-      const k = Math.floor(t / SEGMENT) % SLIDES.length;
-      setIndex((prev) => (prev === k ? prev : k));
-      if (bar.current) bar.current.style.transform = `scaleX(${reduced.current ? 1 : (t % SEGMENT) / SEGMENT})`;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = now - last;
+      last = now;
+      if (!paused.current && !reduced.current) {
+        elapsed.current += dt;
+        if (elapsed.current >= SEGMENT * 1000) {
+          elapsed.current = 0;
+          setIndex((k) => (k + 1) % SLIDES.length);
+        }
+      }
+      if (bar.current) bar.current.style.transform = `scaleX(${reduced.current ? 1 : elapsed.current / (SEGMENT * 1000)})`;
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -61,12 +70,14 @@ export function HomeHero() {
   }, []);
 
   const go = (n: number) => {
-    const k = (n + SLIDES.length) % SLIDES.length;
-    if (video.current) video.current.currentTime = k * SEGMENT + 0.3;
-    setIndex(k);
+    elapsed.current = 0;
+    setIndex((n + SLIDES.length) % SLIDES.length);
   };
-  const pause = () => video.current?.pause();
-  const resume = () => { if (!reduced.current) video.current?.play().catch(() => {}); };
+  const pause = () => { paused.current = true; video.current?.pause(); };
+  const resume = () => {
+    paused.current = false;
+    if (!reduced.current) video.current?.play().catch(() => {});
+  };
   const slide = SLIDES[index];
 
   return (
@@ -84,15 +95,15 @@ export function HomeHero() {
         loop
         playsInline
         preload="auto"
-        poster={`${PHOTO}/banniere.jpg`}
+        poster={`${PHOTO}/campus-video-poster.jpg`}
         aria-hidden
-        className={`absolute inset-0 -z-10 h-full w-full object-cover opacity-70 ${UI.photo}`}
+        className={`absolute inset-0 -z-10 h-full w-full object-cover opacity-90 ${UI.photo}`}
       >
-        <source src={`${PHOTO}/banniere-video-mobile.mp4`} type="video/mp4" media="(max-width: 767px)" />
-        <source src={`${PHOTO}/banniere-video.mp4`} type="video/mp4" />
+        <source src={`${PHOTO}/campus-video-mobile.mp4`} type="video/mp4" media="(max-width: 767px)" />
+        <source src={`${PHOTO}/campus-video.mp4`} type="video/mp4" />
       </video>
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0b1430] via-[#0b1430]/40 to-[#0b1430]/20 dark:from-[#0b1120] dark:via-[#0b1120]/50" />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#0b1430]/50 to-transparent" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0b1430] via-[#0b1430]/30 to-transparent dark:from-[#0b1120] dark:via-[#0b1120]/40" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#0b1430]/70 via-[#0b1430]/30 to-transparent" />
 
       <div className="mx-auto w-full max-w-7xl px-4 pb-24 pt-32 sm:px-6 lg:px-8">
         {/* Texte de la photo affichée (réanimé à chaque changement) */}

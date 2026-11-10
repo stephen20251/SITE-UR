@@ -4,6 +4,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { LogoMark, LogoOnPhoto, serif } from "@/components/site-layout";
+import { FIELD, FIELD_LABEL } from "@/components/form-fields";
 
 export function AuthShell({ photo, subtitle, backTo, children }: {
   photo: string;
@@ -47,6 +48,6 @@ export function AuthShell({ photo, subtitle, backTo, children }: {
   );
 }
 
-export const authInput = "h-11 w-full rounded-xl border bg-background px-3 text-sm outline-none transition focus:ring-2 focus:ring-online/30";
-export const authLabel = "mb-1 block text-xs font-medium text-muted-foreground";
+export const authInput = FIELD;
+export const authLabel = FIELD_LABEL;
 export const authButton = "flex w-full items-center justify-center gap-2 rounded-xl grad-online py-3 text-sm font-semibold text-white shadow-elegant transition-opacity disabled:opacity-60";

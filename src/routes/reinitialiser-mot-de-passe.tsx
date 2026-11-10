@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { AuthShell } from "./mot-de-passe-oublie";
+import { PasswordInput } from "@/components/form-fields";
 
 export const Route = createFileRoute("/reinitialiser-mot-de-passe")({
   head: () => ({ meta: [{ title: "Nouveau mot de passe — Université Références" }] }),
@@ -17,7 +18,6 @@ function ResetPassword() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  const input = "h-11 w-full rounded-xl border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-classroom/30";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,11 +54,11 @@ function ResetPassword() {
         </div>
       ) : (
         <>
-          <h1 className="text-2xl font-bold tracking-tight">Nouveau mot de passe</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-[#14204a]" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Nouveau mot de passe</h1>
           <p className="mt-1 text-sm text-muted-foreground">Choisissez un mot de passe d'au moins 8 caractères.</p>
           <form onSubmit={submit} className="mt-6 space-y-3">
-            <input type="password" required minLength={8} autoComplete="new-password" placeholder="Nouveau mot de passe" value={pw} onChange={(e) => setPw(e.target.value)} className={input} />
-            <input type="password" required minLength={8} autoComplete="new-password" placeholder="Confirmer" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={input} />
+            <PasswordInput required minLength={8} autoComplete="new-password" placeholder="Nouveau mot de passe" value={pw} onChange={(e) => setPw(e.target.value)} />
+            <PasswordInput required minLength={8} autoComplete="new-password" placeholder="Confirmer" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
             {error && (
               <p className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {error}{" "}

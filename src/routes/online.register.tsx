@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { AuthShell, authButton, authInput, authLabel } from "@/components/auth-shell";
+import { PasswordInput } from "@/components/form-fields";
+import { serif } from "@/components/site-layout";
 
 export const Route = createFileRoute("/online/register")({
   head: () => ({ meta: [{ title: "Créer un compte — Cours en ligne — Université Références" }] }),
@@ -45,8 +47,8 @@ function Register() {
 
   return (
     <AuthShell photo="/images/accueil/campus-vie-etudiante.jpg" subtitle="Cours en ligne" backTo="/online">
-      <h2 className="text-2xl font-bold tracking-tight text-foreground">Créer un compte</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Accès aux cours en ligne de l'Université Références.</p>
+      <h2 className="text-3xl font-semibold tracking-tight text-[#14204a] dark:text-white" style={serif}>Créer un compte</h2>
+      <p className="mt-2 text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">Accès aux cours en ligne de l'Université Références.</p>
 
       <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl border p-1" role="radiogroup" aria-label="Type de compte">
         {([
@@ -60,7 +62,7 @@ function Register() {
         ))}
       </div>
 
-      <form className="mt-6 space-y-3" onSubmit={onSubmit}>
+      <form className="mt-6 space-y-5" onSubmit={onSubmit}>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={authLabel} htmlFor="firstName">Prénom</label>
@@ -77,7 +79,7 @@ function Register() {
         </div>
         <div>
           <label className={authLabel} htmlFor="password">Mot de passe (8 caractères minimum)</label>
-          <input id="password" type="password" autoComplete="new-password" minLength={8} className={authInput} value={form.password} onChange={set("password")} required />
+          <PasswordInput id="password" autoComplete="new-password" minLength={8} value={form.password} onChange={set("password")} required />
         </div>
 
         {error && (

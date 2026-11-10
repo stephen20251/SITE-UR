@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { AuthShell, authButton, authInput, authLabel } from "@/components/auth-shell";
+import { PasswordInput } from "@/components/form-fields";
+import { serif } from "@/components/site-layout";
 
 export const Route = createFileRoute("/online/login")({
   head: () => ({ meta: [{ title: "Connexion — Cours en ligne — Université Références" }] }),
@@ -48,22 +50,22 @@ function Login() {
 
   return (
     <AuthShell photo="/images/accueil/campus-vie-etudiante.jpg" subtitle="Cours en ligne" backTo="/online">
-      <h2 className="text-2xl font-bold tracking-tight text-foreground">Connexion</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Entrez vos identifiants pour accéder à vos cours.</p>
+      <h2 className="text-3xl font-semibold tracking-tight text-[#14204a] dark:text-white" style={serif}>Connexion</h2>
+      <p className="mt-2 text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">Entrez vos identifiants pour accéder à vos cours.</p>
 
-      <form className="mt-6 space-y-3" onSubmit={onSubmit}>
+      <form className="mt-8 space-y-5" onSubmit={onSubmit}>
         <div>
           <label className={authLabel} htmlFor="email">Adresse e-mail</label>
           <input id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="votre@email.mg"
             type="email" autoComplete="email" className={authInput} required />
         </div>
         <div>
-          <div className="mb-1 flex items-center justify-between">
-            <label className="block text-xs font-medium text-muted-foreground" htmlFor="password">Mot de passe</label>
-            <a href="/mot-de-passe-oublie" className="text-xs text-online hover:underline">Mot de passe oublié ?</a>
+          <div className="flex items-center justify-between">
+            <label className={authLabel} htmlFor="password">Mot de passe</label>
+            <a href="/mot-de-passe-oublie" className="mb-1.5 text-sm font-medium text-online hover:underline">Mot de passe oublié ?</a>
           </div>
-          <input id="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
-            type="password" autoComplete="current-password" className={authInput} required />
+          <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
+            autoComplete="current-password" required />
         </div>
 
         {error && (
