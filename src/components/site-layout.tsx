@@ -1,8 +1,8 @@
 // En-tête, pied de page et éléments communs aux pages publiques du site
 // (accueil, Actualités, archives, article).
 //
-// Deux thèmes : clair (noir et blanc, photos en niveaux de gris) et sombre
-// (bleu nuit et rouge du logo, photos en couleur). Les classes « dark: »
+// Deux thèmes : clair (noir et blanc) et sombre (bleu nuit et rouge du logo).
+// Les photos restent en couleur dans les deux thèmes. Les classes « dark: »
 // s'appliquent sous un conteneur portant la classe « dark » : voir SitePage.
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -24,7 +24,7 @@ export const UI = {
   title: "text-black dark:text-white",
   text: "text-neutral-600 dark:text-slate-400",
   muted: "text-neutral-500 dark:text-slate-400",
-  photo: "grayscale dark:grayscale-0",
+  photo: "", // photos toujours en couleur (classe gardée pour un éventuel filtre commun)
   altBg: "bg-neutral-50 dark:bg-[#0f172a]",
   card: "bg-white ring-1 ring-neutral-200 dark:bg-[#162036] dark:ring-white/10",
   border: "border-neutral-200 dark:border-white/10",
