@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { CONTACT } from "../lib/contact";
 import {
   FileText, CheckCircle, Clock, XCircle, ChevronRight,
   Upload, School, AlertCircle, Send
@@ -240,7 +241,7 @@ function CandidatDashboard() {
         <AlertCircle size={16} className="shrink-0 text-gray-400 mt-0.5" />
         <div className="text-sm text-gray-500">
           <p className="font-medium text-gray-700">Besoin d'aide ?</p>
-          <p className="mt-0.5">Contactez le secrétariat à <span className="text-[#0F1E3C] font-medium">secretariat@ur.mg</span> ou appelez le <span className="font-medium">+261 20 00 000</span>.</p>
+          <p className="mt-0.5">Contactez le secrétariat à <a href={`mailto:${CONTACT.email}`} className="text-[#0F1E3C] font-medium hover:underline">{CONTACT.email}</a> ou appelez le <a href={CONTACT.phoneHref} className="font-medium hover:underline">{CONTACT.phone}</a>.</p>
         </div>
       </div>
     </div>

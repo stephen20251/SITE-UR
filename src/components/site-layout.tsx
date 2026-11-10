@@ -2,7 +2,8 @@
 // (accueil et Actualités).
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronDown, Clock, ExternalLink, Facebook, LogIn, MapPin, Menu, Search, X } from "lucide-react";
+import { ChevronDown, Clock, ExternalLink, Facebook, LogIn, Mail, MapPin, Menu, Phone, Search, X } from "lucide-react";
+import { CONTACT } from "@/lib/contact";
 import { useAuth } from "@/lib/auth";
 import { usePublicSettings } from "@/lib/lms-admin";
 import { mediaUrl } from "@/components/online/mooc-card";
@@ -149,9 +150,11 @@ export function SiteFooter({ mono = false }: { mono?: boolean }) {
           </ul>
         </div>
         <div>
-          <h3 className="text-lg font-bold text-white" style={serif}>Adresse</h3>
+          <h3 className="text-lg font-bold text-white" style={serif}>Contact</h3>
           <ul className="mt-5 space-y-4 text-sm text-slate-400">
-            <li className="flex gap-3"><MapPin className="h-5 w-5 shrink-0" /> Université Références, Antananarivo, Madagascar</li>
+            <li className="flex gap-3"><MapPin className="h-5 w-5 shrink-0" /> <span>{CONTACT.address}<br />{CONTACT.city}</span></li>
+            <li><a href={CONTACT.phoneHref} className="inline-flex items-center gap-3 hover:text-white"><Phone className="h-5 w-5 shrink-0" /> {CONTACT.phone}</a></li>
+            <li><a href={`mailto:${CONTACT.email}`} className="inline-flex items-center gap-3 break-all hover:text-white"><Mail className="h-5 w-5 shrink-0" /> {CONTACT.email}</a></li>
             <li><a href={MAP.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-white"><ExternalLink className="h-4 w-4" /> Voir sur Google Maps</a></li>
             <li><a href={facebook} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-white"><Facebook className="h-4 w-4" /> Suivez-nous sur Facebook</a></li>
           </ul>

@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ArrowUpRight, Building2, Facebook, MapPin, Menu, MonitorPlay, Moon, Navigation, Sun, UserPlus, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Building2, Facebook, Mail, MapPin, Menu, MonitorPlay, Moon, Navigation, Phone, Sun, UserPlus, X } from "lucide-react";
+import { CONTACT } from "@/lib/contact";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { eventImage, type UniversityEvent } from "@/lib/events";
@@ -334,12 +335,15 @@ function Home() {
         <div className="mx-auto grid max-w-7xl gap-12 px-4 py-28 sm:px-6 lg:grid-cols-[1fr_1.6fr] lg:px-8">
           <div className="flex flex-col justify-center">
             <SectionTitle eyebrow="Adresse" title="Nous trouver" />
-            <p className="mt-8 flex items-start gap-3 text-neutral-700 dark:text-slate-300">
-              <MapPin className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.5} /> Université Références, Antananarivo, Madagascar
-            </p>
-            <a href={facebook} target="_blank" rel="noreferrer" className="mt-4 flex items-center gap-3 text-neutral-700 underline-offset-4 hover:underline dark:text-slate-300">
-              <Facebook className="h-5 w-5 shrink-0" strokeWidth={1.5} /> Suivez-nous sur Facebook
-            </a>
+            <ul className="mt-8 space-y-4 text-neutral-700 dark:text-slate-300">
+              <li className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.5} />
+                <span>Université Références<br />{CONTACT.address}<br />{CONTACT.city}</span>
+              </li>
+              <li><a href={CONTACT.phoneHref} className="flex items-center gap-3 underline-offset-4 hover:underline"><Phone className="h-5 w-5 shrink-0" strokeWidth={1.5} /> {CONTACT.phone}</a></li>
+              <li><a href={`mailto:${CONTACT.email}`} className="flex items-center gap-3 break-all underline-offset-4 hover:underline"><Mail className="h-5 w-5 shrink-0" strokeWidth={1.5} /> {CONTACT.email}</a></li>
+              <li><a href={facebook} target="_blank" rel="noreferrer" className="flex items-center gap-3 underline-offset-4 hover:underline"><Facebook className="h-5 w-5 shrink-0" strokeWidth={1.5} /> Suivez-nous sur Facebook</a></li>
+            </ul>
             <div className="mt-8 flex flex-wrap gap-4">
               <a href={MAP_ROUTE} target="_blank" rel="noreferrer" className={btnDark}><Navigation className="h-4 w-4" /> Itinéraire</a>
               <a href={MAP.link} target="_blank" rel="noreferrer" className={btnLine}>Ouvrir dans Google Maps</a>

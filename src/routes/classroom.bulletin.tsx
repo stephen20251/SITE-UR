@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { CONTACT } from "@/lib/contact";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { useBulletin, useSemesters, type BulletinData } from "@/lib/classroom";
 import { API_ORIGIN } from "@/lib/env";
@@ -152,7 +153,7 @@ th:not(:first-child){text-align:center}
   <div class="sig-box"><div class="sig-line"></div><div>Le Responsable Pédagogique</div></div>
   <div class="sig-box"><div class="sig-line"></div><div>Cachet universitaire</div></div>
 </div>
-<div class="footer">Université de Référence — Antananarivo, Madagascar · contact@ur.mg · Document officiel</div>
+<div class="footer">Université Références — ${CONTACT.address}, ${CONTACT.city} · ${CONTACT.phone} · ${CONTACT.email} · Document officiel</div>
 </body></html>`;
 }
 
