@@ -1,31 +1,32 @@
-// Bannière de l'accueil : trois photos qui se succèdent en fondu, avec un zoom lent,
-// un titre propre à chaque photo et des onglets numérotés qui montrent la progression.
-// - Changement automatique toutes les 7 secondes (à la fin de la barre de progression).
+// Bannière de l'accueil : une vidéo faite à partir de trois photos de l'université
+// (zoom lent et fondus, en boucle sans coupure ; voir scripts/banniere-video.sh).
+// Le titre, le texte et les onglets numérotés suivent la vidéo : chaque photo
+// occupe SEGMENT secondes. Un clic sur un onglet ou une flèche avance la vidéo.
 // - Pause quand la souris est sur la bannière.
-// - Si le visiteur a demandé à réduire les animations : ni zoom, ni défilement automatique.
-import { useState } from "react";
+// - Si le visiteur a demandé à réduire les animations : vidéo arrêtée sur la photo choisie.
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { UI, serif } from "@/components/site-layout";
 
 const PHOTO = "/images/accueil";
+const SEGMENT = 7; // secondes par photo dans la vidéo
+// Le changement de texte se fait au milieu du fondu entre deux photos.
+const OFFSET = 0.6;
 
 const SLIDES = [
   {
-    img: `${PHOTO}/banniere.jpg`,
     tab: "L'université",
     eyebrow: "Université Références · Antananarivo",
     title: <>Apprendre,<br />réussir, s'engager.</>,
     text: "Établissement d'enseignement supérieur, nous formons des étudiants compétents, responsables et innovants, prêts pour le marché du travail national et international.",
   },
   {
-    img: `${PHOTO}/banniere-pratique.jpg`,
     tab: "La pratique",
     eyebrow: "Gestion · Informatique · Anglais",
     title: <>Apprendre<br />en faisant.</>,
     text: "Projets, travaux pratiques et études de cas : des formations concrètes, en présentiel à Antananarivo ou en ligne.",
   },
   {
-    img: `${PHOTO}/banniere-cours.jpg`,
     tab: "L'accompagnement",
     eyebrow: "Investir le présent, gagner l'avenir",
     title: <>L'exigence au service<br />de votre réussite.</>,
@@ -34,38 +35,68 @@ const SLIDES = [
 ];
 
 export function HomeHero() {
+  const video = useRef<HTMLVideoElement>(null);
+  const bar = useRef<HTMLSpanElement | null>(null); // barre de l'onglet actif
+  const reduced = useRef(false);
   const [index, setIndex] = useState(0);
-  const [cycle, setCycle] = useState(0); // relance les animations à chaque changement
+
+  // Suit la lecture : photo affichée et remplissage de la barre de progression.
+  useEffect(() => {
+    const v = video.current;
+    if (!v) return;
+    reduced.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    v.muted = true; // nécessaire pour la lecture automatique
+    if (reduced.current) v.pause();
+    else v.play().catch(() => { /* lecture automatique refusée : la première image reste affichée */ });
+    let frame = 0;
+    const tick = () => {
+      const t = v.currentTime + OFFSET;
+      const k = Math.floor(t / SEGMENT) % SLIDES.length;
+      setIndex((prev) => (prev === k ? prev : k));
+      if (bar.current) bar.current.style.transform = `scaleX(${reduced.current ? 1 : (t % SEGMENT) / SEGMENT})`;
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   const go = (n: number) => {
-    setIndex((n + SLIDES.length) % SLIDES.length);
-    setCycle((c) => c + 1);
+    const k = (n + SLIDES.length) % SLIDES.length;
+    if (video.current) video.current.currentTime = k * SEGMENT + 0.3;
+    setIndex(k);
   };
+  const pause = () => video.current?.pause();
+  const resume = () => { if (!reduced.current) video.current?.play().catch(() => {}); };
   const slide = SLIDES[index];
 
   return (
     <section
       aria-roledescription="carrousel"
       aria-label="Présentation de l'université"
-      className="group/hero relative isolate flex min-h-[calc(100svh-80px)] items-end overflow-hidden bg-black dark:bg-[#0b1120]"
+      onMouseEnter={pause}
+      onMouseLeave={resume}
+      className="relative isolate flex min-h-[calc(100svh-80px)] items-end overflow-hidden bg-black dark:bg-[#0b1120]"
     >
-      {/* Photos superposées : seule la photo active est visible */}
-      {SLIDES.map((s, k) => (
-        <div key={s.img} aria-hidden className={`absolute inset-0 -z-10 transition-opacity duration-[1400ms] ease-out ${k === index ? "opacity-100" : "opacity-0"}`}>
-          <img
-            key={k === index ? `actif-${cycle}` : "repos"}
-            src={s.img}
-            alt=""
-            loading={k === 0 ? "eager" : "lazy"}
-            className={`h-full w-full object-cover opacity-70 ${UI.photo} ${k === index ? "motion-safe:animate-[hero-zoom_9s_ease-out_both]" : ""}`}
-          />
-        </div>
-      ))}
+      <video
+        ref={video}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster={`${PHOTO}/banniere.jpg`}
+        aria-hidden
+        className={`absolute inset-0 -z-10 h-full w-full object-cover opacity-70 ${UI.photo}`}
+      >
+        <source src={`${PHOTO}/banniere-video-mobile.mp4`} type="video/mp4" media="(max-width: 767px)" />
+        <source src={`${PHOTO}/banniere-video.mp4`} type="video/mp4" />
+      </video>
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black via-black/40 to-black/20 dark:from-[#0b1120] dark:via-[#0b1120]/50" />
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/50 to-transparent" />
 
       <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-32 sm:px-6 lg:px-8">
-        {/* Texte de la photo active (réanimé à chaque changement) */}
-        <div key={`texte-${cycle}`} className="max-w-4xl" aria-live="polite">
+        {/* Texte de la photo affichée (réanimé à chaque changement) */}
+        <div key={`texte-${index}`} className="max-w-4xl" aria-live="polite">
           <p className={`${UI.label} text-neutral-300 dark:text-[#f87171] motion-safe:animate-[hero-rise_0.9s_ease-out_both]`}>{slide.eyebrow}</p>
           <h1 className="mt-6 text-5xl font-semibold leading-[1.04] text-white sm:text-6xl lg:text-7xl motion-safe:animate-[hero-rise_0.9s_0.12s_ease-out_both]" style={serif}>
             {slide.title}
@@ -90,11 +121,7 @@ export function HomeHero() {
                 className="group text-left">
                 <span className="relative block h-px overflow-hidden bg-white/25">
                   {k === index && (
-                    <span
-                      key={`barre-${cycle}`}
-                      onAnimationEnd={() => go(index + 1)}
-                      className="absolute inset-0 origin-left bg-white dark:bg-[#e3262b] motion-safe:animate-[hero-progress_7s_linear_both] group-hover/hero:[animation-play-state:paused]"
-                    />
+                    <span ref={bar} className="absolute inset-0 origin-left scale-x-0 bg-white dark:bg-[#e3262b]" />
                   )}
                 </span>
                 <span className="mt-4 flex items-baseline gap-3">
