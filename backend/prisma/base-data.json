@@ -542,7 +542,7 @@
   ],
   "faculties": [
     {
-      "name": "Faculté des Lettres et Langues",
+      "name": "Formation pratique et professionnelle",
       "code": "FAC-LL",
       "deanName": null,
       "logoUrl": null,
@@ -550,7 +550,7 @@
       "campusCode": "UR-TANA"
     },
     {
-      "name": "Faculté des Sciences Économiques et de Gestion",
+      "name": "Sciences de la Société",
       "code": "FAC-SEG",
       "deanName": null,
       "logoUrl": null,
@@ -558,7 +558,7 @@
       "campusCode": "UR-TANA"
     },
     {
-      "name": "Faculté des Sciences et Technologies",
+      "name": "Sciences de l’Ingénieur",
       "code": "FAC-ST",
       "deanName": null,
       "logoUrl": null,

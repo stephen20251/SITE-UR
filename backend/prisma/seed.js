@@ -146,9 +146,9 @@ async function main() {
   console.log(`✅ Campus + 6 salles`)
 
   // ── Structure universitaire ───────────────────────────────────
-  const facST  = await prisma.faculty.upsert({ where: { code: 'FAC-ST' },  update: {}, create: { campusId: campus.id, name: 'Faculté des Sciences et Technologies', code: 'FAC-ST' } })
-  const facSEG = await prisma.faculty.upsert({ where: { code: 'FAC-SEG' }, update: {}, create: { campusId: campus.id, name: 'Faculté des Sciences Économiques et de Gestion', code: 'FAC-SEG' } })
-  const facLL  = await prisma.faculty.upsert({ where: { code: 'FAC-LL' },  update: {}, create: { campusId: campus.id, name: 'Faculté des Lettres et Langues', code: 'FAC-LL' } })
+  const facST  = await prisma.faculty.upsert({ where: { code: 'FAC-ST' },  update: {}, create: { campusId: campus.id, name: 'Sciences de l’Ingénieur', code: 'FAC-ST' } })
+  const facSEG = await prisma.faculty.upsert({ where: { code: 'FAC-SEG' }, update: {}, create: { campusId: campus.id, name: 'Sciences de la Société', code: 'FAC-SEG' } })
+  const facLL  = await prisma.faculty.upsert({ where: { code: 'FAC-LL' },  update: {}, create: { campusId: campus.id, name: 'Formation pratique et professionnelle', code: 'FAC-LL' } })
 
   const deptInfo = await prisma.department.upsert({ where: { code: 'DEPT-INFO' }, update: {}, create: { facultyId: facST.id,  name: 'Département Informatique', code: 'DEPT-INFO' } })
   const deptGest = await prisma.department.upsert({ where: { code: 'DEPT-GEST' }, update: {}, create: { facultyId: facSEG.id, name: 'Département Gestion', code: 'DEPT-GEST' } })

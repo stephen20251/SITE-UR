@@ -141,8 +141,8 @@ function Home() {
             <SectionTitle eyebrow="L'Université" title="Une formation exigeante, tournée vers l'emploi" />
             <p className={`mt-8 text-lg leading-relaxed ${textColor}`}>
               Notre ambition : offrir un enseignement moderne, pratique et accessible, qui permet à chaque étudiant de
-              développer pleinement son potentiel académique et professionnel. L'université réunit trois facultés :
-              Sciences Économiques et de Gestion, Sciences et Technologies, Lettres et Langues.
+              développer pleinement son potentiel académique et professionnel. L'université réunit trois domaines :
+              Sciences de la Société, Sciences de l’Ingénieur, Formation pratique et professionnelle.
             </p>
             <dl className="mt-10 divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-white/10 dark:border-white/10">
               {[
