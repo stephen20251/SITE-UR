@@ -132,20 +132,10 @@ function ClassroomLogin() {
             </button>
           </form>
 
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Système en ligne ?{" "}
-              <Link to="/online" className="text-classroom hover:underline">
-                Accès Online →
-              </Link>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              ERP ?{" "}
-              <Link to="/erp/login" className="text-classroom hover:underline">
-                Accès ERP →
-              </Link>
-            </p>
-          </div>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Cours en ligne ?{" "}
+            <Link to="/online/login" className="text-classroom hover:underline">Se connecter aux cours en ligne →</Link>
+          </p>
 
           <div className="mt-6 rounded-xl border border-dashed border-classroom/40 bg-classroom/5 p-4 text-center">
             <p className="text-sm font-medium">Nouveau ? Vous souhaitez étudier chez nous ?</p>
