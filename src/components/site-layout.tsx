@@ -84,10 +84,28 @@ export function Logo({ size = 48 }: { size?: number }) {
   );
 }
 
+// Emblème sans fond, pour les menus et pieds de page :
+// - tone "auto" : en couleurs sur fond clair, en blanc dans le thème sombre ;
+// - tone "white" : toujours blanc (fonds foncés).
+// Le logo déposé par l'administration (paramètres de la plateforme) reste prioritaire.
+// La version carrée avec fond (Logo) sert sur les photos et les fonds colorés.
+export function LogoMark({ className = "h-10", tone = "auto" }: { className?: string; tone?: "auto" | "white" }) {
+  const { data: settings } = usePublicSettings();
+  const alt = "Logo de l'Université Références";
+  if (settings?.logoUrl) return <img src={mediaUrl(settings.logoUrl)} alt={alt} className={`${className} w-auto object-contain`} />;
+  if (tone === "white") return <img src="/logo-ur-embleme-blanc.png" alt={alt} className={`${className} w-auto`} />;
+  return (
+    <>
+      <img src="/logo-ur-embleme.png" alt={alt} className={`${className} w-auto dark:hidden`} />
+      <img src="/logo-ur-embleme-blanc.png" alt="" aria-hidden className={`${className} hidden w-auto dark:block`} />
+    </>
+  );
+}
+
 function Brand({ mono = false }: { mono?: boolean }) {
   return (
     <a href="/#top" className="flex items-center gap-3">
-      <Logo />
+      <LogoMark tone="white" className="h-12" />
       <div className="leading-tight">
         <div className="text-lg font-bold text-white" style={serif}>Université</div>
         <div className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: mono ? "#a3a3a3" : "#f87171" }}>Références</div>
@@ -109,7 +127,7 @@ export function SiteHeader({ dark, onToggleTheme, current }: { dark: boolean; on
     <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#0b1120]/90">
       <div className="mx-auto flex h-20 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
         <a href="/#top" className="flex items-center gap-3" aria-label="Université Références — accueil">
-          <Logo size={40} />
+          <LogoMark className="h-11" />
           <span className="leading-none">
             <span className={`block whitespace-nowrap text-[15px] font-semibold tracking-tight sm:text-[17px] ${UI.title}`} style={serif}>Université Références</span>
             <span className={`mt-1 block ${UI.eyebrow} ${label} !text-[9px]`}>Antananarivo</span>

@@ -137,11 +137,16 @@ function OnlineHome() {
       <OnlineNavbar />
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <section className="border-b bg-gradient-to-br from-sky-50 via-white to-violet-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-20">
+      <section className="relative isolate overflow-hidden border-b">
+        {/* Fond : photo d'un cours de l'université, voilée pour la lisibilité */}
+        <img src="/images/accueil/banniere-cours.jpg" alt="" aria-hidden className="absolute inset-0 -z-20 h-full w-full object-cover" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-white via-white/[0.93] to-white/75 dark:from-slate-950 dark:via-slate-950/[0.93] dark:to-slate-950/75" />
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-white/70 to-transparent dark:from-slate-950/70" />
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-24">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur dark:bg-white/5">
-              <UrMark size={16} /> Proposé par l'Université Références
+              <img src="/logo-ur-embleme.png" alt="" className="h-4 w-auto dark:hidden" />
+              <img src="/logo-ur-embleme-blanc.png" alt="" className="hidden h-4 w-auto dark:block" /> Proposé par l'Université Références
             </div>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
               Apprenez sans limites
@@ -188,14 +193,13 @@ function OnlineHome() {
 
           {/* Visuel */}
           <div className="relative hidden lg:block">
-            <div className="overflow-hidden rounded-3xl border bg-card shadow-xl">
-              {settings?.bannerUrl ? (
-                <img src={mediaUrl(settings.bannerUrl)} alt="" className="aspect-[4/3] w-full object-cover" />
-              ) : (
-                <div className="grid aspect-[4/3] place-items-center grad-online">
-                  <GraduationCap className="h-24 w-24 text-white/80" />
-                </div>
-              )}
+            <div className="relative overflow-hidden rounded-3xl bg-card shadow-[0_40px_80px_-30px_rgba(30,20,90,0.45)] ring-1 ring-black/5 dark:ring-white/10">
+              <img
+                src={settings?.bannerUrl ? mediaUrl(settings.bannerUrl) : "/images/accueil/online-cadre.jpg"}
+                alt="Cours en ligne de l'Université Références"
+                className="aspect-[4/3] w-full object-cover"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-online/30 via-transparent to-transparent" />
             </div>
             <div className="absolute -bottom-6 -left-6 rounded-2xl border bg-card p-4 shadow-lg">
               <div className="text-2xl font-extrabold">{stats.data?.courses ?? "—"}</div>

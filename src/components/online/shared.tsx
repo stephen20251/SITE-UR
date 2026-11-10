@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useAuth } from "@/lib/auth";
 import { BackHomeButtons } from "@/components/nav-buttons";
+import { LogoMark, serif } from "@/components/site-layout";
 import { usePublicSettings } from "@/lib/lms-admin";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/lib/notifications";
 import { useOnlineUnreadCount } from "@/lib/chat";
@@ -203,8 +204,8 @@ export function OnlineNavbar() {
   ] : [];
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 shadow-sm backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 border-b border-black/5 bg-background/80 backdrop-blur-xl dark:border-white/10">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
 
         {/* ── Retour / Accueil ── */}
         <BackHomeButtons home="/online" compact className="hidden sm:flex" />
@@ -215,19 +216,12 @@ export function OnlineNavbar() {
           className="flex shrink-0 items-center gap-2.5 font-bold tracking-tight"
           onClick={() => setMenuOpen(false)}
         >
-          {settings?.logoUrl ? (
-            <img
-              src={mediaUrl(settings.logoUrl)}
-              alt={settings.platformName ?? "UR Online"}
-              className="h-8 w-auto object-contain"
-            />
-          ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl grad-online shadow-glow">
-              <GraduationCap className="h-4.5 w-4.5 text-white" />
-            </div>
-          )}
-          <span className="hidden bg-gradient-to-r from-online to-purple-500 bg-clip-text text-transparent sm:block">
-            {settings?.platformName ?? "UR Online"}
+          <LogoMark className="h-10" />
+          <span className="hidden leading-none sm:block">
+            <span className="block whitespace-nowrap text-[16px] font-semibold tracking-tight text-foreground" style={serif}>Université Références</span>
+            <span className="mt-1 block text-[9px] font-medium uppercase tracking-[0.28em] text-online">
+              {settings?.platformName && settings.platformName !== "UR Online" ? settings.platformName : "Cours en ligne"}
+            </span>
           </span>
         </Link>
 
@@ -376,13 +370,13 @@ export function OnlineNavbar() {
           <div className="flex items-center gap-2">
             <Link
               to="/online/login"
-              className="rounded-lg border px-3.5 py-2 text-sm font-medium hover:bg-accent transition-colors"
+              className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               Connexion
             </Link>
             <Link
               to="/online/register"
-              className="rounded-xl grad-online px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+              className="rounded-full grad-online px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(59,45,143,0.6)] transition hover:-translate-y-px hover:opacity-95"
             >
               S'inscrire
             </Link>
