@@ -48,18 +48,34 @@ export function useFacebookUrl() {
 }
 
 // Thème choisi par le visiteur, gardé dans son navigateur.
+// Un changement dans un composant (bouton du menu) prévient les autres (mise en page).
 const THEME_KEY = "ur-site-theme";
+const THEME_EVENT = "ur-site-theme";
 export function useSiteTheme() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
-    try { setDark(localStorage.getItem(THEME_KEY) === "dark"); } catch { /* stockage indisponible */ }
+    const read = () => { try { setDark(localStorage.getItem(THEME_KEY) === "dark"); } catch { /* stockage indisponible */ } };
+    read();
+    window.addEventListener(THEME_EVENT, read);
+    window.addEventListener("storage", read);
+    return () => { window.removeEventListener(THEME_EVENT, read); window.removeEventListener("storage", read); };
   }, []);
   const toggle = () => {
     const next = !dark;
     setDark(next);
     try { localStorage.setItem(THEME_KEY, next ? "dark" : "light"); } catch { /* stockage indisponible */ }
+    window.dispatchEvent(new Event(THEME_EVENT));
   };
   return { dark, toggle };
+}
+
+// Emblème en couleurs sans fond, éclairé d'un halo blanc pour rester lisible sur une
+// photo ou un fond coloré (pages de connexion).
+export function LogoOnPhoto({ className = "h-36" }: { className?: string }) {
+  return (
+    <img src="/logo-ur-embleme.png" alt="Logo de l'Université Références"
+      className={`${className} w-auto [filter:drop-shadow(0_0_1px_rgba(255,255,255,0.9))_drop-shadow(0_0_18px_rgba(255,255,255,0.55))]`} />
+  );
 }
 
 export const NAV = [

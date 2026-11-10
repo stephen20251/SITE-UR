@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError, tokenStore } from "@/lib/api";
 import { classroomDashboard } from "@/components/classroom/shared";
-import { Logo, serif } from "@/components/site-layout";
+import { LogoMark, LogoOnPhoto, serif } from "@/components/site-layout";
 
 export const Route = createFileRoute("/classroom/")({ component: ClassroomLogin });
 
@@ -55,7 +55,7 @@ function ClassroomLogin() {
         </Link>
 
         <div className="flex flex-col items-center text-center">
-          <Logo size={112} />
+          <LogoOnPhoto />
           <h1 className="mt-8 text-4xl font-semibold tracking-tight" style={serif}>Université Références</h1>
           <p className="mt-3 text-xs font-medium uppercase tracking-[0.3em] text-white/70">Espace université</p>
         </div>
@@ -73,7 +73,7 @@ function ClassroomLogin() {
 
           {/* Logo (petits écrans) */}
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <Logo size={44} />
+            <LogoMark className="h-11" />
             <div>
               <p className="font-semibold text-foreground" style={serif}>Université Références</p>
               <p className="text-xs text-muted-foreground">Espace université</p>

@@ -2,13 +2,13 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import React, { useEffect, useState, type ReactNode } from "react";
 import {
   GraduationCap, LogOut, X, Menu, MessageSquare, LayoutDashboard,
-  BookOpen, User, Shield, ChevronDown, Bell, CheckCircle2, AlertCircle, Award, Crown,
+  BookOpen, User, Shield, ChevronDown, Bell, CheckCircle2, AlertCircle, Award, Crown, Moon, Sun,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useAuth } from "@/lib/auth";
 import { BackHomeButtons } from "@/components/nav-buttons";
-import { LogoMark, serif } from "@/components/site-layout";
+import { LogoMark, serif, useSiteTheme } from "@/components/site-layout";
 import { usePublicSettings } from "@/lib/lms-admin";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/lib/notifications";
 import { useOnlineUnreadCount } from "@/lib/chat";
@@ -178,6 +178,14 @@ export function OnlineNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const onlineUnread = useOnlineUnreadCount(!!user);
+  const theme = useSiteTheme();
+  const themeButton = (
+    <button type="button" onClick={theme.toggle}
+      aria-label={theme.dark ? "Passer au thème clair" : "Passer au thème sombre"} title={theme.dark ? "Thème clair" : "Thème sombre"}
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground">
+      {theme.dark ? <Sun className="h-[18px] w-[18px]" strokeWidth={1.5} /> : <Moon className="h-[18px] w-[18px]" strokeWidth={1.5} />}
+    </button>
+  );
 
   const isStudent = effectiveOnlineRole(user) === "STUDENT_ONLINE";
   const isTeacher = effectiveOnlineRole(user) === "TEACHER_ONLINE";
@@ -257,6 +265,7 @@ export function OnlineNavbar() {
         {/* ── Right side ── */}
         {ready && user ? (
           <div className="flex items-center gap-2">
+            {themeButton}
             {/* Admin badge */}
             {isSuperAdmin && (
               <Link
@@ -368,6 +377,7 @@ export function OnlineNavbar() {
           </div>
         ) : (
           <div className="flex items-center gap-2">
+            {themeButton}
             <Link
               to="/online/login"
               className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"

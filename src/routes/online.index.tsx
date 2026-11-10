@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search, Award, ChevronRight, Star, GraduationCap, ShieldCheck, Smartphone, BadgeCheck,
-  UserPlus, MonitorPlay, Medal, Quote, Clock, SlidersHorizontal, X, BookOpen, Layers,
+  UserPlus, MonitorPlay, Medal, Quote, Clock, SlidersHorizontal, X, BookOpen, Layers, ArrowRight,
 } from "lucide-react";
+import { LogoMark, serif } from "@/components/site-layout";
 import { useAuth } from "@/lib/auth";
 import { isHybridUser, OnlineNavbar, initials } from "@/components/online/shared";
 import {
@@ -130,6 +131,7 @@ function OnlineHome() {
   }
 
   const flatCats = categories.flatMap((c) => [c, ...(c.children ?? [])]);
+  const domainCats = flatCats.filter((c) => (c._count?.courses ?? 0) > 0).slice(0, 12);
   const platformName = settings?.platformName ?? "UR Online";
 
   return (
@@ -140,8 +142,7 @@ function OnlineHome() {
       <section className="relative isolate overflow-hidden border-b">
         {/* Fond : photo d'un cours de l'université, voilée pour la lisibilité */}
         <img src="/images/accueil/banniere-cours.jpg" alt="" aria-hidden className="absolute inset-0 -z-20 h-full w-full object-cover" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-white via-white/[0.93] to-white/75 dark:from-slate-950 dark:via-slate-950/[0.93] dark:to-slate-950/75" />
-        <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-white/70 to-transparent dark:from-slate-950/70" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-white/95 via-white/75 to-white/20 dark:from-slate-950/95 dark:via-slate-950/75 dark:to-slate-950/30" />
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-24">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur dark:bg-white/5">
@@ -240,19 +241,42 @@ function OnlineHome() {
       )}
 
       {/* ── DOMAINES ─────────────────────────────────────────────────── */}
-      {flatCats.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 pt-14 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold tracking-tight">Explorer par domaine</h2>
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {flatCats.slice(0, 12).map((cat) => (
+      {/* Domaines ayant au moins un cours publié */}
+      {domainCats.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pt-20 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-online">Catalogue</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl" style={serif}>Explorer par domaine</h2>
+            </div>
+            <button onClick={() => { resetFilters(); scrollToCatalogue(); }} className="group inline-flex items-center gap-2 text-sm font-medium text-online">
+              Tout le catalogue <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </button>
+          </div>
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {domainCats.map((cat, i) => (
               <button
                 key={cat.id}
                 onClick={() => { resetFilters(); setCategoryId(cat.id); scrollToCatalogue(); }}
-                className="flex flex-col items-start gap-2 rounded-xl border bg-card p-4 text-left transition hover:border-online hover:shadow-md"
+                className="group relative isolate flex min-h-[168px] flex-col justify-between overflow-hidden rounded-2xl border bg-card p-6 text-left transition duration-500 hover:-translate-y-1 hover:border-transparent hover:shadow-[0_24px_48px_-20px_rgba(30,20,90,0.5)]"
               >
-                <span className="text-2xl">{cat.icon ?? "📘"}</span>
-                <span className="text-sm font-semibold leading-tight">{cat.name}</span>
-                <span className="text-xs text-muted-foreground">{cat._count?.courses ?? 0} cours</span>
+                {/* Fond qui apparaît au survol */}
+                <span className="absolute inset-0 -z-10 grad-online opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <span className="flex w-full items-start justify-between">
+                  <span className="grid h-12 w-12 place-items-center rounded-full bg-online/5 text-2xl ring-1 ring-online/15 transition duration-500 group-hover:bg-white/15 group-hover:ring-white/25">
+                    {cat.icon ?? "📘"}
+                  </span>
+                  <span className="text-[11px] font-medium tabular-nums tracking-[0.2em] text-muted-foreground transition group-hover:text-white/60">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                </span>
+                <span className="mt-6 block">
+                  <span className="block text-[17px] font-semibold leading-snug transition group-hover:text-white" style={serif}>{cat.name}</span>
+                  <span className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground transition group-hover:text-white/80">
+                    {cat._count?.courses ?? 0} cours
+                    <ArrowRight className="h-3 w-3 -translate-x-1 opacity-0 transition duration-300 group-hover:translate-x-0 group-hover:opacity-100" />
+                  </span>
+                </span>
               </button>
             ))}
           </div>
@@ -550,11 +574,13 @@ function OnlineHome() {
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid gap-10 md:grid-cols-4">
             <div>
-              <div className="flex items-center gap-2.5">
-                <UrMark size={32} />
-                <div>
-                  <div className="font-bold text-white">{platformName}</div>
-                  <div className="text-[11px] text-slate-400">Université Références</div>
+              <div className="flex items-center gap-3">
+                <LogoMark tone="white" className="h-12" />
+                <div className="leading-tight">
+                  <div className="text-lg font-semibold text-white" style={serif}>Université Références</div>
+                  <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.28em] text-slate-400">
+                    {platformName !== "UR Online" ? platformName : "Cours en ligne"}
+                  </div>
                 </div>
               </div>
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">

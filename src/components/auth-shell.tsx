@@ -3,7 +3,7 @@
 // Même présentation que la connexion de l'espace université (/classroom).
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { Logo, serif } from "@/components/site-layout";
+import { LogoMark, LogoOnPhoto, serif } from "@/components/site-layout";
 
 export function AuthShell({ photo, subtitle, backTo, children }: {
   photo: string;
@@ -20,7 +20,7 @@ export function AuthShell({ photo, subtitle, backTo, children }: {
           <ArrowLeft className="h-4 w-4" /> Retour
         </Link>
         <div className="flex flex-col items-center text-center">
-          <Logo size={112} />
+          <LogoOnPhoto />
           <h1 className="mt-8 text-4xl font-semibold tracking-tight" style={serif}>Université Références</h1>
           <p className="mt-3 text-xs font-medium uppercase tracking-[0.3em] text-white/70">{subtitle}</p>
         </div>
@@ -34,7 +34,7 @@ export function AuthShell({ photo, subtitle, backTo, children }: {
             <ArrowLeft className="h-4 w-4" /> Retour
           </Link>
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <Logo size={44} />
+            <LogoMark className="h-11" />
             <div>
               <p className="font-semibold text-foreground" style={serif}>Université Références</p>
               <p className="text-xs text-muted-foreground">{subtitle}</p>
