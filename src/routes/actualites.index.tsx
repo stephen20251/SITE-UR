@@ -90,12 +90,12 @@ function NewsHome() {
       )}
 
       {toc.length > 1 && (
-        <nav aria-label="Rubriques" className="sticky top-20 z-40 border-y border-neutral-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#0b1120]/90">
+        <nav aria-label="Rubriques" className="sticky top-20 z-40 border-y border-slate-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#0b1120]/90">
           <div className="mx-auto flex max-w-7xl gap-8 overflow-x-auto px-4 [scrollbar-width:none] sm:px-6 lg:px-8">
             {toc.map((t) => (
-              <a key={t.href} href={t.href} className={`group relative shrink-0 py-4 text-neutral-600 transition hover:text-black dark:text-slate-300 dark:hover:text-white ${UI.label} !text-[10px]`}>
+              <a key={t.href} href={t.href} className={`group relative shrink-0 py-4 text-slate-600 transition hover:text-[#14204a] dark:text-slate-300 dark:hover:text-white ${UI.label} !text-[10px]`}>
                 {t.label}
-                <span className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-black transition-transform duration-300 group-hover:scale-x-100 dark:bg-[#e3262b]" />
+                <span className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-[#14204a] transition-transform duration-300 group-hover:scale-x-100 dark:bg-[#e3262b]" />
               </a>
             ))}
           </div>

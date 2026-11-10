@@ -74,25 +74,25 @@ export function MentionPanel({ mentionId, fallbackImage, onClose }: { mentionId:
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-labelledby="mention-title">
       {/* Voile : un clic à côté ferme la fenêtre */}
       <div onClick={close}
-        className={`absolute inset-0 bg-black/60 backdrop-blur-[3px] ${closing ? "motion-safe:animate-[veil-out_0.32s_ease-in_both]" : "motion-safe:animate-[veil-in_0.4s_ease-out_both]"}`} />
+        className={`absolute inset-0 bg-[#14204a]/60 backdrop-blur-[3px] ${closing ? "motion-safe:animate-[veil-out_0.32s_ease-in_both]" : "motion-safe:animate-[veil-in_0.4s_ease-out_both]"}`} />
 
       <aside className={`absolute inset-y-0 right-0 flex w-full max-w-2xl flex-col bg-white shadow-2xl dark:bg-[#0b1120] ${closing ? "motion-safe:animate-[panel-out_0.32s_cubic-bezier(0.4,0,1,1)_both]" : "motion-safe:animate-[panel-in_0.55s_cubic-bezier(0.16,1,0.3,1)_both]"}`}>
         <button ref={closeBtn} onClick={close} aria-label="Fermer"
-          className="absolute right-4 top-4 z-20 grid h-11 w-11 place-items-center bg-white/90 text-black backdrop-blur transition hover:bg-white dark:bg-[#0b1120]/80 dark:text-white dark:hover:bg-[#0b1120]">
+          className="absolute right-4 top-4 z-20 grid h-11 w-11 place-items-center bg-white/90 text-[#14204a] backdrop-blur transition hover:bg-white dark:bg-[#0b1120]/80 dark:text-white dark:hover:bg-[#0b1120]">
           <X className="h-5 w-5" strokeWidth={1.5} />
         </button>
 
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {/* En-tête : photo, domaine, nom, accroche */}
-          <div className="relative aspect-[4/3] overflow-hidden bg-black sm:aspect-[16/10]">
+          <div className="relative aspect-[4/3] overflow-hidden bg-[#14204a] sm:aspect-[16/10]">
             <img src={img} alt="" className={`h-full w-full object-cover opacity-80 ${UI.photo}`} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0b1430] via-[#0b1430]/30 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-8 sm:p-10">
-              <p className={`${UI.label} text-neutral-300 dark:text-[#f87171]`}>{m?.domain?.name ?? "Mention"}</p>
+              <p className={`${UI.label} text-slate-300 dark:text-[#f87171]`}>{m?.domain?.name ?? "Mention"}</p>
               <h2 id="mention-title" className="mt-3 text-4xl font-semibold leading-[1.05] text-white sm:text-6xl" style={serif}>
                 {m?.name ?? " "}
               </h2>
-              {m?.tagline && <p className="mt-4 max-w-lg text-lg leading-relaxed text-neutral-200">{m.tagline}</p>}
+              {m?.tagline && <p className="mt-4 max-w-lg text-lg leading-relaxed text-slate-200">{m.tagline}</p>}
             </div>
           </div>
 
@@ -144,7 +144,7 @@ export function MentionPanel({ mentionId, fallbackImage, onClose }: { mentionId:
                     <ul className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
                       {m.skills.map((s, i) => (
                         <li key={i} className={`flex items-start gap-3 leading-relaxed ${UI.text}`}>
-                          <Check className="mt-1 h-4 w-4 shrink-0 text-black dark:text-[#f87171]" strokeWidth={2} /> {s}
+                          <Check className="mt-1 h-4 w-4 shrink-0 text-[#14204a] dark:text-[#f87171]" strokeWidth={2} /> {s}
                         </li>
                       ))}
                     </ul>
@@ -153,7 +153,7 @@ export function MentionPanel({ mentionId, fallbackImage, onClose }: { mentionId:
 
                 {m.parcours.length > 0 && (
                   <Section n={num()} title="Parcours proposés">
-                    <div className="grid gap-px bg-neutral-200 dark:bg-white/10 sm:grid-cols-2">
+                    <div className="grid gap-px bg-slate-200 dark:bg-white/10 sm:grid-cols-2">
                       {m.parcours.map((p) => (
                         <div key={p.id} className="bg-white p-6 dark:bg-[#0b1120]">
                           <p className={`text-lg font-semibold ${UI.title}`} style={serif}>{p.name}</p>
@@ -196,7 +196,7 @@ export function MentionPanel({ mentionId, fallbackImage, onClose }: { mentionId:
                   <Section n={num()} title="Débouchés">
                     <ul className="flex flex-wrap gap-2">
                       {m.careers.map((c, i) => (
-                        <li key={i} className={`border border-neutral-300 px-4 py-2 text-sm dark:border-white/20 ${UI.title}`}>{c}</li>
+                        <li key={i} className={`border border-slate-300 px-4 py-2 text-sm dark:border-white/20 ${UI.title}`}>{c}</li>
                       ))}
                     </ul>
                   </Section>

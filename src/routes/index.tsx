@@ -105,7 +105,7 @@ const { photo: gray, label, eyebrow: eyebrowColor, title: titleColor, text: text
 function SectionTitle({ eyebrow, title, light = false, center = false }: { eyebrow: string; title: React.ReactNode; light?: boolean; center?: boolean }) {
   return (
     <div className={center ? "text-center" : ""}>
-      <p className={`${label} ${light ? "text-neutral-400 dark:text-[#f87171]" : eyebrowColor}`}>{eyebrow}</p>
+      <p className={`${label} ${light ? "text-[#f87171]" : eyebrowColor}`}>{eyebrow}</p>
       <h2 className={`mt-4 text-4xl font-semibold leading-[1.1] sm:text-5xl ${light ? "text-white" : titleColor}`} style={serif}>{title}</h2>
     </div>
   );
@@ -117,16 +117,16 @@ function EventItem({ ev }: { ev: UniversityEvent }) {
   const past = new Date(ev.endAt ?? ev.startAt).getTime() < Date.now();
   return (
     <article className="group">
-      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-[#162036]">
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-[#162036]">
         {img && <img src={img} alt="" className={`h-full w-full object-cover ${gray} transition duration-700 group-hover:scale-[1.03]`} />}
         <div className="absolute left-0 top-0 bg-white px-4 py-3 text-center">
-          <div className="text-2xl font-semibold leading-none text-black dark:text-[#e3262b]" style={serif}>{start.getDate()}</div>
-          <div className={`mt-1 text-neutral-500 ${label} !text-[9px]`}>{start.toLocaleDateString("fr-FR", { month: "short" })}</div>
+          <div className="text-2xl font-semibold leading-none text-[#e3262b]" style={serif}>{start.getDate()}</div>
+          <div className={`mt-1 text-slate-500 ${label} !text-[9px]`}>{start.toLocaleDateString("fr-FR", { month: "short" })}</div>
         </div>
-        {past && <span className={`absolute right-3 top-3 bg-black/70 px-2 py-1 text-white ${label} !text-[9px]`}>Passé</span>}
+        {past && <span className={`absolute right-3 top-3 bg-[#14204a]/70 px-2 py-1 text-white ${label} !text-[9px]`}>Passé</span>}
       </div>
       <h3 className={`mt-5 text-xl font-semibold leading-snug ${titleColor}`} style={serif}>{ev.title}</h3>
-      <p className="mt-2 text-sm text-neutral-500 dark:text-slate-400">{fmtDate(ev.startAt)}{ev.location ? ` · ${ev.location}` : ""}</p>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{fmtDate(ev.startAt)}{ev.location ? ` · ${ev.location}` : ""}</p>
       {ev.description && <p className={`mt-3 line-clamp-3 text-sm leading-relaxed ${textColor}`}>{ev.description}</p>}
     </article>
   );
@@ -162,7 +162,7 @@ function Home() {
         <div className="mx-auto grid max-w-7xl items-center gap-16 px-4 py-28 sm:px-6 lg:grid-cols-2 lg:px-8">
           <div className="relative pb-12">
             <img src={IMG.about} alt="Étudiants de l'Université Références" className={`aspect-[4/3] w-full object-cover object-[75%_center] lg:aspect-[5/6] ${gray}`} />
-            <figure className="absolute bottom-0 right-0 max-w-xs bg-black p-7 dark:bg-[#e3262b] sm:-right-8">
+            <figure className="absolute bottom-0 right-0 max-w-xs bg-[#e3262b] p-7 shadow-xl sm:-right-8">
               <blockquote className="text-lg italic leading-snug text-white" style={serif}>
                 « Former aujourd'hui les compétences dont Madagascar a besoin demain. »
               </blockquote>
@@ -175,14 +175,14 @@ function Home() {
               développer pleinement son potentiel académique et professionnel. L'université réunit trois domaines :
               Sciences de la Société, Sciences de l’Ingénieur, Formation pratique et professionnelle.
             </p>
-            <dl className="mt-10 divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-white/10 dark:border-white/10">
+            <dl className="mt-10 divide-y divide-slate-200 border-y border-slate-200 dark:divide-white/10 dark:border-white/10">
               {[
                 ["01", "Une pédagogie innovante", "Projets, travaux pratiques et études de cas : on apprend en faisant."],
                 ["02", "Des enseignants expérimentés", "Ils allient exigence académique et connaissance du monde professionnel."],
                 ["03", "Des diplômés prêts pour l'emploi", "Des compétences recherchées, au niveau national comme à l'international."],
               ].map(([n, t, d]) => (
                 <div key={n} className="flex gap-6 py-5">
-                  <dt className="text-sm text-neutral-400 dark:text-[#f87171]" style={serif}>{n}</dt>
+                  <dt className="text-sm text-[#e3262b] dark:text-[#f87171]" style={serif}>{n}</dt>
                   <dd>
                     <p className={`font-semibold ${titleColor}`}>{t}</p>
                     <p className={`mt-1 text-sm leading-relaxed ${textColor}`}>{d}</p>
@@ -195,13 +195,13 @@ function Home() {
       </section>
 
       {/* ── FORMATIONS ──────────────────────────────────────────────────── */}
-      <section id="formations" className="scroll-mt-20 bg-neutral-50 dark:bg-[#0f172a]">
+      <section id="formations" className="scroll-mt-20 bg-slate-50 dark:bg-[#0f172a]">
         <div className="mx-auto max-w-7xl px-4 py-28 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <SectionTitle eyebrow="Formations" title="Nos mentions" />
             <p className={`max-w-md ${textColor}`}>Trois mentions, accessibles en présentiel ou en ligne.</p>
           </div>
-          <div className="mt-16 grid gap-px bg-neutral-200 dark:bg-white/10 md:grid-cols-3">
+          <div className="mt-16 grid gap-px bg-slate-200 dark:bg-white/10 md:grid-cols-3">
             {faculties.map((f) => {
               // Photo : celle de la mention (administration), sinon celle du domaine.
               const first = f.mentions[0];
@@ -212,17 +212,17 @@ function Home() {
                   <button type="button" disabled={!first} onClick={() => first && open(first.id)} tabIndex={-1} aria-hidden
                     className="relative aspect-[4/3] overflow-hidden enabled:cursor-pointer">
                     <img src={image} alt="" className={`h-full w-full object-cover ${gray} transition duration-700 group-hover:scale-[1.03]`} />
-                    <span className="absolute inset-0 bg-black/0 transition duration-500 group-hover:bg-black/10" />
+                    <span className="absolute inset-0 bg-[#14204a]/0 transition duration-500 group-hover:bg-[#14204a]/10" />
                   </button>
                   <div className="flex flex-1 flex-col p-8">
-                    <p className={`${label} text-neutral-400 dark:text-[#f87171]`}>{f.name}</p>
-                    {f.mentions.length === 0 && <p className="mt-4 text-sm italic text-neutral-500 dark:text-slate-400">Mentions en préparation.</p>}
+                    <p className={`${label} text-[#e3262b] dark:text-[#f87171]`}>{f.name}</p>
+                    {f.mentions.length === 0 && <p className="mt-4 text-sm italic text-slate-500 dark:text-slate-400">Mentions en préparation.</p>}
                     {f.mentions.map((m) => (
                       <button key={m.id} type="button" onClick={() => open(m.id)} aria-haspopup="dialog"
                         className="group/m mt-4 flex flex-1 flex-col text-left">
                         <h3 className={`text-2xl font-semibold ${titleColor}`} style={serif}>{m.name}</h3>
                         <p className={`mt-3 line-clamp-4 text-sm leading-relaxed ${textColor}`}>{m.tagline || MENTION_TEXT[m.name] || m.description}</p>
-                        <span className={`mt-auto inline-flex items-center gap-2 pt-6 ${label} !text-[10px] text-black dark:text-[#f87171]`}>
+                        <span className={`mt-auto inline-flex items-center gap-2 pt-6 ${label} !text-[10px] text-[#e3262b] dark:text-[#f87171]`}>
                           <span className="border-b border-transparent pb-0.5 transition group-hover/m:border-current">Découvrir la mention</span>
                           <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/m:translate-x-1" />
                         </span>
@@ -241,22 +241,22 @@ function Home() {
       </section>
 
       {/* ── POURQUOI NOUS CHOISIR : devise et valeurs ───────────────────── */}
-      <section className="bg-black dark:bg-[#0f172a]">
+      <section className="bg-gradient-to-br from-[#14204a] to-[#0b1430] dark:from-[#0f172a] dark:to-[#0f172a]">
         <div className="mx-auto max-w-7xl px-4 py-28 sm:px-6 lg:px-8">
-          <p className={`${label} text-neutral-400 dark:text-[#f87171]`}>Pourquoi l'Université Références</p>
+          <p className={`${label} text-[#f87171]`}>Pourquoi l'Université Références</p>
           <blockquote className="mt-6 max-w-4xl text-4xl font-semibold leading-[1.1] text-white sm:text-6xl" style={serif}>
             « Investir le présent, gagner l'avenir. »
           </blockquote>
-          <p className="mt-8 max-w-2xl text-lg leading-relaxed text-neutral-400">
+          <p className="mt-8 max-w-2xl text-lg leading-relaxed text-slate-400">
             Former des professionnels qualifiés grâce à une pédagogie innovante, des enseignants expérimentés et un
             accompagnement personnalisé.
           </p>
-          <div className="mt-16 grid gap-px bg-white/10 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-16 grid gap-px bg-white/15 sm:grid-cols-2 lg:grid-cols-5">
             {VALUES.map(({ Icon, t, d }) => (
-              <div key={t} className="bg-black p-8 dark:bg-[#0f172a] sm:last:col-span-2 lg:last:col-span-1">
-                <Icon className="h-7 w-7 text-white dark:text-[#f87171]" strokeWidth={1.25} />
+              <div key={t} className="bg-[#14204a] p-8 transition hover:bg-[#1c2a5e] dark:bg-[#0f172a] sm:last:col-span-2 lg:last:col-span-1">
+                <Icon className="h-7 w-7 text-[#f87171]" strokeWidth={1.25} />
                 <h3 className="mt-6 text-xl font-semibold text-white" style={serif}>{t}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-neutral-400">{d}</p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">{d}</p>
               </div>
             ))}
           </div>
@@ -272,8 +272,8 @@ function Home() {
             <ol className="mt-12 space-y-10">
               {STEPS.map((s, i) => (
                 <li key={s.t} className="flex gap-8">
-                  <span className="w-12 shrink-0 text-5xl font-semibold leading-none text-neutral-300 dark:text-[#e3262b]" style={serif}>{i + 1}</span>
-                  <div className="border-t border-neutral-200 pt-4 dark:border-white/10">
+                  <span className="w-12 shrink-0 text-5xl font-semibold leading-none text-[#e3262b]" style={serif}>{i + 1}</span>
+                  <div className="border-t border-slate-200 pt-4 dark:border-white/10">
                     <h3 className={`text-xl font-semibold ${titleColor}`} style={serif}>{s.t}</h3>
                     <p className={`mt-2 text-sm leading-relaxed ${textColor}`}>{s.d}</p>
                   </div>
@@ -301,12 +301,12 @@ function Home() {
               <SectionTitle eyebrow="Actualité" title="Agenda de l'université" />
               <p className={`mt-5 max-w-xl ${textColor}`}>Rentrée, examens, conférences, soutenances : les rendez-vous de l'Université Références.</p>
             </div>
-            <a href="/actualites" className={`group inline-flex items-center gap-2 border-b border-black pb-1 text-black dark:border-[#f87171] dark:text-[#f87171] ${label}`}>
+            <a href="/actualites" className={`group inline-flex items-center gap-2 border-b border-[#e3262b] pb-1 text-[#e3262b] dark:border-[#f87171] dark:text-[#f87171] ${label}`}>
               Toutes les actualités <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </a>
           </div>
           {events.isLoading ? null : eventList.length === 0 ? (
-            <p className="mt-14 border-t border-neutral-200 pt-10 text-neutral-500 dark:border-white/10 dark:text-slate-400">Les prochains rendez-vous de l'université seront publiés ici.</p>
+            <p className="mt-14 border-t border-slate-200 pt-10 text-slate-500 dark:border-white/10 dark:text-slate-400">Les prochains rendez-vous de l'université seront publiés ici.</p>
           ) : (
             <div className="mt-16 grid gap-12 md:grid-cols-3">{eventList.map((ev) => <EventItem key={ev.id} ev={ev} />)}</div>
           )}
@@ -314,11 +314,11 @@ function Home() {
       </section>
 
       {/* ── VIE AU CAMPUS ───────────────────────────────────────────────── */}
-      <section className="bg-black dark:bg-[#0f172a]">
+      <section className="bg-gradient-to-br from-[#0b1430] to-[#14204a] dark:from-[#0f172a] dark:to-[#0f172a]">
         <div className="mx-auto max-w-7xl px-4 py-28 sm:px-6 lg:px-8">
           <div className="grid items-end gap-8 lg:grid-cols-2">
             <SectionTitle eyebrow="Vie au campus" title="Plus qu'un lieu d'étude." light />
-            <p className="text-lg leading-relaxed text-neutral-400">
+            <p className="text-lg leading-relaxed text-slate-400">
               Associations, culture, sport et entraide : ici, chacun trouve sa place et construit son réseau.
             </p>
           </div>
@@ -326,7 +326,7 @@ function Home() {
             {IMG.campus.map((c) => (
               <div key={c.title} className="group relative overflow-hidden">
                 <img src={c.img} alt="" className={`aspect-[4/5] w-full object-cover ${gray} opacity-80 transition duration-700 group-hover:scale-[1.03] group-hover:opacity-100`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0b1430]/80 via-transparent to-transparent" />
                 <h3 className="absolute bottom-6 left-6 text-2xl font-semibold text-white" style={serif}>{c.title}</h3>
               </div>
             ))}
@@ -338,14 +338,14 @@ function Home() {
       <section id="contact" className="scroll-mt-20">
         <div className="mx-auto max-w-7xl px-4 py-28 sm:px-6 lg:px-8">
           <SectionTitle eyebrow="Contact" title="Par où commencer ?" />
-          <div className="mt-16 grid gap-px bg-neutral-200 dark:bg-white/10 md:grid-cols-3">
+          <div className="mt-16 grid gap-px bg-slate-200 dark:bg-white/10 md:grid-cols-3">
             {[
               { href: "/classroom?candidater=1", Icon: UserPlus, t: "Candidater", d: "Créez votre dossier en ligne, choisissez votre mention : le secrétariat des admissions vous répond.", cta: "Déposer ma candidature" },
               { href: "/classroom", Icon: Building2, t: "Espace université", d: "Étudiants, parents et enseignants : connectez-vous à votre espace.", cta: "Se connecter" },
               { href: "/online", Icon: MonitorPlay, t: "Cours en ligne", d: "Cours certifiants ouverts à tous, à suivre à votre rythme.", cta: "Explorer les cours" },
             ].map(({ href, Icon, t, d, cta }) => (
-              <a key={t} href={href} className="group flex flex-col bg-white p-10 transition hover:bg-neutral-50 dark:bg-[#162036] dark:hover:bg-[#1c2944]">
-                <Icon className="h-6 w-6 text-black dark:text-[#f87171]" strokeWidth={1.5} />
+              <a key={t} href={href} className="group flex flex-col bg-white p-10 transition hover:bg-slate-50 dark:bg-[#162036] dark:hover:bg-[#1c2944]">
+                <Icon className="h-6 w-6 text-[#e3262b] dark:text-[#f87171]" strokeWidth={1.5} />
                 <h3 className={`mt-8 text-2xl font-semibold ${titleColor}`} style={serif}>{t}</h3>
                 <p className={`mt-3 flex-1 text-sm leading-relaxed ${textColor}`}>{d}</p>
                 <span className={`mt-8 inline-flex items-center gap-2 ${titleColor} ${label}`}>
@@ -358,11 +358,11 @@ function Home() {
       </section>
 
       {/* ── ADRESSE ─────────────────────────────────────────────────────── */}
-      <section id="adresse" className="scroll-mt-20 bg-neutral-50 dark:bg-[#0f172a]">
+      <section id="adresse" className="scroll-mt-20 bg-slate-50 dark:bg-[#0f172a]">
         <div className="mx-auto grid max-w-7xl gap-12 px-4 py-28 sm:px-6 lg:grid-cols-[1fr_1.6fr] lg:px-8">
           <div className="flex flex-col justify-center">
             <SectionTitle eyebrow="Contact" title="Nous trouver" />
-            <ul className="mt-8 space-y-4 text-neutral-700 dark:text-slate-300">
+            <ul className="mt-8 space-y-4 text-slate-700 dark:text-slate-300">
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.5} />
                 <span>Université Références<br />{CONTACT.address}<br />{CONTACT.city}</span>

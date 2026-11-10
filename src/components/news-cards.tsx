@@ -5,11 +5,11 @@ import { categoryLabel, fmtNewsDate, fmtNewsDateTime, newsImage, type NewsSummar
 import { UI, serif } from "@/components/site-layout";
 
 // Fond d'une actualité sans image
-const FALLBACK = "bg-neutral-200 dark:bg-gradient-to-br dark:from-[#1b1a4a] dark:via-[#26246b] dark:to-[#6b1418]";
+const FALLBACK = "bg-slate-200 dark:bg-gradient-to-br dark:from-[#1b1a4a] dark:via-[#26246b] dark:to-[#6b1418]";
 
 export function CategoryBadge({ item }: { item: Pick<NewsSummary, "category"> }) {
   return (
-    <span className={`inline-block bg-black px-3 py-1.5 text-white dark:bg-[#e3262b] ${UI.label} !text-[10px] !tracking-[0.2em]`}>
+    <span className={`inline-block bg-[#e3262b] px-3 py-1.5 text-white ${UI.label} !text-[10px] !tracking-[0.2em]`}>
       {categoryLabel(item.category)}
     </span>
   );
@@ -29,17 +29,17 @@ function EventDetails({ item }: { item: NewsSummary }) {
 export function FeaturedNews({ item }: { item: NewsSummary }) {
   const img = newsImage(item.imageUrl);
   return (
-    <Link to="/actualites/$slug" params={{ slug: item.slug }} className="group relative block overflow-hidden bg-black">
+    <Link to="/actualites/$slug" params={{ slug: item.slug }} className="group relative block overflow-hidden bg-[#14204a]">
       <div className="relative aspect-[4/5] sm:aspect-[16/9] lg:aspect-[21/9]">
         {img
           ? <img src={img} alt="" className={`absolute inset-0 h-full w-full object-cover ${UI.photo} transition-transform duration-700 group-hover:scale-[1.03]`} />
           : <div className={`absolute inset-0 ${FALLBACK}`} />}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1430]/90 via-[#0b1430]/40 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-6 sm:p-10">
           <CategoryBadge item={item} />
           <h2 className="mt-4 max-w-4xl text-3xl font-semibold leading-tight text-white sm:text-5xl" style={serif}>{item.title}</h2>
-          {item.excerpt && <p className="mt-4 hidden max-w-3xl text-lg leading-relaxed text-neutral-200 sm:block">{item.excerpt}</p>}
-          <p className={`mt-4 text-neutral-300 ${UI.label}`}>{fmtNewsDate(item.publishedAt)}</p>
+          {item.excerpt && <p className="mt-4 hidden max-w-3xl text-lg leading-relaxed text-slate-200 sm:block">{item.excerpt}</p>}
+          <p className={`mt-4 text-slate-300 ${UI.label}`}>{fmtNewsDate(item.publishedAt)}</p>
         </div>
       </div>
     </Link>
@@ -50,7 +50,7 @@ export function NewsCard({ item }: { item: NewsSummary }) {
   const img = newsImage(item.imageUrl);
   return (
     <article className="group flex flex-col">
-      <Link to="/actualites/$slug" params={{ slug: item.slug }} className="relative block aspect-[16/10] overflow-hidden bg-neutral-100 dark:bg-[#162036]">
+      <Link to="/actualites/$slug" params={{ slug: item.slug }} className="relative block aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-[#162036]">
         {img
           ? <img src={img} alt="" className={`h-full w-full object-cover ${UI.photo} transition duration-700 group-hover:scale-[1.03]`} />
           : <div className={`h-full w-full ${FALLBACK}`} />}
@@ -71,7 +71,7 @@ export function NewsCard({ item }: { item: NewsSummary }) {
 // Ligne compacte : annonces, résultats, publications, archives.
 export function NewsRow({ item, showCategory = false }: { item: NewsSummary; showCategory?: boolean }) {
   return (
-    <article className={`p-6 transition hover:ring-neutral-400 dark:hover:ring-white/25 ${UI.card}`}>
+    <article className={`p-6 transition hover:ring-slate-400 dark:hover:ring-white/25 ${UI.card}`}>
       <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 ${UI.label} !text-[10px]`}>
         <span className={UI.muted}>{fmtNewsDate(item.publishedAt)}</span>
         {showCategory && <span className={UI.accent}>{categoryLabel(item.category)}</span>}

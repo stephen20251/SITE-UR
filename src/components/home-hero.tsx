@@ -75,7 +75,7 @@ export function HomeHero() {
       aria-label="Présentation de l'université"
       onMouseEnter={pause}
       onMouseLeave={resume}
-      className="relative isolate flex min-h-[calc(100svh-80px)] items-end overflow-hidden bg-black dark:bg-[#0b1120]"
+      className="relative isolate flex min-h-[calc(100svh-80px)] items-end overflow-hidden bg-[#14204a] dark:bg-[#0b1120]"
     >
       <video
         ref={video}
@@ -91,24 +91,24 @@ export function HomeHero() {
         <source src={`${PHOTO}/banniere-video-mobile.mp4`} type="video/mp4" media="(max-width: 767px)" />
         <source src={`${PHOTO}/banniere-video.mp4`} type="video/mp4" />
       </video>
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black via-black/40 to-black/20 dark:from-[#0b1120] dark:via-[#0b1120]/50" />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/50 to-transparent" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0b1430] via-[#0b1430]/40 to-[#0b1430]/20 dark:from-[#0b1120] dark:via-[#0b1120]/50" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#0b1430]/50 to-transparent" />
 
       <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-32 sm:px-6 lg:px-8">
         {/* Texte de la photo affichée (réanimé à chaque changement) */}
         <div key={`texte-${index}`} className="max-w-4xl" aria-live="polite">
-          <p className={`${UI.label} text-neutral-300 dark:text-[#f87171] motion-safe:animate-[hero-rise_0.9s_ease-out_both]`}>{slide.eyebrow}</p>
+          <p className={`${UI.label} text-[#fca5a5] motion-safe:animate-[hero-rise_0.9s_ease-out_both]`}>{slide.eyebrow}</p>
           <h1 className="mt-6 text-5xl font-semibold leading-[1.04] text-white sm:text-6xl lg:text-7xl motion-safe:animate-[hero-rise_0.9s_0.12s_ease-out_both]" style={serif}>
             {slide.title}
           </h1>
-          <p className="mt-8 max-w-xl text-lg leading-relaxed text-neutral-300 motion-safe:animate-[hero-rise_0.9s_0.24s_ease-out_both]">{slide.text}</p>
+          <p className="mt-8 max-w-xl text-lg leading-relaxed text-slate-300 motion-safe:animate-[hero-rise_0.9s_0.24s_ease-out_both]">{slide.text}</p>
         </div>
 
         <div className="mt-10 flex flex-wrap gap-4">
-          <a href="#formations" className="inline-flex items-center gap-2 bg-white px-7 py-3.5 text-sm font-medium tracking-wide text-black transition hover:bg-neutral-200 dark:bg-[#e3262b] dark:text-white dark:hover:bg-[#c81e23]">
+          <a href="#formations" className="inline-flex items-center gap-2 bg-[#e3262b] px-7 py-3.5 text-sm font-medium tracking-wide text-white shadow-[0_10px_24px_-10px_rgba(227,38,43,0.8)] transition hover:-translate-y-px hover:bg-[#c81e23]">
             Découvrir nos formations <ArrowRight className="h-4 w-4" />
           </a>
-          <a href="/classroom?candidater=1" className="inline-flex items-center gap-2 border border-white/70 px-7 py-3.5 text-sm font-medium tracking-wide text-white transition hover:bg-white hover:text-black">
+          <a href="/classroom?candidater=1" className="inline-flex items-center gap-2 border border-white/70 px-7 py-3.5 text-sm font-medium tracking-wide text-white transition hover:bg-white hover:text-[#14204a]">
             Déposer ma candidature
           </a>
         </div>
@@ -121,23 +121,23 @@ export function HomeHero() {
                 className="group text-left">
                 <span className="relative block h-px overflow-hidden bg-white/25">
                   {k === index && (
-                    <span ref={bar} className="absolute inset-0 origin-left scale-x-0 bg-white dark:bg-[#e3262b]" />
+                    <span ref={bar} className="absolute inset-0 origin-left scale-x-0 bg-[#e3262b]" />
                   )}
                 </span>
                 <span className="mt-4 flex items-baseline gap-3">
-                  <span className={`text-sm ${k === index ? "text-white" : "text-neutral-500 group-hover:text-neutral-300"}`} style={serif}>0{k + 1}</span>
-                  <span className={`hidden ${UI.label} !text-[10px] transition sm:inline ${k === index ? "text-white" : "text-neutral-500 group-hover:text-neutral-300"}`}>{s.tab}</span>
+                  <span className={`text-sm ${k === index ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`} style={serif}>0{k + 1}</span>
+                  <span className={`hidden ${UI.label} !text-[10px] transition sm:inline ${k === index ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`}>{s.tab}</span>
                 </span>
               </button>
             ))}
           </div>
           <div className="hidden gap-2 sm:flex">
             <button type="button" onClick={() => go(index - 1)} aria-label="Photo précédente"
-              className="grid h-11 w-11 place-items-center border border-white/30 text-white transition hover:bg-white hover:text-black">
+              className="grid h-11 w-11 place-items-center border border-white/30 text-white transition hover:bg-white hover:text-[#14204a]">
               <ArrowLeft className="h-4 w-4" />
             </button>
             <button type="button" onClick={() => go(index + 1)} aria-label="Photo suivante"
-              className="grid h-11 w-11 place-items-center border border-white/30 text-white transition hover:bg-white hover:text-black">
+              className="grid h-11 w-11 place-items-center border border-white/30 text-white transition hover:bg-white hover:text-[#14204a]">
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>

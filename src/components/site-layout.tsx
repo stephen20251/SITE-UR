@@ -20,17 +20,17 @@ export const SITE_FONTS = "https://fonts.googleapis.com/css2?family=Playfair+Dis
 // #162036 (cartes), rouge #e3262b, rouge clair #f87171.
 export const UI = {
   label: "text-[11px] font-medium uppercase tracking-[0.28em]",
-  eyebrow: "text-neutral-500 dark:text-[#f87171]",
-  title: "text-black dark:text-white",
-  text: "text-neutral-600 dark:text-slate-400",
-  muted: "text-neutral-500 dark:text-slate-400",
+  eyebrow: "text-[#e3262b] dark:text-[#f87171]",
+  title: "text-[#14204a] dark:text-white",
+  text: "text-slate-600 dark:text-slate-400",
+  muted: "text-slate-500 dark:text-slate-400",
   photo: "", // photos toujours en couleur (classe gardée pour un éventuel filtre commun)
-  altBg: "bg-neutral-50 dark:bg-[#0f172a]",
-  card: "bg-white ring-1 ring-neutral-200 dark:bg-[#162036] dark:ring-white/10",
-  border: "border-neutral-200 dark:border-white/10",
-  accent: "text-black dark:text-[#f87171]",
-  btnDark: "inline-flex items-center justify-center gap-2 bg-black px-7 py-3.5 text-sm font-medium tracking-wide text-white transition hover:bg-neutral-800 dark:bg-[#e3262b] dark:hover:bg-[#c81e23]",
-  btnLine: "inline-flex items-center justify-center gap-2 border border-black px-7 py-3.5 text-sm font-medium tracking-wide text-black transition hover:bg-black hover:text-white dark:border-white/30 dark:text-white dark:hover:bg-white dark:hover:text-[#0b1120]",
+  altBg: "bg-[#f3f6fd] dark:bg-[#0f172a]",
+  card: "bg-white ring-1 ring-slate-200 dark:bg-[#162036] dark:ring-white/10",
+  border: "border-slate-200 dark:border-white/10",
+  accent: "text-[#e3262b] dark:text-[#f87171]",
+  btnDark: "inline-flex items-center justify-center gap-2 bg-[#e3262b] px-7 py-3.5 text-sm font-medium tracking-wide text-white shadow-[0_10px_24px_-10px_rgba(227,38,43,0.7)] transition hover:-translate-y-px hover:bg-[#c81e23]",
+  btnLine: "inline-flex items-center justify-center gap-2 border border-[#14204a] px-7 py-3.5 text-sm font-medium tracking-wide text-[#14204a] transition hover:bg-[#14204a] hover:text-white dark:border-white/30 dark:text-white dark:hover:bg-white dark:hover:text-[#0b1120]",
 };
 
 // Emplacement de l'université (fiche Google Maps « University Reference »)
@@ -132,7 +132,7 @@ function Brand({ mono = false }: { mono?: boolean }) {
       <LogoMark tone="white" className="h-12" />
       <div className="leading-tight">
         <div className="text-lg font-bold text-white" style={serif}>Université</div>
-        <div className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: mono ? "#a3a3a3" : "#f87171" }}>Références</div>
+        <div className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "#f87171" }}>Références</div>
       </div>
     </a>
   );
@@ -148,7 +148,7 @@ export function SiteHeader({ dark, onToggleTheme, current }: { dark: boolean; on
   const [open, setOpen] = useState(false);
   const { label } = UI;
   return (
-    <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#0b1120]/90">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#0b1120]/90">
       <div className="mx-auto flex h-20 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
         <a href="/#top" className="flex items-center gap-3" aria-label="Université Références — accueil">
           <LogoMark className="h-11" />
@@ -162,9 +162,9 @@ export function SiteHeader({ dark, onToggleTheme, current }: { dark: boolean; on
             const active = current === n.href;
             return (
               <a key={n.href} href={n.href} aria-current={active ? "page" : undefined}
-                className={`group relative py-2 transition ${active ? UI.title : "text-neutral-600 hover:text-black dark:text-slate-300 dark:hover:text-white"} ${label}`}>
+                className={`group relative py-2 transition ${active ? UI.title : "text-slate-600 hover:text-[#14204a] dark:text-slate-300 dark:hover:text-white"} ${label}`}>
                 {n.label}
-                <span className={`absolute inset-x-0 -bottom-0.5 h-px origin-left bg-black transition-transform duration-300 group-hover:scale-x-100 dark:bg-[#e3262b] ${active ? "scale-x-100" : "scale-x-0"}`} />
+                <span className={`absolute inset-x-0 -bottom-0.5 h-px origin-left bg-[#e3262b] transition-transform duration-300 group-hover:scale-x-100 ${active ? "scale-x-100" : "scale-x-0"}`} />
               </a>
             );
           })}
@@ -172,24 +172,24 @@ export function SiteHeader({ dark, onToggleTheme, current }: { dark: boolean; on
         <div className="ml-auto flex items-center gap-2 lg:ml-2">
           <button
             onClick={onToggleTheme}
-            className="grid h-10 w-10 place-items-center text-black transition hover:bg-neutral-100 dark:text-slate-200 dark:hover:bg-white/10"
+            className="grid h-10 w-10 place-items-center text-[#14204a] transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10"
             aria-label={dark ? "Passer au thème clair" : "Passer au thème sombre"}
             title={dark ? "Thème clair" : "Thème sombre"}
           >
             {dark ? <Sun className="h-[18px] w-[18px]" strokeWidth={1.5} /> : <Moon className="h-[18px] w-[18px]" strokeWidth={1.5} />}
           </button>
-          <Link to="/choice" className={`hidden items-center bg-black px-5 py-2.5 text-white transition hover:bg-neutral-800 dark:bg-[#e3262b] dark:hover:bg-[#c81e23] sm:inline-flex ${label} !tracking-[0.2em]`}>
+          <Link to="/choice" className={`hidden items-center bg-[#e3262b] px-5 py-2.5 text-white transition hover:bg-[#c81e23] sm:inline-flex ${label} !tracking-[0.2em]`}>
             {user ? "Mon espace" : "Espace numérique"}
           </Link>
-          <button onClick={() => setOpen((v) => !v)} className="grid h-10 w-10 place-items-center text-black dark:text-white lg:hidden" aria-label="Menu" aria-expanded={open}>
+          <button onClick={() => setOpen((v) => !v)} className="grid h-10 w-10 place-items-center text-[#14204a] dark:text-white lg:hidden" aria-label="Menu" aria-expanded={open}>
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
       {open && (
-        <nav className="border-t border-neutral-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-[#0b1120] lg:hidden">
+        <nav className="border-t border-slate-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-[#0b1120] lg:hidden">
           {NAV.map((n) => (
-            <a key={n.href} href={n.href} onClick={() => setOpen(false)} className={`block border-b border-neutral-100 py-3.5 text-neutral-700 dark:border-white/5 dark:text-slate-200 ${label}`}>{n.label}</a>
+            <a key={n.href} href={n.href} onClick={() => setOpen(false)} className={`block border-b border-slate-100 py-3.5 text-slate-700 dark:border-white/5 dark:text-slate-200 ${label}`}>{n.label}</a>
           ))}
           <Link to="/choice" className={`mt-4 flex w-full ${UI.btnDark}`}>{user ? "Mon espace" : "Espace numérique"}</Link>
         </nav>
@@ -203,7 +203,7 @@ export function SitePage({ current, children }: { current?: string; children: Re
   const { dark, toggle } = useSiteTheme();
   return (
     <div className={dark ? "dark" : ""}>
-      <div id="top" className="min-h-screen bg-white text-neutral-900 antialiased dark:bg-[#0b1120] dark:text-slate-200">
+      <div id="top" className="min-h-screen bg-white text-slate-900 antialiased dark:bg-[#0b1120] dark:text-slate-200">
         <SiteHeader dark={dark} onToggleTheme={toggle} current={current} />
         {children}
         {/* Pied de page : noir en thème clair, bleu nuit et rouge en thème sombre */}
@@ -217,7 +217,7 @@ export function SitePage({ current, children }: { current?: string; children: Re
 export function SiteFooter({ mono = false }: { mono?: boolean }) {
   const facebook = useFacebookUrl();
   return (
-    <footer className="border-t border-white/10" style={{ background: mono ? "#000000" : "#070b16" }}>
+    <footer className="border-t border-white/10" style={{ background: mono ? "#0b1430" : "#070b16" }}>
       <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
           <Brand mono={mono} />
@@ -246,7 +246,7 @@ export function SiteFooter({ mono = false }: { mono?: boolean }) {
         <div>
           <h3 className="text-lg font-bold text-white" style={serif}>Espace numérique</h3>
           <p className="mt-5 text-sm text-slate-400">Accédez à votre espace selon votre profil.</p>
-          <Link to="/choice" className={`mt-4 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold ${mono ? "bg-white text-black hover:bg-neutral-200" : "text-white"}`} style={mono ? undefined : { background: "#e3262b" }}>
+          <Link to="/choice" className={`mt-4 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white hover:opacity-90`} style={{ background: "#e3262b" }}>
             <LogIn className="h-4 w-4" /> Se connecter
           </Link>
         </div>
@@ -276,13 +276,13 @@ export function EventCard({ ev }: { ev: UniversityEvent }) {
   const long = (ev.description?.length ?? 0) > 140;
   return (
     <article className={`flex flex-col overflow-hidden transition ${UI.card}`}>
-      <div className="relative aspect-[16/10] overflow-hidden bg-neutral-100 dark:bg-[#0f172a]">
+      <div className="relative aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-[#0f172a]">
         {img && <img src={img} alt="" className={`h-full w-full object-cover ${UI.photo}`} />}
         <div className="absolute left-0 top-0 bg-white px-4 py-3 text-center">
-          <div className="text-2xl font-semibold leading-none text-black dark:text-[#e3262b]" style={serif}>{start.getDate()}</div>
-          <div className={`mt-1 text-neutral-500 ${UI.label} !text-[9px]`}>{start.toLocaleDateString("fr-FR", { month: "short" })}</div>
+          <div className="text-2xl font-semibold leading-none text-[#e3262b]" style={serif}>{start.getDate()}</div>
+          <div className={`mt-1 text-slate-500 ${UI.label} !text-[9px]`}>{start.toLocaleDateString("fr-FR", { month: "short" })}</div>
         </div>
-        <span className={`absolute right-3 top-3 px-2 py-1 ${UI.label} !text-[9px] ${past ? "bg-black/70 text-white" : "bg-black text-white dark:bg-[#e3262b]"}`}>
+        <span className={`absolute right-3 top-3 px-2 py-1 ${UI.label} !text-[9px] ${past ? "bg-[#14204a]/70 text-white" : "bg-[#e3262b] text-white"}`}>
           {past ? "Passé" : "À venir"}
         </span>
       </div>

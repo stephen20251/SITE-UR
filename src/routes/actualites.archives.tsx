@@ -18,7 +18,7 @@ export const Route = createFileRoute("/actualites/archives")({
   component: ArchivesPage,
 });
 
-const selectCls = "h-11 border border-neutral-300 bg-white px-3 text-sm text-black outline-none focus:border-black dark:border-white/15 dark:bg-[#162036] dark:text-slate-100 dark:focus:border-white/40";
+const selectCls = "h-11 border border-slate-300 bg-white px-3 text-sm text-[#14204a] outline-none focus:border-[#14204a] dark:border-white/15 dark:bg-[#162036] dark:text-slate-100 dark:focus:border-white/40";
 
 function ArchivesPage() {
   const [year, setYear] = useState("");
@@ -73,9 +73,9 @@ function ArchivesPage() {
 
         {pages > 1 && (
           <div className={`mt-10 flex items-center justify-center gap-4 text-sm ${UI.text}`}>
-            <button onClick={() => setPage((p) => p - 1)} disabled={page <= 1} className="border border-black px-4 py-2 font-medium text-black transition hover:bg-black hover:text-white disabled:pointer-events-none disabled:opacity-30 dark:border-white/30 dark:text-white dark:hover:bg-white dark:hover:text-[#0b1120]">Précédent</button>
+            <button onClick={() => setPage((p) => p - 1)} disabled={page <= 1} className="border border-[#14204a] px-4 py-2 font-medium text-[#14204a] transition hover:bg-[#14204a] hover:text-white disabled:pointer-events-none disabled:opacity-30 dark:border-white/30 dark:text-white dark:hover:bg-white dark:hover:text-[#0b1120]">Précédent</button>
             <span>Page {page} sur {pages}</span>
-            <button onClick={() => setPage((p) => p + 1)} disabled={page >= pages} className="border border-black px-4 py-2 font-medium text-black transition hover:bg-black hover:text-white disabled:pointer-events-none disabled:opacity-30 dark:border-white/30 dark:text-white dark:hover:bg-white dark:hover:text-[#0b1120]">Suivant</button>
+            <button onClick={() => setPage((p) => p + 1)} disabled={page >= pages} className="border border-[#14204a] px-4 py-2 font-medium text-[#14204a] transition hover:bg-[#14204a] hover:text-white disabled:pointer-events-none disabled:opacity-30 dark:border-white/30 dark:text-white dark:hover:bg-white dark:hover:text-[#0b1120]">Suivant</button>
           </div>
         )}
       </div>
