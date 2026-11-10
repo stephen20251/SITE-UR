@@ -1,58 +1,50 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Globe, Building2, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, MonitorPlay } from "lucide-react";
+import { Logo, SITE_FONTS, serif, useSiteTheme } from "@/components/site-layout";
 
 export const Route = createFileRoute("/choice")({
-  head: () => ({ meta: [{ title: "Choose your system — University" }] }),
+  head: () => ({
+    meta: [{ title: "Espace numérique — Université Références" }],
+    links: [{ rel: "stylesheet", href: SITE_FONTS }],
+  }),
   component: Choice,
 });
 
-function Choice() {
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      <div className="pointer-events-none absolute inset-0 -z-10 opacity-60 [background:radial-gradient(60%_60%_at_30%_20%,oklch(0.58_0.19_260/_.15),transparent),radial-gradient(60%_60%_at_80%_80%,oklch(0.72_0.16_55/_.18),transparent)]" />
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-6 py-16">
-        <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">← Back to home</Link>
-        <h1 className="mt-6 text-center text-4xl font-semibold tracking-tight md:text-6xl">
-          How do you want to learn?
-        </h1>
-        <p className="mt-3 max-w-xl text-center text-muted-foreground">
-          Pick the system that fits you. You can always switch later.
-        </p>
+// Choix de l'espace : même thème que l'accueil (clair noir et blanc, ou sombre bleu nuit et rouge).
+const SPACES = [
+  { to: "/classroom", Icon: Building2, title: "Espace université" },
+  { to: "/online", Icon: MonitorPlay, title: "Cours en ligne" },
+] as const;
 
-        <div className="mt-14 grid w-full gap-6 md:grid-cols-2">
-          {[
-            {
-              to: "/online",
-              icon: <Globe className="h-7 w-7" />,
-              title: "Online System",
-              sub: "Learn from anywhere",
-              desc: "Coursera-style courses, videos, quizzes, certificates and live chat.",
-              grad: "grad-online",
-            },
-            {
-              to: "/classroom",
-              icon: <Building2 className="h-7 w-7" />,
-              title: "Classroom System",
-              sub: "Digitalized campus",
-              desc: "Timetables, attendance, grades, finance, announcements — all connected.",
-              grad: "grad-classroom",
-            },
-          ].map((c) => (
-            <Link
-              key={c.to}
-              to={c.to}
-              className="group relative overflow-hidden rounded-3xl border bg-card p-10 shadow-elegant transition hover:-translate-y-1 hover:shadow-glow"
-            >
-              <div className={`grid h-14 w-14 place-items-center rounded-2xl ${c.grad} text-white`}>{c.icon}</div>
-              <div className="mt-6 text-xs uppercase tracking-wider text-muted-foreground">{c.sub}</div>
-              <h2 className="mt-1 text-3xl font-semibold tracking-tight">{c.title}</h2>
-              <p className="mt-3 max-w-sm text-muted-foreground">{c.desc}</p>
-              <div className="mt-8 inline-flex items-center gap-2 text-sm font-medium">
-                Continue <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-              </div>
-              <div className={`absolute -bottom-24 -right-24 h-64 w-64 rounded-full opacity-20 blur-3xl ${c.grad}`} />
-            </Link>
-          ))}
+function Choice() {
+  const { dark } = useSiteTheme();
+  return (
+    <div className={dark ? "dark" : ""}>
+      <div className="min-h-screen bg-white text-black antialiased dark:bg-[#0b1120] dark:text-white">
+        <div className="mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center px-4 py-16 sm:px-6">
+          <Link to="/" className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.28em] text-neutral-500 transition hover:text-black dark:text-slate-400 dark:hover:text-white">
+            <ArrowLeft className="h-4 w-4" /> Retour à l'accueil
+          </Link>
+          <div className="mt-10"><Logo size={56} /></div>
+          <h1 className="mt-8 text-center text-4xl font-semibold tracking-tight sm:text-5xl" style={serif}>
+            Espace numérique
+          </h1>
+
+          <div className="mt-14 grid w-full gap-px bg-neutral-200 dark:bg-white/10 md:grid-cols-2">
+            {SPACES.map(({ to, Icon, title }) => (
+              <Link
+                key={to}
+                to={to}
+                className="group flex items-center justify-between gap-6 bg-white p-8 transition hover:bg-neutral-50 dark:bg-[#162036] dark:hover:bg-[#1c2944] sm:p-10"
+              >
+                <span className="flex items-center gap-5">
+                  <Icon className="h-7 w-7 shrink-0 text-black dark:text-[#f87171]" strokeWidth={1.5} />
+                  <span className="text-2xl font-semibold" style={serif}>{title}</span>
+                </span>
+                <ArrowRight className="h-5 w-5 shrink-0 transition group-hover:translate-x-1 dark:text-[#f87171]" />
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>

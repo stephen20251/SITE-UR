@@ -1,8 +1,8 @@
 // En-tête, pied de page et éléments communs aux pages publiques du site
 // (accueil et Actualités).
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ChevronDown, Clock, ExternalLink, LogIn, MapPin, Menu, Search, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, Clock, ExternalLink, Facebook, LogIn, MapPin, Menu, Search, X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { usePublicSettings } from "@/lib/lms-admin";
 import { mediaUrl } from "@/components/online/mooc-card";
@@ -26,6 +26,29 @@ export const MAP = {
   link: "https://maps.app.goo.gl/EaE7E622bSG47S9Q7",
 };
 
+// Page Facebook officielle (remplacée par celle des paramètres de la plateforme si elle est renseignée)
+export const FACEBOOK_URL = "https://www.facebook.com/university.reference/";
+export function useFacebookUrl() {
+  const { data: settings } = usePublicSettings();
+  return settings?.socialFacebook?.trim() || FACEBOOK_URL;
+}
+
+// Thème des pages publiques : clair (noir et blanc) ou sombre (bleu nuit et rouge).
+// Le choix est gardé dans le navigateur du visiteur.
+const THEME_KEY = "ur-site-theme";
+export function useSiteTheme() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    try { setDark(localStorage.getItem(THEME_KEY) === "dark"); } catch { /* stockage indisponible */ }
+  }, []);
+  const toggle = () => {
+    const next = !dark;
+    setDark(next);
+    try { localStorage.setItem(THEME_KEY, next ? "dark" : "light"); } catch { /* stockage indisponible */ }
+  };
+  return { dark, toggle };
+}
+
 export const NAV = [
   { href: "/#top", label: "Accueil" },
   { href: "/#universite", label: "L'Université" },
@@ -39,7 +62,7 @@ export const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateStrin
 
 // Logo de l'université : celui des paramètres de la plateforme, sinon le fichier du site.
 // L'image est carrée avec de larges marges : on l'agrandit sur l'emblème.
-function Logo({ size = 48 }: { size?: number }) {
+export function Logo({ size = 48 }: { size?: number }) {
   const { data: settings } = usePublicSettings();
   const src = settings?.logoUrl ? mediaUrl(settings.logoUrl) : "/logo-ur.jpg";
   return (
@@ -49,13 +72,13 @@ function Logo({ size = 48 }: { size?: number }) {
   );
 }
 
-function Brand() {
+function Brand({ mono = false }: { mono?: boolean }) {
   return (
     <a href="/#top" className="flex items-center gap-3">
       <Logo />
       <div className="leading-tight">
         <div className="text-lg font-bold text-white" style={serif}>Université</div>
-        <div className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: RED_SOFT }}>Références</div>
+        <div className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: mono ? "#a3a3a3" : RED_SOFT }}>Références</div>
       </div>
     </a>
   );
@@ -105,15 +128,17 @@ export function SiteHeader() {
   );
 }
 
-export function SiteFooter() {
+// mono : version noir et blanc de la page d'accueil
+export function SiteFooter({ mono = false }: { mono?: boolean }) {
+  const facebook = useFacebookUrl();
   return (
-    <footer className="border-t border-white/10" style={{ background: "#070b16" }}>
+    <footer className="border-t border-white/10" style={{ background: mono ? "#000000" : "#070b16" }}>
       <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
-          <Brand />
+          <Brand mono={mono} />
           <p className="mt-5 text-sm leading-relaxed text-slate-400">
-            « Former, chercher et innover ensemble. » L'Université Références forme les talents de demain, en
-            alliant exigence académique et ouverture sur le monde professionnel.
+            L'Université Références forme en Gestion, en Informatique et en Anglais, en présentiel et en ligne,
+            à Antananarivo.
           </p>
         </div>
         <div>
@@ -126,14 +151,15 @@ export function SiteFooter() {
         <div>
           <h3 className="text-lg font-bold text-white" style={serif}>Adresse</h3>
           <ul className="mt-5 space-y-4 text-sm text-slate-400">
-            <li className="flex gap-3"><MapPin className="h-5 w-5 shrink-0" /> University Reference, Antananarivo, Madagascar</li>
+            <li className="flex gap-3"><MapPin className="h-5 w-5 shrink-0" /> Université Références, Antananarivo, Madagascar</li>
             <li><a href={MAP.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-white"><ExternalLink className="h-4 w-4" /> Voir sur Google Maps</a></li>
+            <li><a href={facebook} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-white"><Facebook className="h-4 w-4" /> Suivez-nous sur Facebook</a></li>
           </ul>
         </div>
         <div>
           <h3 className="text-lg font-bold text-white" style={serif}>Espace numérique</h3>
           <p className="mt-5 text-sm text-slate-400">Accédez à votre espace selon votre profil.</p>
-          <Link to="/choice" className="mt-4 flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white" style={{ background: RED }}>
+          <Link to="/choice" className={`mt-4 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold ${mono ? "bg-white text-black hover:bg-neutral-200" : "rounded-md text-white"}`} style={mono ? undefined : { background: RED }}>
             <LogIn className="h-4 w-4" /> Se connecter
           </Link>
         </div>
