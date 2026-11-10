@@ -222,7 +222,7 @@ export function SiteFooter({ mono = false }: { mono?: boolean }) {
         <div>
           <Brand mono={mono} />
           <p className="mt-5 text-sm leading-relaxed text-slate-400">
-            L'Université Références forme en Gestion, en Informatique et en Anglais, en présentiel et en ligne,
+            L'Université Références (University Reference) forme en Gestion, en Informatique et en Anglais, en présentiel et en ligne,
             à Antananarivo.
           </p>
         </div>
