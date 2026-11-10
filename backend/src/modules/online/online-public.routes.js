@@ -48,10 +48,11 @@ r.get('/home', asyncHandler(async (req, res) => {
     prisma.onlineCertificate.count(),
     prisma.mention.count({ where: { isActive: true } }),
     prisma.faculty.findMany({
+      where: { isActive: true },
       orderBy: { name: 'asc' },
       select: {
         id: true, name: true, code: true,
-        departments: { select: { name: true, mentions: { where: { isActive: true }, select: { id: true, name: true, description: true, tagline: true, imageUrl: true } } } },
+        departments: { where: { isActive: true }, select: { name: true, mentions: { where: { isActive: true }, select: { id: true, name: true, description: true, tagline: true, imageUrl: true } } } },
       },
     }),
     prisma.announcement.findMany({

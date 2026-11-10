@@ -15,6 +15,34 @@ export const updateCampus = async (req, res) => {
   res.json(campus)
 }
 
+// ── Saisie commune (faculté, département, parcours) ─────────────────
+// Ne garde que les champs autorisés : textes nettoyés, nom et code obligatoires.
+function structureInput(b = {}, { texts, parent, create, label }) {
+  const data = {}
+  for (const k of ['name', 'code', ...texts]) {
+    if (b[k] === undefined) continue
+    const v = b[k] === null ? '' : String(b[k]).trim().slice(0, 2000)
+    data[k] = k === 'code' ? v.toUpperCase() : v || null
+  }
+  if (b[parent] !== undefined) data[parent] = String(b[parent])
+  if (b.isActive !== undefined) data.isActive = Boolean(b.isActive)
+  if ('name' in data && !data.name) throw new HttpError(400, `Le nom ${label} est obligatoire`)
+  if ('code' in data && !data.code) throw new HttpError(400, `Le code ${label} est obligatoire`)
+  if (create && (!data.name || !data.code || !data[parent])) throw new HttpError(400, 'Nom, code et rattachement sont obligatoires')
+  return data
+}
+// Code déjà pris (y compris par un élément supprimé) : message clair au lieu d'une erreur technique.
+async function withCode(fn) {
+  try { return await fn() } catch (e) {
+    if (e?.code === 'P2002') throw new HttpError(409, 'Ce code est déjà utilisé : choisissez-en un autre')
+    if (e?.code === 'P2003') throw new HttpError(400, 'Rattachement invalide (faculté, département ou mention introuvable)')
+    throw e
+  }
+}
+// Suppression « douce » : l'élément disparaît des listes mais l'historique (étudiants, notes,
+// promotions…) reste intact. Son code est libéré pour pouvoir être réutilisé.
+const freedCode = (code) => `${code}~${Date.now().toString(36)}`.slice(0, 190)
+
 // ── Faculty ───────────────────────────────────────────────────────
 export const listFaculties = async (req, res) => {
   const data = await prisma.faculty.findMany({
@@ -24,13 +52,25 @@ export const listFaculties = async (req, res) => {
   })
   res.json(data)
 }
+const facultyInput = (b, create = false) => structureInput(b, { texts: ['deanName'], parent: 'campusId', create, label: 'de la faculté' })
 export const createFaculty = async (req, res) => {
-  const faculty = await prisma.faculty.create({ data: req.body })
+  const body = { ...req.body }
+  // Campus non précisé : celui de l'université (installation à un seul campus).
+  if (!body.campusId) body.campusId = (await prisma.campus.findFirst({ where: { isActive: true }, orderBy: { name: 'asc' } }))?.id
+  const faculty = await withCode(() => prisma.faculty.create({ data: facultyInput(body, true) }))
   res.status(201).json(faculty)
 }
 export const updateFaculty = async (req, res) => {
-  const faculty = await prisma.faculty.update({ where: { id: req.params.id }, data: req.body })
+  const faculty = await withCode(() => prisma.faculty.update({ where: { id: req.params.id }, data: facultyInput(req.body) }))
   res.json(faculty)
+}
+export const deleteFaculty = async (req, res) => {
+  const f = await prisma.faculty.findUnique({ where: { id: req.params.id } })
+  if (!f || !f.isActive) throw new HttpError(404, 'Faculté introuvable')
+  const n = await prisma.department.count({ where: { facultyId: f.id, isActive: true } })
+  if (n) throw new HttpError(409, `Cette faculté contient encore ${n} département${n > 1 ? 's' : ''} : supprimez-les ou rattachez-les à une autre faculté d'abord`)
+  await prisma.faculty.update({ where: { id: f.id }, data: { isActive: false, code: freedCode(f.code) } })
+  res.json({ ok: true })
 }
 
 // ── Department ────────────────────────────────────────────────────
@@ -42,13 +82,22 @@ export const listDepartments = async (req, res) => {
   })
   res.json(data)
 }
+const departmentInput = (b, create = false) => structureInput(b, { texts: ['headName'], parent: 'facultyId', create, label: 'du département' })
 export const createDepartment = async (req, res) => {
-  const dept = await prisma.department.create({ data: req.body })
+  const dept = await withCode(() => prisma.department.create({ data: departmentInput(req.body, true) }))
   res.status(201).json(dept)
 }
 export const updateDepartment = async (req, res) => {
-  const dept = await prisma.department.update({ where: { id: req.params.id }, data: req.body })
+  const dept = await withCode(() => prisma.department.update({ where: { id: req.params.id }, data: departmentInput(req.body) }))
   res.json(dept)
+}
+export const deleteDepartment = async (req, res) => {
+  const d = await prisma.department.findUnique({ where: { id: req.params.id } })
+  if (!d || !d.isActive) throw new HttpError(404, 'Département introuvable')
+  const n = await prisma.mention.count({ where: { departmentId: d.id, isActive: true } })
+  if (n) throw new HttpError(409, `Ce département contient encore ${n} mention${n > 1 ? 's' : ''} : supprimez-les ou rattachez-les à un autre département d'abord`)
+  await prisma.department.update({ where: { id: d.id }, data: { isActive: false, code: freedCode(d.code) } })
+  res.json({ ok: true })
 }
 
 // ── Mention ───────────────────────────────────────────────────────
@@ -82,15 +131,19 @@ function mentionInput(b = {}, { create = false } = {}) {
   return data
 }
 export const createMention = async (req, res) => {
-  const mention = await prisma.mention.create({ data: mentionInput(req.body, { create: true }) })
+  const mention = await withCode(() => prisma.mention.create({ data: mentionInput(req.body, { create: true }) }))
   res.status(201).json(mention)
 }
 export const updateMention = async (req, res) => {
-  const mention = await prisma.mention.update({ where: { id: req.params.id }, data: mentionInput(req.body) })
+  const mention = await withCode(() => prisma.mention.update({ where: { id: req.params.id }, data: mentionInput(req.body) }))
   res.json(mention)
 }
 export const deleteMention = async (req, res) => {
-  await prisma.mention.update({ where: { id: req.params.id }, data: { isActive: false } })
+  const m = await prisma.mention.findUnique({ where: { id: req.params.id } })
+  if (!m || !m.isActive) throw new HttpError(404, 'Mention introuvable')
+  const n = await prisma.parcours.count({ where: { mentionId: m.id, isActive: true } })
+  if (n) throw new HttpError(409, `Cette mention contient encore ${n} parcours : supprimez-les ou rattachez-les à une autre mention d'abord`)
+  await prisma.mention.update({ where: { id: m.id }, data: { isActive: false, code: freedCode(m.code) } })
   res.json({ ok: true })
 }
 
@@ -103,9 +156,20 @@ export const listParcours = async (req, res) => {
   })
   res.json(data)
 }
+const parcoursInput = (b, create = false) => structureInput(b, { texts: ['description'], parent: 'mentionId', create, label: 'du parcours' })
 export const createParcours = async (req, res) => {
-  const p = await prisma.parcours.create({ data: req.body })
+  const p = await withCode(() => prisma.parcours.create({ data: parcoursInput(req.body, true) }))
   res.status(201).json(p)
+}
+export const updateParcours = async (req, res) => {
+  const p = await withCode(() => prisma.parcours.update({ where: { id: req.params.id }, data: parcoursInput(req.body) }))
+  res.json(p)
+}
+export const deleteParcours = async (req, res) => {
+  const p = await prisma.parcours.findUnique({ where: { id: req.params.id } })
+  if (!p || !p.isActive) throw new HttpError(404, 'Parcours introuvable')
+  await prisma.parcours.update({ where: { id: p.id }, data: { isActive: false, code: freedCode(p.code) } })
+  res.json({ ok: true })
 }
 
 // ── Academic Year ─────────────────────────────────────────────────

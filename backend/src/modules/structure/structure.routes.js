@@ -43,11 +43,13 @@ r.put('/campuses/:id',               requirePermission('MANAGE_CAMPUS'), asyncHa
 r.get('/faculties',                  asyncHandler(svc.listFaculties))
 r.post('/faculties',                 requirePermission('MANAGE_FACULTY'), asyncHandler(svc.createFaculty))
 r.put('/faculties/:id',              requirePermission('MANAGE_FACULTY'), asyncHandler(svc.updateFaculty))
+r.delete('/faculties/:id',           requirePermission('MANAGE_FACULTY'), asyncHandler(svc.deleteFaculty))
 
 // Department
 r.get('/departments',                asyncHandler(svc.listDepartments))
 r.post('/departments',               requirePermission('MANAGE_DEPARTMENT'), asyncHandler(svc.createDepartment))
 r.put('/departments/:id',            requirePermission('MANAGE_DEPARTMENT'), asyncHandler(svc.updateDepartment))
+r.delete('/departments/:id',         requirePermission('MANAGE_DEPARTMENT'), asyncHandler(svc.deleteDepartment))
 
 // Mention
 r.get('/mentions',                   asyncHandler(svc.listMentions))
@@ -72,6 +74,8 @@ r.delete('/mentions/:id/image', requirePermission('MANAGE_MENTION'), asyncHandle
 // Parcours
 r.get('/parcours',                   asyncHandler(svc.listParcours))
 r.post('/parcours',                  requirePermission('MANAGE_MENTION'), asyncHandler(svc.createParcours))
+r.put('/parcours/:id',               requirePermission('MANAGE_MENTION'), asyncHandler(svc.updateParcours))
+r.delete('/parcours/:id',            requirePermission('MANAGE_MENTION'), asyncHandler(svc.deleteParcours))
 
 // Academic Year
 r.get('/academic-years',             asyncHandler(svc.listAcademicYears))
