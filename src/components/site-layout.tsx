@@ -1,8 +1,12 @@
 // En-tête, pied de page et éléments communs aux pages publiques du site
-// (accueil et Actualités).
+// (accueil, Actualités, archives, article).
+//
+// Deux thèmes : clair (noir et blanc, photos en niveaux de gris) et sombre
+// (bleu nuit et rouge du logo, photos en couleur). Les classes « dark: »
+// s'appliquent sous un conteneur portant la classe « dark » : voir SitePage.
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronDown, Clock, ExternalLink, Facebook, LogIn, Mail, MapPin, Menu, Phone, Search, X } from "lucide-react";
+import { ChevronDown, Clock, ExternalLink, Facebook, LogIn, Mail, MapPin, Menu, Moon, Phone, Sun, X } from "lucide-react";
 import { CONTACT } from "@/lib/contact";
 import { useAuth } from "@/lib/auth";
 import { usePublicSettings } from "@/lib/lms-admin";
@@ -10,15 +14,24 @@ import { mediaUrl } from "@/components/online/mooc-card";
 import { eventImage, type UniversityEvent } from "@/lib/events";
 
 export const serif = { fontFamily: "'Playfair Display', Georgia, serif" };
-// Couleurs du logo : rouge et bleu marine, sur fond sombre.
-export const RED = "#e3262b";
-export const RED_SOFT = "#f87171";
-export const BLUE_SOFT = "#a5b4fc";
-export const BG = "#0b1120";       // fond principal
-export const BG_ALT = "#0f172a";   // sections alternées
-export const CARD = "#162036";     // cartes
-
 export const SITE_FONTS = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap";
+
+// Classes partagées. Thème sombre : #0b1120 (fond), #0f172a (sections alternées),
+// #162036 (cartes), rouge #e3262b, rouge clair #f87171.
+export const UI = {
+  label: "text-[11px] font-medium uppercase tracking-[0.28em]",
+  eyebrow: "text-neutral-500 dark:text-[#f87171]",
+  title: "text-black dark:text-white",
+  text: "text-neutral-600 dark:text-slate-400",
+  muted: "text-neutral-500 dark:text-slate-400",
+  photo: "grayscale dark:grayscale-0",
+  altBg: "bg-neutral-50 dark:bg-[#0f172a]",
+  card: "bg-white ring-1 ring-neutral-200 dark:bg-[#162036] dark:ring-white/10",
+  border: "border-neutral-200 dark:border-white/10",
+  accent: "text-black dark:text-[#f87171]",
+  btnDark: "inline-flex items-center justify-center gap-2 bg-black px-7 py-3.5 text-sm font-medium tracking-wide text-white transition hover:bg-neutral-800 dark:bg-[#e3262b] dark:hover:bg-[#c81e23]",
+  btnLine: "inline-flex items-center justify-center gap-2 border border-black px-7 py-3.5 text-sm font-medium tracking-wide text-black transition hover:bg-black hover:text-white dark:border-white/30 dark:text-white dark:hover:bg-white dark:hover:text-[#0b1120]",
+};
 
 // Emplacement de l'université (fiche Google Maps « University Reference »)
 export const MAP = {
@@ -34,8 +47,7 @@ export function useFacebookUrl() {
   return settings?.socialFacebook?.trim() || FACEBOOK_URL;
 }
 
-// Thème des pages publiques : clair (noir et blanc) ou sombre (bleu nuit et rouge).
-// Le choix est gardé dans le navigateur du visiteur.
+// Thème choisi par le visiteur, gardé dans son navigateur.
 const THEME_KEY = "ur-site-theme";
 export function useSiteTheme() {
   const [dark, setDark] = useState(false);
@@ -51,7 +63,6 @@ export function useSiteTheme() {
 }
 
 export const NAV = [
-  { href: "/#top", label: "Accueil" },
   { href: "/#universite", label: "L'Université" },
   { href: "/#formations", label: "Formation" },
   { href: "/actualites", label: "Actualités" },
@@ -79,57 +90,88 @@ function Brand({ mono = false }: { mono?: boolean }) {
       <Logo />
       <div className="leading-tight">
         <div className="text-lg font-bold text-white" style={serif}>Université</div>
-        <div className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: mono ? "#a3a3a3" : RED_SOFT }}>Références</div>
+        <div className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: mono ? "#a3a3a3" : "#f87171" }}>Références</div>
       </div>
     </a>
   );
 }
 
 export function Eyebrow({ children, center = false }: { children: React.ReactNode; center?: boolean }) {
-  return <p className={`text-sm font-bold uppercase tracking-[0.14em] ${center ? "text-center" : ""}`} style={{ color: RED_SOFT }}>{children}</p>;
+  return <p className={`${UI.label} ${UI.eyebrow} ${center ? "text-center" : ""}`}>{children}</p>;
 }
 
-export function SiteHeader() {
+// ─── Menu du haut : sobre, avec le choix du thème ────────────────────────────
+export function SiteHeader({ dark, onToggleTheme, current }: { dark: boolean; onToggleTheme: () => void; current?: string }) {
   const { user } = useAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const { label } = UI;
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 backdrop-blur" style={{ background: "rgba(11,17,32,0.92)" }}>
-      <div className="mx-auto flex h-[76px] max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <Brand />
-        <nav className="ml-auto hidden items-center gap-1.5 lg:flex">
-          {NAV.map((n) => (
-            <a key={n.href} href={n.href} className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white">
-              {n.label}
-            </a>
-          ))}
+    <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#0b1120]/90">
+      <div className="mx-auto flex h-20 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+        <a href="/#top" className="flex items-center gap-3" aria-label="Université Références — accueil">
+          <Logo size={40} />
+          <span className="leading-none">
+            <span className={`block whitespace-nowrap text-[15px] font-semibold tracking-tight sm:text-[17px] ${UI.title}`} style={serif}>Université Références</span>
+            <span className={`mt-1 block ${UI.eyebrow} ${label} !text-[9px]`}>Antananarivo</span>
+          </span>
+        </a>
+        <nav className="ml-auto hidden items-center gap-8 lg:flex">
+          {NAV.map((n) => {
+            const active = current === n.href;
+            return (
+              <a key={n.href} href={n.href} aria-current={active ? "page" : undefined}
+                className={`group relative py-2 transition ${active ? UI.title : "text-neutral-600 hover:text-black dark:text-slate-300 dark:hover:text-white"} ${label}`}>
+                {n.label}
+                <span className={`absolute inset-x-0 -bottom-0.5 h-px origin-left bg-black transition-transform duration-300 group-hover:scale-x-100 dark:bg-[#e3262b] ${active ? "scale-x-100" : "scale-x-0"}`} />
+              </a>
+            );
+          })}
         </nav>
-        <div className="ml-auto flex items-center gap-2 lg:ml-3">
-          <Link to="/online" title="Rechercher un cours" className="grid h-10 w-10 place-items-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-white">
-            <Search className="h-5 w-5" />
+        <div className="ml-auto flex items-center gap-2 lg:ml-2">
+          <button
+            onClick={onToggleTheme}
+            className="grid h-10 w-10 place-items-center text-black transition hover:bg-neutral-100 dark:text-slate-200 dark:hover:bg-white/10"
+            aria-label={dark ? "Passer au thème clair" : "Passer au thème sombre"}
+            title={dark ? "Thème clair" : "Thème sombre"}
+          >
+            {dark ? <Sun className="h-[18px] w-[18px]" strokeWidth={1.5} /> : <Moon className="h-[18px] w-[18px]" strokeWidth={1.5} />}
+          </button>
+          <Link to="/choice" className={`hidden items-center bg-black px-5 py-2.5 text-white transition hover:bg-neutral-800 dark:bg-[#e3262b] dark:hover:bg-[#c81e23] sm:inline-flex ${label} !tracking-[0.2em]`}>
+            {user ? "Mon espace" : "Espace numérique"}
           </Link>
-          <Link to="/choice" className="hidden items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow sm:inline-flex" style={{ background: RED }}>
-            <LogIn className="h-4 w-4" /> {user ? "Mon espace" : "Espace numérique"}
-          </Link>
-          <button onClick={() => setMenuOpen((v) => !v)} className="grid h-10 w-10 place-items-center rounded-lg text-slate-200 hover:bg-white/10 lg:hidden" aria-label="Menu">
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <button onClick={() => setOpen((v) => !v)} className="grid h-10 w-10 place-items-center text-black dark:text-white lg:hidden" aria-label="Menu" aria-expanded={open}>
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
-      {menuOpen && (
-        <nav className="border-t border-white/10 px-4 py-3 lg:hidden" style={{ background: BG }}>
+      {open && (
+        <nav className="border-t border-neutral-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-[#0b1120] lg:hidden">
           {NAV.map((n) => (
-            <a key={n.href} href={n.href} onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-200 hover:bg-white/5">{n.label}</a>
+            <a key={n.href} href={n.href} onClick={() => setOpen(false)} className={`block border-b border-neutral-100 py-3.5 text-neutral-700 dark:border-white/5 dark:text-slate-200 ${label}`}>{n.label}</a>
           ))}
-          <Link to="/choice" className="mt-2 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white" style={{ background: RED }}>
-            <LogIn className="h-4 w-4" /> {user ? "Mon espace" : "Espace numérique"}
-          </Link>
+          <Link to="/choice" className={`mt-4 flex w-full ${UI.btnDark}`}>{user ? "Mon espace" : "Espace numérique"}</Link>
         </nav>
       )}
     </header>
   );
 }
 
-// mono : version noir et blanc de la page d'accueil
+// Page publique complète : thème, menu du haut, contenu, pied de page.
+export function SitePage({ current, children }: { current?: string; children: React.ReactNode }) {
+  const { dark, toggle } = useSiteTheme();
+  return (
+    <div className={dark ? "dark" : ""}>
+      <div id="top" className="min-h-screen bg-white text-neutral-900 antialiased dark:bg-[#0b1120] dark:text-slate-200">
+        <SiteHeader dark={dark} onToggleTheme={toggle} current={current} />
+        {children}
+        {/* Pied de page : noir en thème clair, bleu nuit et rouge en thème sombre */}
+        <SiteFooter mono={!dark} />
+      </div>
+    </div>
+  );
+}
+
+// mono : version noir et blanc
 export function SiteFooter({ mono = false }: { mono?: boolean }) {
   const facebook = useFacebookUrl();
   return (
@@ -145,7 +187,7 @@ export function SiteFooter({ mono = false }: { mono?: boolean }) {
         <div>
           <h3 className="text-lg font-bold text-white" style={serif}>Liens rapides</h3>
           <ul className="mt-5 space-y-3 text-sm text-slate-400">
-            {NAV.slice(1).map((n) => <li key={n.href}><a href={n.href} className="hover:text-white">{n.label}</a></li>)}
+            {NAV.map((n) => <li key={n.href}><a href={n.href} className="hover:text-white">{n.label}</a></li>)}
             <li><a href="/guide" className="hover:text-white">Guide d'utilisation</a></li>
           </ul>
         </div>
@@ -162,7 +204,7 @@ export function SiteFooter({ mono = false }: { mono?: boolean }) {
         <div>
           <h3 className="text-lg font-bold text-white" style={serif}>Espace numérique</h3>
           <p className="mt-5 text-sm text-slate-400">Accédez à votre espace selon votre profil.</p>
-          <Link to="/choice" className={`mt-4 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold ${mono ? "bg-white text-black hover:bg-neutral-200" : "rounded-md text-white"}`} style={mono ? undefined : { background: RED }}>
+          <Link to="/choice" className={`mt-4 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold ${mono ? "bg-white text-black hover:bg-neutral-200" : "text-white"}`} style={mono ? undefined : { background: "#e3262b" }}>
             <LogIn className="h-4 w-4" /> Se connecter
           </Link>
         </div>
@@ -191,28 +233,26 @@ export function EventCard({ ev }: { ev: UniversityEvent }) {
     : `Du ${fmtDate(ev.startAt)} au ${fmtDate(ev.endAt)}`;
   const long = (ev.description?.length ?? 0) > 140;
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl ring-1 ring-white/10 transition hover:ring-white/25" style={{ background: CARD }}>
-      <div className="relative aspect-[16/10] overflow-hidden">
-        {img
-          ? <img src={img} alt="" className="h-full w-full object-cover" />
-          : <div className="h-full w-full" style={{ background: "linear-gradient(135deg, #1b1a4a 0%, #26246b 55%, #6b1418 100%)" }} />}
-        <div className="absolute left-4 top-4 rounded-xl bg-white px-3 py-2 text-center shadow-lg">
-          <div className="text-2xl font-bold leading-none" style={{ color: RED }}>{start.getDate()}</div>
-          <div className="mt-1 text-[11px] font-bold uppercase tracking-wide text-slate-700">{start.toLocaleDateString("fr-FR", { month: "short" })}</div>
+    <article className={`flex flex-col overflow-hidden transition ${UI.card}`}>
+      <div className="relative aspect-[16/10] overflow-hidden bg-neutral-100 dark:bg-[#0f172a]">
+        {img && <img src={img} alt="" className={`h-full w-full object-cover ${UI.photo}`} />}
+        <div className="absolute left-0 top-0 bg-white px-4 py-3 text-center">
+          <div className="text-2xl font-semibold leading-none text-black dark:text-[#e3262b]" style={serif}>{start.getDate()}</div>
+          <div className={`mt-1 text-neutral-500 ${UI.label} !text-[9px]`}>{start.toLocaleDateString("fr-FR", { month: "short" })}</div>
         </div>
-        <span className={`absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${past ? "bg-slate-800/80 text-slate-300" : "text-white"}`} style={past ? undefined : { background: RED }}>
+        <span className={`absolute right-3 top-3 px-2 py-1 ${UI.label} !text-[9px] ${past ? "bg-black/70 text-white" : "bg-black text-white dark:bg-[#e3262b]"}`}>
           {past ? "Passé" : "À venir"}
         </span>
       </div>
       <div className="flex flex-1 flex-col p-6">
-        <h3 className="text-xl font-bold leading-snug text-white" style={serif}>{ev.title}</h3>
-        <p className="mt-3 flex items-start gap-2 text-sm text-slate-400"><Clock className="mt-0.5 h-4 w-4 shrink-0" /> {when}</p>
-        {ev.location && <p className="mt-1.5 flex items-start gap-2 text-sm text-slate-400"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {ev.location}</p>}
+        <h3 className={`text-xl font-semibold leading-snug ${UI.title}`} style={serif}>{ev.title}</h3>
+        <p className={`mt-3 flex items-start gap-2 text-sm ${UI.muted}`}><Clock className="mt-0.5 h-4 w-4 shrink-0" /> {when}</p>
+        {ev.location && <p className={`mt-1.5 flex items-start gap-2 text-sm ${UI.muted}`}><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {ev.location}</p>}
         {ev.description && (
-          <p className={`mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-300 ${open ? "" : "line-clamp-3"}`}>{ev.description}</p>
+          <p className={`mt-4 whitespace-pre-line text-sm leading-relaxed ${UI.text} ${open ? "" : "line-clamp-3"}`}>{ev.description}</p>
         )}
         {long && (
-          <button onClick={() => setOpen((v) => !v)} className="mt-auto inline-flex items-center gap-1 self-start pt-4 text-sm font-medium" style={{ color: RED_SOFT }}>
+          <button onClick={() => setOpen((v) => !v)} className={`mt-auto inline-flex items-center gap-1 self-start pt-4 text-sm font-medium ${UI.accent}`}>
             {open ? "Réduire" : "Lire la suite"} <ChevronDown className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} />
           </button>
         )}

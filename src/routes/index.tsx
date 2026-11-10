@@ -1,12 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ArrowUpRight, Building2, Facebook, Mail, MapPin, Menu, MonitorPlay, Moon, Navigation, Phone, Sun, UserPlus, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Building2, Facebook, Mail, MapPin, MonitorPlay, Navigation, Phone, UserPlus } from "lucide-react";
 import { CONTACT } from "@/lib/contact";
 import { api } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
 import { eventImage, type UniversityEvent } from "@/lib/events";
-import { Logo, MAP, NAV, SITE_FONTS, SiteFooter, fmtDate, serif, useFacebookUrl, useSiteTheme } from "@/components/site-layout";
+import { MAP, SITE_FONTS, SitePage, UI, fmtDate, serif, useFacebookUrl } from "@/components/site-layout";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -19,9 +17,7 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-// Page d'accueil en deux thèmes : clair (noir et blanc, photos en niveaux de gris)
-// et sombre (bleu nuit et rouge du logo, photos en couleur). Les classes « dark: »
-// s'appliquent quand le conteneur de la page porte la classe « dark ».
+// Page d'accueil. Thème clair (noir et blanc) ou sombre (bleu nuit et rouge) : voir SitePage.
 
 type HomeData = {
   faculties: { id: string; name: string; code: string; mentions: { id: string; name: string; description: string | null }[] }[];
@@ -58,65 +54,8 @@ const MENTION_TEXT: Record<string, string> = {
   Anglais: "Langue, communication et culture anglophones : pour l'enseignement, la traduction, le tourisme et les échanges internationaux.",
 };
 
-// Thème sombre : bleu nuit #0b1120 (fond), #0f172a (sections alternées), #162036 (cartes), rouge #e3262b.
-const gray = "grayscale dark:grayscale-0"; // photos en noir et blanc, en couleur dans le thème sombre
-const label = "text-[11px] font-medium uppercase tracking-[0.28em]";
-const eyebrowColor = "text-neutral-500 dark:text-[#f87171]";
-const titleColor = "text-black dark:text-white";
-const textColor = "text-neutral-600 dark:text-slate-400";
-const btnDark = "inline-flex items-center justify-center gap-2 bg-black px-7 py-3.5 text-sm font-medium tracking-wide text-white transition hover:bg-neutral-800 dark:bg-[#e3262b] dark:hover:bg-[#c81e23]";
-const btnLine = "inline-flex items-center justify-center gap-2 border border-black px-7 py-3.5 text-sm font-medium tracking-wide text-black transition hover:bg-black hover:text-white dark:border-white/30 dark:text-white dark:hover:bg-white dark:hover:text-[#0b1120]";
-
-// ─── Menu du haut : sobre, avec le choix du thème ────────────────────────────
-function HomeHeader({ dark, onToggleTheme }: { dark: boolean; onToggleTheme: () => void }) {
-  const { user } = useAuth();
-  const [open, setOpen] = useState(false);
-  return (
-    <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#0b1120]/90">
-      <div className="mx-auto flex h-20 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
-        <a href="#top" className="flex items-center gap-3" aria-label="Université Références — accueil">
-          <Logo size={40} />
-          <span className="leading-none">
-            <span className={`block whitespace-nowrap text-[15px] font-semibold tracking-tight sm:text-[17px] ${titleColor}`} style={serif}>Université Références</span>
-            <span className={`mt-1 block ${eyebrowColor} ${label} !text-[9px]`}>Antananarivo</span>
-          </span>
-        </a>
-        <nav className="ml-auto hidden items-center gap-8 lg:flex">
-          {NAV.slice(1).map((n) => (
-            <a key={n.href} href={n.href.replace(/^\//, "") || "/"} className={`group relative py-2 text-neutral-600 transition hover:text-black dark:text-slate-300 dark:hover:text-white ${label}`}>
-              {n.label}
-              <span className="absolute inset-x-0 -bottom-0.5 h-px origin-left scale-x-0 bg-black transition-transform duration-300 group-hover:scale-x-100 dark:bg-[#e3262b]" />
-            </a>
-          ))}
-        </nav>
-        <div className="ml-auto flex items-center gap-2 lg:ml-2">
-          <button
-            onClick={onToggleTheme}
-            className="grid h-10 w-10 place-items-center text-black transition hover:bg-neutral-100 dark:text-slate-200 dark:hover:bg-white/10"
-            aria-label={dark ? "Passer au thème clair" : "Passer au thème sombre"}
-            title={dark ? "Thème clair" : "Thème sombre"}
-          >
-            {dark ? <Sun className="h-[18px] w-[18px]" strokeWidth={1.5} /> : <Moon className="h-[18px] w-[18px]" strokeWidth={1.5} />}
-          </button>
-          <Link to="/choice" className={`hidden items-center bg-black px-5 py-2.5 text-white transition hover:bg-neutral-800 dark:bg-[#e3262b] dark:hover:bg-[#c81e23] sm:inline-flex ${label} !tracking-[0.2em]`}>
-            {user ? "Mon espace" : "Espace numérique"}
-          </Link>
-          <button onClick={() => setOpen((v) => !v)} className="grid h-10 w-10 place-items-center text-black dark:text-white lg:hidden" aria-label="Menu" aria-expanded={open}>
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-      </div>
-      {open && (
-        <nav className="border-t border-neutral-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-[#0b1120] lg:hidden">
-          {NAV.slice(1).map((n) => (
-            <a key={n.href} href={n.href.replace(/^\//, "") || "/"} onClick={() => setOpen(false)} className={`block border-b border-neutral-100 py-3.5 text-neutral-700 dark:border-white/5 dark:text-slate-200 ${label}`}>{n.label}</a>
-          ))}
-          <Link to="/choice" className={`mt-4 flex w-full ${btnDark}`}>{user ? "Mon espace" : "Espace numérique"}</Link>
-        </nav>
-      )}
-    </header>
-  );
-}
+// Classes de style partagées avec les autres pages publiques (voir site-layout).
+const { photo: gray, label, eyebrow: eyebrowColor, title: titleColor, text: textColor, btnDark, btnLine } = UI;
 
 function SectionTitle({ eyebrow, title, light = false, center = false }: { eyebrow: string; title: React.ReactNode; light?: boolean; center?: boolean }) {
   return (
@@ -150,7 +89,6 @@ function EventItem({ ev }: { ev: UniversityEvent }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 function Home() {
-  const { dark, toggle } = useSiteTheme();
   const facebook = useFacebookUrl();
   const { data } = useQuery({
     queryKey: ["public", "home"],
@@ -167,9 +105,7 @@ function Home() {
   const eventList = (events.data ?? []).slice(0, 3);
 
   return (
-    <div className={dark ? "dark" : ""}>
-    <div id="top" className="min-h-screen bg-white text-neutral-900 antialiased dark:bg-[#0b1120] dark:text-slate-200">
-      <HomeHeader dark={dark} onToggleTheme={toggle} />
+    <SitePage>
 
       {/* ── BANNIÈRE ────────────────────────────────────────────────────── */}
       <section className="relative isolate flex min-h-[calc(100svh-80px)] items-end overflow-hidden bg-black dark:bg-[#0b1120]">
@@ -360,9 +296,6 @@ function Home() {
         </div>
       </section>
 
-      {/* Pied de page : noir en thème clair, bleu nuit et rouge en thème sombre */}
-      <SiteFooter mono={!dark} />
-    </div>
-    </div>
+    </SitePage>
   );
 }

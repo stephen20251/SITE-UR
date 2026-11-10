@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { GraduationCap, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError, tokenStore } from "@/lib/api";
 import { classroomDashboard } from "@/components/classroom/shared";
+import { Logo, serif } from "@/components/site-layout";
 
 export const Route = createFileRoute("/classroom/")({ component: ClassroomLogin });
 
@@ -45,32 +46,18 @@ function ClassroomLogin() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      {/* ── Left panel ── */}
-      <div className="relative hidden overflow-hidden grad-classroom p-12 text-white lg:flex lg:flex-col lg:justify-between">
+      {/* ── Panneau de gauche : photo de l'université et logo ── */}
+      <div className="relative isolate hidden overflow-hidden p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <img src="/images/accueil/banniere.jpg" alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />
+        <div className="absolute inset-0 -z-10 grad-classroom opacity-[0.88]" />
         <Link to="/choice" className="inline-flex items-center gap-2 text-sm opacity-80 hover:opacity-100">
           <ArrowLeft className="h-4 w-4" /> Retour
         </Link>
 
-        <div>
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
-            <GraduationCap className="h-4 w-4" />
-            Système Classroom · ERP Universitaire
-          </div>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight leading-tight">
-            Votre campus,<br />numérisé.
-          </h1>
-          <p className="mt-4 max-w-sm text-white/80 leading-relaxed">
-            Emplois du temps, notes, présences et annonces — un seul portail pour tous les acteurs de l'université.
-          </p>
-
-          {/* Role pills */}
-          <div className="mt-8 flex flex-wrap gap-2">
-            {["Étudiant", "Enseignant", "Resp. Pédagogique", "Secrétaire", "Parent", "Admin"].map((r) => (
-              <span key={r} className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur-sm">
-                {r}
-              </span>
-            ))}
-          </div>
+        <div className="flex flex-col items-center text-center">
+          <Logo size={112} />
+          <h1 className="mt-8 text-4xl font-semibold tracking-tight" style={serif}>Université Références</h1>
+          <p className="mt-3 text-xs font-medium uppercase tracking-[0.3em] text-white/70">Espace université</p>
         </div>
 
         <div className="text-xs opacity-60">© Université Références {new Date().getFullYear()}</div>
@@ -84,14 +71,12 @@ function ClassroomLogin() {
             <ArrowLeft className="h-4 w-4" /> Retour
           </Link>
 
-          {/* Mobile logo */}
+          {/* Logo (petits écrans) */}
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl grad-classroom">
-              <GraduationCap className="h-5 w-5 text-white" />
-            </div>
+            <Logo size={44} />
             <div>
-              <p className="font-bold text-foreground">Université Références</p>
-              <p className="text-xs text-muted-foreground">Système Classroom</p>
+              <p className="font-semibold text-foreground" style={serif}>Université Références</p>
+              <p className="text-xs text-muted-foreground">Espace université</p>
             </div>
           </div>
 
