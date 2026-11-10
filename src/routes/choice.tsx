@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Building2, MonitorPlay } from "lucide-react";
-import { Logo, SITE_FONTS, serif, useSiteTheme } from "@/components/site-layout";
+import { LogoMark, SITE_FONTS, serif, useSiteTheme } from "@/components/site-layout";
 
 export const Route = createFileRoute("/choice")({
   head: () => ({
@@ -25,7 +25,7 @@ function Choice() {
           <Link to="/" className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.28em] text-neutral-500 transition hover:text-black dark:text-slate-400 dark:hover:text-white">
             <ArrowLeft className="h-4 w-4" /> Retour à l'accueil
           </Link>
-          <div className="mt-10"><Logo size={56} /></div>
+          <div className="mt-10"><LogoMark className="h-20" /></div>
           <h1 className="mt-8 text-center text-4xl font-semibold tracking-tight sm:text-5xl" style={serif}>
             Espace numérique
           </h1>
