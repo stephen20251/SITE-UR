@@ -139,7 +139,16 @@ export type AdminCtx = {
   unreadNotifications: number;
 };
 
-export type MyContext = StudentCtx | TeacherCtx | ParentCtx | StaffCtx | AdminCtx;
+// Candidat ou compte en ligne sans fiche universitaire : identité seulement.
+export type BasicCtx = {
+  role: "CANDIDATE" | "ONLINE";
+  user: { id: string; firstName: string; lastName: string; email: string; phone?: string | null; avatarUrl?: string | null } | null;
+  profile: null;
+  account?: AccountCtx;
+  unreadNotifications: number;
+};
+
+export type MyContext = StudentCtx | TeacherCtx | ParentCtx | StaffCtx | AdminCtx | BasicCtx;
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 

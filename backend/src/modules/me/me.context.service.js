@@ -341,6 +341,16 @@ async function staffContext(userId) {
   };
 }
 
+// ─── Compte sans fiche universitaire (candidat, compte en ligne) ────────────
+// Seulement l'identité du compte : aucune statistique de l'université ni rattachement.
+async function basicContext(userId, role) {
+  const [user, unreadCount] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatarUrl: true } }),
+    prisma.notification.count({ where: { userId, isRead: false } }),
+  ]);
+  return { role, user, profile: null, unreadNotifications: unreadCount };
+}
+
 // ─── Admin context ────────────────────────────────────────────────────────────
 
 async function adminContext(userId) {
@@ -400,8 +410,9 @@ function roleContext(user) {
     case 'STUDENT':        return studentContext(user.sub);
     case 'TEACHER':        return teacherContext(user.sub);
     // Comptes online : fiche universitaire seulement s'ils en ont une
-    case 'STUDENT_ONLINE': return studentContext(user.sub).then((c) => c ?? staffContext(user.sub));
-    case 'TEACHER_ONLINE': return teacherContext(user.sub).then((c) => c ?? staffContext(user.sub));
+    case 'STUDENT_ONLINE': return studentContext(user.sub).then((c) => c ?? basicContext(user.sub, 'ONLINE'));
+    case 'TEACHER_ONLINE': return teacherContext(user.sub).then((c) => c ?? basicContext(user.sub, 'ONLINE'));
+    case 'CANDIDATE':      return basicContext(user.sub, 'CANDIDATE');
     case 'PARENT':         return parentContext(user.sub);
     case 'SUPER_ADMIN':    return adminContext(user.sub);
     default:               return staffContext(user.sub);

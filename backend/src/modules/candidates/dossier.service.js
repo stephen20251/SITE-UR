@@ -24,14 +24,15 @@ export const PRIVATE_DIR = privatePath('candidates')
 
 export const DOC_TYPES = {
   // Pré-inscription
-  CIN_OR_BIRTH: { stage: 'PRE_INSCRIPTION', label: "CIN ou copie d'acte de naissance", required: true },
+  // maxFiles : nombre de fichiers acceptés pour une même pièce (ex. CIN recto et verso).
+  CIN_OR_BIRTH: { stage: 'PRE_INSCRIPTION', label: "CIN ou copie d'acte de naissance", required: true, maxFiles: 3, hint: 'CIN : recto et verso (2 fichiers), ou acte de naissance (1 à 3 pages)' },
   PHOTO: { stage: 'PRE_INSCRIPTION', label: 'Photo d\'identité 4x4', required: true },
-  BACC: { stage: 'PRE_INSCRIPTION', label: 'Diplôme, relevé ou attestation de réussite au BACC', required: true },
+  BACC: { stage: 'PRE_INSCRIPTION', label: 'Diplôme, relevé ou attestation de réussite au BACC', required: true, maxFiles: 3, hint: 'Recto et verso si nécessaire' },
   // Inscription
   ENGAGEMENT_PARENTAL: { stage: 'INSCRIPTION', label: "Lettre d'engagement parental", required: true },
   PAYMENT_PROOF: { stage: 'INSCRIPTION', label: "Justificatif de paiement du droit d'inscription", required: false },
   DEMANDE_ADMISSION: { stage: 'INSCRIPTION', label: "Demande d'admission adressée au service des admissions", otherSchool: true },
-  RELEVE_NOTES: { stage: 'INSCRIPTION', label: 'Relevé des notes', otherSchool: true },
+  RELEVE_NOTES: { stage: 'INSCRIPTION', label: 'Relevé des notes', otherSchool: true, maxFiles: 3 },
 }
 
 // Questionnaire de motivation (pré-inscription)
@@ -80,8 +81,15 @@ export async function uploadDocument(userId, file, type) {
       ? 'Dossier de pré-inscription déjà soumis'
       : "Le dossier d'inscription n'est pas modifiable (candidature non acceptée ou déjà soumise)")
   }
-  // Une seule pièce par type : on remplace l'ancienne
-  const old = await prisma.candidateDocument.findMany({ where: { candidateId: c.id, type } })
+  // Pièce en un seul fichier : on remplace l'ancien. Pièce en plusieurs fichiers (recto,
+  // verso…) : on ajoute, en remplaçant d'abord les fichiers refusés par le secrétariat.
+  const max = def.maxFiles ?? 1
+  const existing = await prisma.candidateDocument.findMany({ where: { candidateId: c.id, type }, orderBy: { uploadedAt: 'asc' } })
+  const old = max === 1 ? existing : existing.filter((d) => d.reviewStatus === 'REJECTED')
+  if (existing.length - old.length >= max) {
+    fs.unlink(file.path, () => {})
+    throw new HttpError(400, `${max} fichiers maximum pour « ${def.label} » : retirez-en un pour en ajouter un autre`)
+  }
   for (const d of old) {
     fs.unlink(path.join(PRIVATE_DIR, path.basename(d.url)), () => {})
     await prisma.candidateDocument.delete({ where: { id: d.id } })

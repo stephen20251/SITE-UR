@@ -167,8 +167,8 @@ function PreInscription({ c }: { c: Candidate }) {
       <p className="text-xs text-muted-foreground">Formats acceptés : PDF, JPG, PNG ou Word — 10 Mo maximum par fichier.</p>
       <div className="mt-2 grid gap-2">
         {preTypes.map(([type, def]) => (
-          <DocSlot key={type} type={type} label={def.label} required={def.required}
-            doc={c.documents.find((d) => d.type === type)} editable={editable} />
+          <DocSlot key={type} type={type} label={def.label} required={def.required} maxFiles={def.maxFiles} hint={def.hint}
+            docs={c.documents.filter((d) => d.type === type)} editable={editable} />
         ))}
       </div>
 
@@ -350,8 +350,8 @@ function Inscription({ c }: { c: Candidate }) {
       <h3 className="mt-4 text-sm font-semibold">Documents à déposer</h3>
       <div className="mt-2 grid gap-2">
         {insTypes.map(([type, def]) => (
-          <DocSlot key={type} type={type} label={def.label} required={def.required || def.otherSchool}
-            doc={c.documents.find((d) => d.type === type)} editable={editable} template={templates[type]} />
+          <DocSlot key={type} type={type} label={def.label} required={def.required || def.otherSchool} maxFiles={def.maxFiles} hint={def.hint}
+            docs={c.documents.filter((d) => d.type === type)} editable={editable} template={templates[type]} />
         ))}
       </div>
 

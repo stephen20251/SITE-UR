@@ -533,7 +533,7 @@ function ProfilePage() {
             <p className="text-white/70 text-sm mt-0.5">
               {isStudentCtx(d) && d.profile.matricule && `Matricule: ${d.profile.matricule} · `}
               {isTeacherCtx(d) && d.profile.employeeId && `N° employé: ${d.profile.employeeId} · `}
-              {d.role === "STUDENT" ? "Étudiant" : d.role === "TEACHER" ? "Enseignant" : d.role === "PARENT" ? "Parent" : d.role === "STAFF" ? "Personnel" : "Administrateur"}
+              {d.role === "STUDENT" ? "Étudiant" : d.role === "TEACHER" ? "Enseignant" : d.role === "PARENT" ? "Parent" : d.role === "STAFF" ? "Personnel" : d.role === "CANDIDATE" ? "Candidat(e)" : d.role === "ONLINE" ? "Cours en ligne" : "Administrateur"}
             </p>
             {d.user?.email && <p className="text-white/60 text-xs mt-1 flex items-center gap-1"><Mail size={11} /> {d.user.email}</p>}
             {d.account?.phone && <p className="text-white/60 text-xs mt-1 flex items-center gap-1"><Phone size={11} /> {d.account.phone}</p>}

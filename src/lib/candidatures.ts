@@ -94,7 +94,7 @@ export const usePublicMentions = () =>
 
 // ─── Dossier (pièces, questionnaire, inscription) ────────────────────────────
 export type DossierMeta = {
-  docTypes: Record<string, { stage: "PRE_INSCRIPTION" | "INSCRIPTION"; label: string; required?: boolean; otherSchool?: boolean }>;
+  docTypes: Record<string, { stage: "PRE_INSCRIPTION" | "INSCRIPTION"; label: string; required?: boolean; otherSchool?: boolean; maxFiles?: number; hint?: string }>;
   questions: { key: string; label: string }[];
   requiredFormFields: [string, string][];
 };
