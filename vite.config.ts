@@ -18,7 +18,20 @@ export default defineConfig(({ command }) => ({
       // Le code « serveur » ne doit jamais partir dans le navigateur.
       importProtection: { behavior: "error", client: { files: ["**/server/**"], specifiers: ["server-only"] } },
     }),
-    ...(command === "build" ? [nitro({ preset: "node-server" })] : []),
+    ...(command === "build"
+      ? [nitro({
+          preset: "node-server",
+          // Photos, vidéos et icônes gardées 7 jours par le navigateur (pas retéléchargées à
+          // chaque visite). Pour remplacer un fichier tout de suite, changez son nom.
+          routeRules: {
+            "/images/**": { headers: { "cache-control": "public, max-age=604800" } },
+            "/icons/**": { headers: { "cache-control": "public, max-age=604800" } },
+            "/logo-ur-embleme.png": { headers: { "cache-control": "public, max-age=604800" } },
+            "/logo-ur-embleme-blanc.png": { headers: { "cache-control": "public, max-age=604800" } },
+            "/favicon.ico": { headers: { "cache-control": "public, max-age=604800" } },
+          },
+        })]
+      : []),
     viteReact(),
   ],
   resolve: {

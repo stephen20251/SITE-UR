@@ -2,7 +2,8 @@
 //  1. applique les migrations en attente (prisma migrate deploy) ;
 //  2. base vide (aucun rôle) : installe les données de base (seed-base, paramètres, catégories) ;
 //  3. ADMIN_EMAIL + ADMIN_PASSWORD définis et ce compte absent : crée le Super administrateur.
-//     Un compte existant n'est jamais modifié : retirez ces deux variables après la première mise en ligne.
+//     Un compte existant n'est pas modifié, sauf si ADMIN_RESET_PASSWORD=oui : son mot de passe est
+//     alors remplacé par ADMIN_PASSWORD (dépannage sans e-mail). Retirez ces variables ensuite.
 // Une erreur arrête le démarrage, avec un message clair dans les journaux.
 import 'dotenv/config';
 import { spawnSync } from 'child_process';
@@ -40,8 +41,10 @@ try {
   const { ADMIN_EMAIL, ADMIN_PASSWORD } = process.env;
   if (ADMIN_EMAIL && ADMIN_PASSWORD) {
     const exists = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL.toLowerCase().trim() }, select: { id: true } });
-    if (exists) console.log('ℹ Super administrateur déjà créé : retirez ADMIN_EMAIL et ADMIN_PASSWORD des variables.');
-    else run('Création du Super administrateur', ['prisma/create-admin.js']);
+    const reset = /^(oui|1|true|yes)$/i.test((process.env.ADMIN_RESET_PASSWORD ?? '').trim());
+    if (!exists) run('Création du Super administrateur', ['prisma/create-admin.js']);
+    else if (reset) run('Nouveau mot de passe du Super administrateur', ['prisma/create-admin.js']);
+    else console.log('ℹ Super administrateur déjà créé : retirez ADMIN_EMAIL et ADMIN_PASSWORD des variables.');
   }
 } finally {
   await prisma.$disconnect();

@@ -192,3 +192,4 @@ applications. Les nouvelles migrations de base sont appliquées au démarrage de
 | Les e-mails ne partent pas (« messagerie non configurée ») | Variables `SMTP_*` absentes ou fausses : vérifiez le mot de passe de la boîte et le port 465 (sinon 587) |
 | Les e-mails arrivent dans les indésirables | Dans hPanel → E-mails, vérifiez que les enregistrements DNS (SPF, DKIM) du domaine sont actifs |
 | « Trop de requêtes » pour tous les utilisateurs | Le proxy n'est pas reconnu : `TRUST_PROXY=1` (ou `2`) |
+| Le Super administrateur ne peut plus se connecter (et l'e-mail « Mot de passe oublié » n'arrive pas) | Dans les variables de l'API : `ADMIN_EMAIL`, `ADMIN_PASSWORD` = nouveau mot de passe (12 caractères min.) et `ADMIN_RESET_PASSWORD` = `oui`. Enregistrez (l'API redémarre, le journal affiche « Super administrateur mis à jour »), connectez-vous, puis retirez ces trois variables. |

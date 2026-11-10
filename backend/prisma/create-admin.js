@@ -43,7 +43,8 @@ const askHidden = (question) => new Promise((resolve) => {
 async function readInput() {
   const { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_FIRST_NAME, ADMIN_LAST_NAME } = process.env;
   if (ADMIN_EMAIL && ADMIN_PASSWORD) {
-    return { email: ADMIN_EMAIL, password: ADMIN_PASSWORD, firstName: ADMIN_FIRST_NAME || 'Super', lastName: ADMIN_LAST_NAME || 'Administrateur' };
+    // Espaces ou retours à la ligne invisibles autour des valeurs (copier-coller) : retirés.
+    return { email: ADMIN_EMAIL.trim(), password: ADMIN_PASSWORD.trim(), firstName: ADMIN_FIRST_NAME?.trim() || 'Super', lastName: ADMIN_LAST_NAME?.trim() || 'Administrateur' };
   }
   if (!process.stdin.isTTY) {
     throw new Error('Terminal non interactif : lancez la commande dans PowerShell, ou définissez ADMIN_EMAIL et ADMIN_PASSWORD.');
@@ -81,7 +82,7 @@ try {
     await prisma.userRole.create({ data: { userId: user.id, roleId: role.id } });
   }
   if (existing) await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
-  console.log(`✔ Super administrateur ${existing ? 'mis à jour' : 'créé'} : ${email}`);
+  console.log(`✔ Super administrateur ${existing ? 'mis à jour' : 'créé'} : ${email} (mot de passe de ${input.password.length} caractères)`);
 } catch (e) {
   console.error(`✖ ${e.message}`);
   process.exitCode = 1;

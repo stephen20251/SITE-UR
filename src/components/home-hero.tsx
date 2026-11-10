@@ -4,7 +4,10 @@
 // - Pause (vidéo et messages) quand la souris est sur la bannière.
 // - Si le visiteur a demandé à réduire les animations : vidéo arrêtée, pas de défilement.
 // Vidéo d'origine : image-UR/video_banneur_home.mp4 (passage de 3,0 s à 29,9 s, réencodé
-// en H.264 pour le web : campus-video.mp4 et campus-video-mobile.mp4).
+// en H.264 léger pour le web : campus-video.mp4 en 1280x720 ≈ 2 Mo, campus-video-mobile.mp4
+// en 640x360 ≈ 0,9 Mo).
+// Chargement : la vidéo n'est téléchargée qu'une fois la page affichée (image d'attente
+// avant), et jamais en mode « économie de données » ou sur une connexion très lente.
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { UI, serif } from "@/components/site-layout";
@@ -38,6 +41,7 @@ export function HomeHero() {
   const bar = useRef<HTMLSpanElement | null>(null); // barre de l'onglet actif
   const reduced = useRef(false);
   const paused = useRef(false);
+  const videoOn = useRef(false); // vidéo autorisée (connexion suffisante, animations permises)
   const elapsed = useRef(0); // temps écoulé (ms) sur le message affiché
   const [index, setIndex] = useState(0);
 
@@ -45,11 +49,17 @@ export function HomeHero() {
   useEffect(() => {
     const v = video.current;
     reduced.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (v) {
+    // Lance la vidéo une fois la page chargée, sauf économie de données ou connexion très lente.
+    const startVideo = () => {
+      const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+      const slow = !!c?.saveData || /(^|-)2g$/.test(c?.effectiveType ?? "");
+      if (!v || reduced.current || slow) return; // l'image d'attente reste affichée
+      videoOn.current = true;
       v.muted = true; // nécessaire pour la lecture automatique
-      if (reduced.current) v.pause();
-      else v.play().catch(() => { /* lecture automatique refusée : l'image d'attente reste affichée */ });
-    }
+      if (!paused.current) v.play().catch(() => { /* lecture refusée : l'image d'attente reste */ });
+    };
+    if (document.readyState === "complete") startVideo();
+    else window.addEventListener("load", startVideo, { once: true });
     let frame = 0;
     let last = performance.now();
     const tick = (now: number) => {
@@ -66,7 +76,7 @@ export function HomeHero() {
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("load", startVideo); };
   }, []);
 
   const go = (n: number) => {
@@ -76,7 +86,7 @@ export function HomeHero() {
   const pause = () => { paused.current = true; video.current?.pause(); };
   const resume = () => {
     paused.current = false;
-    if (!reduced.current) video.current?.play().catch(() => {});
+    if (videoOn.current) video.current?.play().catch(() => {});
   };
   const slide = SLIDES[index];
 
@@ -90,11 +100,10 @@ export function HomeHero() {
     >
       <video
         ref={video}
-        autoPlay
         muted
         loop
         playsInline
-        preload="auto"
+        preload="none"
         poster={`${PHOTO}/campus-video-poster.jpg`}
         aria-hidden
         className={`absolute inset-0 -z-10 h-full w-full object-cover opacity-90 ${UI.photo}`}
