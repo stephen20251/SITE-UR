@@ -469,6 +469,17 @@ export function useUpdateTestimonial() {
   });
 }
 
+// Photo d'un témoin (image téléversée, renvoie l'URL à mettre dans « avatar »).
+export function useUploadTestimonialPhoto() {
+  return useMutation<{ url: string }, Error, File>({
+    mutationFn: (file) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      return api("/lms-admin/testimonials/photo", { method: "POST", body: fd, raw: true });
+    },
+  });
+}
+
 export function useDeleteTestimonial() {
   const qc = useQueryClient();
   return useMutation<void, Error, string>({

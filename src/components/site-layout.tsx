@@ -275,7 +275,7 @@ export function EventCard({ ev }: { ev: UniversityEvent }) {
     : `Du ${fmtDate(ev.startAt)} au ${fmtDate(ev.endAt)}`;
   const long = (ev.description?.length ?? 0) > 140;
   return (
-    <article className={`flex flex-col overflow-hidden transition ${UI.card}`}>
+    <article className={`flex flex-col overflow-hidden rounded-2xl shadow-[0_2px_10px_-4px_rgba(20,32,74,0.12)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(20,32,74,0.35)] dark:shadow-none ${UI.card}`}>
       <div className="relative aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-[#0f172a]">
         {img && <img src={img} alt="" className={`h-full w-full object-cover ${UI.photo}`} />}
         <div className="absolute left-0 top-0 bg-white px-4 py-3 text-center">

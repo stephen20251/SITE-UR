@@ -30,7 +30,7 @@ import {
   useAdminTeachers, useAdminUpdateTeacher,
   useAdminStudents,
   useAdminMedia, useUploadMedia, useAddMediaLink, useUpdateMedia, useDeleteMedia,
-  useTestimonials, useCreateTestimonial, useUpdateTestimonial, useDeleteTestimonial,
+  useTestimonials, useCreateTestimonial, useUpdateTestimonial, useDeleteTestimonial, useUploadTestimonialPhoto,
   useFaqItems, useCreateFaqItem, useUpdateFaqItem, useDeleteFaqItem,
   useAdminDashboard,
   useAdminUsers, useAdminCreateUser, useAdminUpdateUser, useAdminToggleActive,
@@ -43,6 +43,8 @@ import {
 } from "@/lib/lms-admin";
 import { certThemeFrom, CERT_DEFAULTS, type CertTheme } from "./online.certificate.$code";
 import { API_ORIGIN } from "@/lib/env";
+import { useQueryClient } from "@tanstack/react-query";
+import { mediaUrl } from "@/components/online/mooc-card";
 
 export const Route = createFileRoute("/online/admin")({
   component: AdminPanel,
@@ -1799,11 +1801,24 @@ function TestimonialList() {
   const create = useCreateTestimonial();
   const update = useUpdateTestimonial();
   const del = useDeleteTestimonial();
+  const uploadPhoto = useUploadTestimonialPhoto();
+  const qc = useQueryClient();
+  const photoInput = useRef<HTMLInputElement>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", role: "", content: "", rating: 5, avatar: "" });
 
   function resetForm() { setForm({ name: "", role: "", content: "", rating: 5, avatar: "" }); setShowForm(false); setEditId(null); }
+
+  async function onPhoto(file?: File) {
+    if (!file) return;
+    try {
+      const { url } = await uploadPhoto.mutateAsync(file);
+      setForm((p) => ({ ...p, avatar: url }));
+      toast.success("Photo ajoutée : pensez à enregistrer");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Envoi de la photo impossible"); }
+    finally { if (photoInput.current) photoInput.current.value = ""; }
+  }
 
   async function handleSave() {
     try {
@@ -1815,6 +1830,7 @@ function TestimonialList() {
         toast.success("Témoignage ajouté");
       }
       resetForm();
+      qc.invalidateQueries({ queryKey: ["public", "testimonials"] });
     } catch { toast.error("Erreur"); }
   }
 
@@ -1837,9 +1853,24 @@ function TestimonialList() {
             <div><label className="mb-1 block text-xs text-muted-foreground">Rôle / Titre</label>
               <input value={form.role} onChange={e => setForm(p => ({...p, role: e.target.value}))}
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" placeholder="Étudiant en informatique" /></div>
-            <div><label className="mb-1 block text-xs text-muted-foreground">URL Avatar</label>
-              <input value={form.avatar} onChange={e => setForm(p => ({...p, avatar: e.target.value}))}
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></div>
+            <div className="col-span-2"><label className="mb-1 block text-xs text-muted-foreground">Photo du témoin</label>
+              <div className="flex items-center gap-3">
+                <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full bg-muted text-lg font-semibold text-muted-foreground ring-2 ring-border">
+                  {form.avatar ? <img src={mediaUrl(form.avatar)} alt="" className="h-full w-full object-cover" /> : (form.name[0]?.toUpperCase() || "?")}
+                </div>
+                <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => onPhoto(e.target.files?.[0])} />
+                <button type="button" onClick={() => photoInput.current?.click()} disabled={uploadPhoto.isPending}
+                  className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-60">
+                  {uploadPhoto.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {form.avatar ? "Changer la photo" : "Téléverser une photo"}
+                </button>
+                {form.avatar && (
+                  <button type="button" onClick={() => setForm((p) => ({ ...p, avatar: "" }))}
+                    className="rounded-lg px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10">Retirer</button>
+                )}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">JPG, PNG ou WebP, 5 Mo maximum. Une photo carrée, visage centré, rend le mieux.</p>
+            </div>
             <div><label className="mb-1 block text-xs text-muted-foreground">Note (1–5)</label>
               <input type="number" min={1} max={5} value={form.rating} onChange={e => setForm(p => ({...p, rating: Number(e.target.value)}))}
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></div>
@@ -1862,7 +1893,7 @@ function TestimonialList() {
           <div key={item.id} className="rounded-xl border bg-card p-4">
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 shrink-0 rounded-full bg-muted flex items-center justify-center text-sm font-semibold">
-                {item.avatar ? <img src={item.avatar} className="h-full w-full rounded-full object-cover" /> : item.name[0]}
+                {item.avatar ? <img src={mediaUrl(item.avatar)} alt="" className="h-full w-full rounded-full object-cover" /> : item.name[0]}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">

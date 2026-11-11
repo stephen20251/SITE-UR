@@ -230,6 +230,17 @@ router.post('/testimonials', asyncHandler(async (req, res) => {
   res.status(201).json(await svc.createTestimonial(req.body));
 }));
 
+// Photo d'un témoin : images uniquement, 5 Mo maximum. Renvoie l'URL à enregistrer dans « avatar ».
+const photoUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)),
+});
+router.post('/testimonials/photo', photoUpload.single('file'), asyncHandler(async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Choisissez une image (JPG, PNG, WebP) de 5 Mo maximum' });
+  res.status(201).json({ url: `/uploads/lms-media/${req.file.filename}` });
+}));
+
 router.put('/testimonials/:id', asyncHandler(async (req, res) => {
   res.json(await svc.updateTestimonial(req.params.id, req.body));
 }));

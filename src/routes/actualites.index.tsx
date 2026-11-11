@@ -104,12 +104,12 @@ function NewsHome() {
 
       {d && d.latest.length > 0 && (
         <Section id="dernieres" eyebrow="À lire" title="Dernières actualités">
-          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">{d.latest.map((a) => <NewsCard key={a.id} item={a} />)}</div>
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">{d.latest.map((a) => <NewsCard key={a.id} item={a} />)}</div>
         </Section>
       )}
       {d && d.officialAnnouncements.length > 0 && (
         <Section id="annonces" eyebrow="Direction" title="Annonces officielles de la direction" alt>
-          <div className="grid gap-4 md:grid-cols-2">{d.officialAnnouncements.map((a) => <NewsRow key={a.id} item={a} />)}</div>
+          <div className="grid gap-6 md:grid-cols-2">{d.officialAnnouncements.map((a) => <NewsRow key={a.id} item={a} />)}</div>
         </Section>
       )}
       {eventList.length > 0 && (
@@ -119,22 +119,22 @@ function NewsHome() {
       )}
       {d && d.conferences.length > 0 && (
         <Section id="conferences" eyebrow="Vie scientifique" title="Conférences et soutenances" alt>
-          <div className="grid gap-4 md:grid-cols-2">{d.conferences.map((a) => <NewsRow key={a.id} item={a} showCategory />)}</div>
+          <div className="grid gap-6 md:grid-cols-2">{d.conferences.map((a) => <NewsRow key={a.id} item={a} showCategory />)}</div>
         </Section>
       )}
       {d && d.publications.length > 0 && (
         <Section id="publications" eyebrow="Recherche" title="Publications scientifiques">
-          <div className="grid gap-4 md:grid-cols-2">{d.publications.map((a) => <NewsRow key={a.id} item={a} />)}</div>
+          <div className="grid gap-6 md:grid-cols-2">{d.publications.map((a) => <NewsRow key={a.id} item={a} />)}</div>
         </Section>
       )}
       {d && d.results.length > 0 && (
         <Section id="resultats" eyebrow="Scolarité" title="Résultats et annonces académiques" alt>
-          <div className="grid gap-4 md:grid-cols-2">{d.results.map((a) => <NewsRow key={a.id} item={a} />)}</div>
+          <div className="grid gap-6 md:grid-cols-2">{d.results.map((a) => <NewsRow key={a.id} item={a} />)}</div>
         </Section>
       )}
       {d && d.activities.length > 0 && (
         <Section id="activites" eyebrow="Vie de l'université" title="Activités des enseignants et des étudiants">
-          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">{d.activities.map((a) => <NewsCard key={a.id} item={a} />)}</div>
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">{d.activities.map((a) => <NewsCard key={a.id} item={a} />)}</div>
         </Section>
       )}
       {d && d.archiveCount > 0 && (

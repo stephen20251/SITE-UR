@@ -4,7 +4,8 @@ import { ArrowLeft, CalendarDays, ExternalLink, Loader2, MapPin, Users } from "l
 import { api, ApiError } from "@/lib/api";
 import { fmtNewsDate, fmtNewsDateTime, newsImage, type NewsArticle, type NewsSummary } from "@/lib/news";
 import { SITE_FONTS, SitePage, UI, serif } from "@/components/site-layout";
-import { CategoryBadge, NewsCard } from "@/components/news-cards";
+import { CategoryBadge, NewsCardSimple } from "@/components/news-cards";
+import { ArticleBody } from "@/components/article-body";
 
 export const Route = createFileRoute("/actualites/$slug")({
   head: () => ({
@@ -27,7 +28,7 @@ function ArticlePage() {
 
   return (
     <SitePage current="/actualites">
-      <article className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
+      <article className="mx-auto max-w-[880px] px-5 py-16 sm:px-8 lg:py-20">
         <Link to="/actualites" className={`inline-flex items-center gap-2 hover:underline ${UI.label} ${UI.accent}`}>
           <ArrowLeft className="h-4 w-4" /> Actualités
         </Link>
@@ -52,8 +53,14 @@ function ArticlePage() {
               </div>
             )}
             {img && <img src={img} alt="" className={`mt-10 aspect-[16/9] w-full object-cover ${UI.photo}`} />}
-            {a.excerpt && <p className={`mt-10 text-xl leading-relaxed ${UI.title}`} style={serif}>{a.excerpt}</p>}
-            <div className={`mt-6 whitespace-pre-line text-base leading-relaxed ${UI.text}`}>{a.body}</div>
+            {a.excerpt && (
+              <p lang="fr" className={`mt-12 border-l-2 border-[#e3262b] pl-5 text-lg leading-[1.7] sm:pl-6 sm:text-justify sm:text-xl [hyphens:auto] ${UI.title}`} style={serif}>
+                {a.excerpt}
+              </p>
+            )}
+            <div className={`${a.excerpt ? "mt-10 border-t pt-10" : "mt-12"} ${UI.border}`}>
+              <ArticleBody body={a.body} />
+            </div>
             {a.linkUrl && (
               <a href={a.linkUrl} target="_blank" rel="noreferrer" className={`mt-10 ${UI.btnDark}`}>
                 <ExternalLink className="h-4 w-4" /> Consulter le document
@@ -66,7 +73,7 @@ function ArticlePage() {
         <section className={UI.altBg}>
           <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
             <h2 className={`text-3xl font-semibold ${UI.title}`} style={serif}>Dans la même rubrique</h2>
-            <div className="mt-10 grid gap-10 md:grid-cols-2 lg:grid-cols-3">{related.map((r) => <NewsCard key={r.id} item={r} />)}</div>
+            <div className="mt-10 grid gap-10 md:grid-cols-2 lg:grid-cols-3">{related.map((r) => <NewsCardSimple key={r.id} item={r} />)}</div>
           </div>
         </section>
       )}

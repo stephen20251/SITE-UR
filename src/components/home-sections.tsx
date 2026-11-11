@@ -96,25 +96,29 @@ export function Testimonials() {
   return (
     <section className="bg-white dark:bg-[#0b1120]">
       <div className="mx-auto max-w-7xl px-4 py-28 sm:px-6 lg:px-8">
-        <p className={`${UI.label} ${UI.eyebrow}`}>Témoignages</p>
-        <h2 className={`mt-4 text-4xl font-semibold leading-[1.1] sm:text-5xl ${UI.title}`} style={serif}>Ils en parlent mieux que nous.</h2>
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <p className={`${UI.label} ${UI.eyebrow}`}>Témoignages</p>
+            <h2 className={`mt-4 text-4xl font-semibold leading-[1.1] sm:text-5xl ${UI.title}`} style={serif}>Ils en parlent mieux que nous.</h2>
+          </div>
+        </div>
         <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {data.slice(0, 6).map((t) => (
-            <figure key={t.id} className="relative flex flex-col rounded-2xl bg-[#f3f6fd] p-8 ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(20,32,74,0.4)] dark:bg-[#162036] dark:ring-white/10">
-              <Quote className="h-8 w-8 text-[#e3262b]" />
-              <div className="mt-4 flex gap-0.5">
-                {[1, 2, 3, 4, 5].map((i) => <Star key={i} className={`h-4 w-4 ${i <= t.rating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`} />)}
-              </div>
-              <blockquote className={`mt-4 flex-1 text-base leading-relaxed ${UI.text}`}>« {t.content} »</blockquote>
-              <figcaption className="mt-6 flex items-center gap-3">
+            <figure key={t.id} className="group relative flex flex-col rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_2px_12px_-6px_rgba(20,32,74,0.15)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_56px_-28px_rgba(20,32,74,0.45)] dark:border-white/10 dark:bg-[#162036] dark:shadow-none">
+              <Quote className="absolute right-7 top-7 h-10 w-10 text-[#e3262b]/15 transition group-hover:text-[#e3262b]/30 dark:text-[#f87171]/20" strokeWidth={1.5} />
+              <figcaption className="flex items-center gap-4">
                 {t.avatar
-                  ? <img src={mediaUrl(t.avatar)} alt="" className="h-11 w-11 rounded-full object-cover" />
-                  : <span className="grid h-11 w-11 place-items-center rounded-full bg-[#14204a] text-sm font-semibold text-white">{t.name.slice(0, 1).toUpperCase()}</span>}
-                <span>
-                  <span className={`block font-semibold ${UI.title}`}>{t.name}</span>
-                  {t.role && <span className={`block text-sm ${UI.muted}`}>{t.role}</span>}
+                  ? <img src={mediaUrl(t.avatar)} alt={`Photo de ${t.name}`} loading="lazy" className="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-[#e3262b] ring-offset-2 ring-offset-white dark:ring-offset-[#162036]" />
+                  : <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#14204a] text-xl font-semibold text-white ring-2 ring-[#e3262b] ring-offset-2 ring-offset-white dark:bg-[#1e2d5e] dark:ring-offset-[#162036]" style={serif}>{t.name.slice(0, 1).toUpperCase()}</span>}
+                <span className="min-w-0 pr-10">
+                  <span className={`block text-lg font-semibold leading-tight ${UI.title}`} style={serif}>{t.name}</span>
+                  {t.role && <span className={`mt-1 block text-sm ${UI.muted}`}>{t.role}</span>}
                 </span>
               </figcaption>
+              <div className="mt-6 flex gap-0.5" aria-label={`Note : ${t.rating} sur 5`}>
+                {[1, 2, 3, 4, 5].map((i) => <Star key={i} className={`h-4 w-4 ${i <= t.rating ? "fill-amber-400 text-amber-400" : "text-slate-300 dark:text-slate-600"}`} />)}
+              </div>
+              <blockquote className={`mt-4 flex-1 text-base leading-[1.7] ${UI.text} dark:text-slate-300`}>« {t.content} »</blockquote>
             </figure>
           ))}
         </div>
