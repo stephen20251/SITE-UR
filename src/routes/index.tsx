@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, ArrowUpRight, Building2, Facebook, GraduationCap, Handshake, Lightbulb, Mail, MapPin, MonitorPlay, Navigation, Phone, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { CONTACT } from "@/lib/contact";
 import { api } from "@/lib/api";
-import { eventImage, type UniversityEvent } from "@/lib/events";
-import { FACEBOOK_URL, MAP, SITE_FONTS, SitePage, UI, fmtDate, serif, useFacebookUrl } from "@/components/site-layout";
+import type { UniversityEvent } from "@/lib/events";
+import { EventCard, FACEBOOK_URL, MAP, SITE_FONTS, SitePage, UI, serif, useFacebookUrl } from "@/components/site-layout";
 import { HomeHero } from "@/components/home-hero";
 import { CampusGallery, FaqSection, FinalCta, KeyFacts, Testimonials } from "@/components/home-sections";
 import { MentionPanel } from "@/components/mention-panel";
@@ -104,27 +104,6 @@ function SectionTitle({ eyebrow, title, light = false, center = false }: { eyebr
       <p className={`${label} ${light ? "text-[#f87171]" : eyebrowColor}`}>{eyebrow}</p>
       <h2 className={`mt-4 text-4xl font-semibold leading-[1.1] sm:text-5xl ${light ? "text-white" : titleColor}`} style={serif}>{title}</h2>
     </div>
-  );
-}
-
-function EventItem({ ev }: { ev: UniversityEvent }) {
-  const img = eventImage(ev.imageUrl);
-  const start = new Date(ev.startAt);
-  const past = new Date(ev.endAt ?? ev.startAt).getTime() < Date.now();
-  return (
-    <article className="group">
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-[#162036]">
-        {img && <img src={img} alt="" className={`h-full w-full object-cover ${gray} transition duration-700 group-hover:scale-[1.03]`} />}
-        <div className="absolute left-0 top-0 bg-white px-4 py-3 text-center">
-          <div className="text-2xl font-semibold leading-none text-[#e3262b]" style={serif}>{start.getDate()}</div>
-          <div className={`mt-1 text-slate-500 ${label} !text-[9px]`}>{start.toLocaleDateString("fr-FR", { month: "short" })}</div>
-        </div>
-        {past && <span className={`absolute right-3 top-3 bg-[#14204a]/70 px-2 py-1 text-white ${label} !text-[9px]`}>Passé</span>}
-      </div>
-      <h3 className={`mt-5 text-xl font-semibold leading-snug ${titleColor}`} style={serif}>{ev.title}</h3>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{fmtDate(ev.startAt)}{ev.location ? ` · ${ev.location}` : ""}</p>
-      {ev.description && <p className={`mt-3 line-clamp-3 text-sm leading-relaxed ${textColor}`}>{ev.description}</p>}
-    </article>
   );
 }
 
@@ -305,7 +284,7 @@ function Home() {
           {events.isLoading ? null : eventList.length === 0 ? (
             <p className="mt-14 border-t border-slate-200 pt-10 text-slate-500 dark:border-white/10 dark:text-slate-400">Les prochains rendez-vous de l'université seront publiés ici.</p>
           ) : (
-            <div className="mt-16 grid gap-12 md:grid-cols-3">{eventList.map((ev) => <EventItem key={ev.id} ev={ev} />)}</div>
+            <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{eventList.map((ev) => <EventCard key={ev.id} ev={ev} />)}</div>
           )}
         </div>
       </section>

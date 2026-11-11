@@ -27,6 +27,9 @@ export const UI = {
   photo: "", // photos toujours en couleur (classe gardée pour un éventuel filtre commun)
   altBg: "bg-[#f3f6fd] dark:bg-[#0f172a]",
   card: "bg-white ring-1 ring-slate-200 dark:bg-[#162036] dark:ring-white/10",
+  // Carte d'actualité ou d'événement (accueil et page Actualités) : contour fin, coins arrondis,
+  // ombre discrète, survol (contour plus visible, léger déplacement).
+  newsCard: "h-full rounded-2xl border border-slate-200 bg-white shadow-[0_2px_10px_-4px_rgba(20,32,74,0.12)] transition duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_20px_40px_-24px_rgba(20,32,74,0.35)] dark:border-[rgba(148,163,184,0.18)] dark:bg-[#162036] dark:shadow-[0_2px_12px_-6px_rgba(0,0,0,0.5)] dark:hover:border-[rgba(148,163,184,0.35)]",
   border: "border-slate-200 dark:border-white/10",
   accent: "text-[#e3262b] dark:text-[#f87171]",
   btnDark: "inline-flex items-center justify-center gap-2 bg-[#e3262b] px-7 py-3.5 text-sm font-medium tracking-wide text-white shadow-[0_10px_24px_-10px_rgba(227,38,43,0.7)] transition hover:-translate-y-px hover:bg-[#c81e23]",
@@ -275,9 +278,9 @@ export function EventCard({ ev }: { ev: UniversityEvent }) {
     : `Du ${fmtDate(ev.startAt)} au ${fmtDate(ev.endAt)}`;
   const long = (ev.description?.length ?? 0) > 140;
   return (
-    <article className={`flex flex-col overflow-hidden rounded-2xl shadow-[0_2px_10px_-4px_rgba(20,32,74,0.12)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(20,32,74,0.35)] dark:shadow-none ${UI.card}`}>
-      <div className="relative aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-[#0f172a]">
-        {img && <img src={img} alt="" className={`h-full w-full object-cover ${UI.photo}`} />}
+    <article className={`group flex flex-col overflow-hidden ${UI.newsCard}`}>
+      <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-slate-100 dark:bg-[#0f172a]">
+        {img && <img src={img} alt="" loading="lazy" className={`h-full w-full object-cover ${UI.photo} transition duration-700 group-hover:scale-[1.03]`} />}
         <div className="absolute left-0 top-0 bg-white px-4 py-3 text-center">
           <div className="text-2xl font-semibold leading-none text-[#e3262b]" style={serif}>{start.getDate()}</div>
           <div className={`mt-1 text-slate-500 ${UI.label} !text-[9px]`}>{start.toLocaleDateString("fr-FR", { month: "short" })}</div>
@@ -286,17 +289,22 @@ export function EventCard({ ev }: { ev: UniversityEvent }) {
           {past ? "Passé" : "À venir"}
         </span>
       </div>
-      <div className="flex flex-1 flex-col p-6">
-        <h3 className={`text-xl font-semibold leading-snug ${UI.title}`} style={serif}>{ev.title}</h3>
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        {/* Zone de titre réservée sur deux lignes : les titres d'une même rangée restent alignés */}
+        <h3 className={`min-h-[2.75em] text-xl font-semibold leading-snug [overflow-wrap:break-word] ${UI.title}`} style={serif}>{ev.title}</h3>
         <p className={`mt-3 flex items-start gap-2 text-sm ${UI.muted}`}><Clock className="mt-0.5 h-4 w-4 shrink-0" /> {when}</p>
         {ev.location && <p className={`mt-1.5 flex items-start gap-2 text-sm ${UI.muted}`}><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {ev.location}</p>}
         {ev.description && (
-          <p className={`mt-4 whitespace-pre-line text-sm leading-relaxed ${UI.text} ${open ? "" : "line-clamp-3"}`}>{ev.description}</p>
+          <p className={`mt-4 text-sm leading-relaxed ${UI.text} ${open ? "whitespace-pre-line" : "line-clamp-3"}`}>{ev.description}</p>
         )}
+        {/* Bouton toujours en bas de la carte, aligné d'une carte à l'autre ; le texte complet s'affiche dans la carte */}
         {long && (
-          <button onClick={() => setOpen((v) => !v)} className={`mt-auto inline-flex items-center gap-1 self-start pt-4 text-sm font-medium ${UI.accent}`}>
-            {open ? "Réduire" : "Lire la suite"} <ChevronDown className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} />
-          </button>
+          <div className={`mt-auto pt-5`}>
+            <button onClick={() => setOpen((v) => !v)} aria-expanded={open}
+              className={`inline-flex w-full items-center gap-1.5 border-t pt-4 text-sm font-semibold ${UI.border} ${UI.accent}`}>
+              {open ? "Réduire" : "Lire la suite"} <ChevronDown className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} />
+            </button>
+          </div>
         )}
       </div>
     </article>

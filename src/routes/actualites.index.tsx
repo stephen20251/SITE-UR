@@ -114,7 +114,7 @@ function NewsHome() {
       )}
       {eventList.length > 0 && (
         <Section id="evenements" eyebrow="Agenda" title="Événements de l'établissement">
-          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">{eventList.map((ev) => <EventCard key={ev.id} ev={ev} />)}</div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{eventList.map((ev) => <EventCard key={ev.id} ev={ev} />)}</div>
         </Section>
       )}
       {d && d.conferences.length > 0 && (

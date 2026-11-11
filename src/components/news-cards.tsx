@@ -33,7 +33,7 @@ export function NavyBadge({ item, className = "" }: { item: Pick<NewsSummary, "c
   );
 }
 
-const CARD = "rounded-2xl border border-slate-200 bg-white shadow-[0_2px_10px_-4px_rgba(20,32,74,0.12)] transition duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_24px_48px_-24px_rgba(20,32,74,0.35)] dark:border-white/10 dark:bg-[#162036] dark:shadow-none dark:hover:border-white/20 dark:hover:shadow-[0_24px_48px_-24px_rgba(0,0,0,0.7)]";
+const CARD = UI.newsCard;
 
 function ReadMore({ slug, className = "" }: { slug: string; className?: string }) {
   return (
