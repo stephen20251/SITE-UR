@@ -4,7 +4,8 @@
 export const CONTACT = {
   address: "Alarobia Amboniloha / Siniben-drano",
   city: "Antananarivo, Madagascar",
-  phone: "+261 34 28 607 78",
-  phoneHref: "tel:+261342860778",
+  // Même numéro que la fiche Google « University Reference »
+  phone: "+261 34 49 469 39",
+  phoneHref: "tel:+261344946939",
   email: "unirefes@gmail.com",
 } as const;
