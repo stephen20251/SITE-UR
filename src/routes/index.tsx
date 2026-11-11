@@ -54,7 +54,7 @@ const ORGANIZATION_LD = {
   name: "Université Références",
   alternateName: ["University Reference", "University Références", "UR"],
   url: "https://univreference.com/",
-  logo: "https://univreference.com/icons/icon-512.png",
+  logo: "https://univreference.com/logo-ur.jpg",
   image: "https://univreference.com/images/partage.jpg",
   description: "Établissement d'enseignement supérieur à Antananarivo : Licence en Informatique et en Gestion (3 ans), formation en anglais parlé (5 mois), en présentiel et en ligne.",
   // Programmes (actualité « Gestion et management : préparer son avenir professionnel dès aujourd'hui »)

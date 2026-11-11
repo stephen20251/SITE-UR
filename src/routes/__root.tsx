@@ -76,10 +76,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
-      { rel: "icon", type: "image/png", sizes: "96x96", href: "/icons/favicon-96.png" },
-      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/icon-192.png" },
-      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
+      // Icônes tirées du logo (emblème « UR » sur fond blanc) ; ?v=2 force le renouvellement des caches.
+      { rel: "icon", href: "/favicon.ico?v=2", sizes: "16x16 32x32 48x48" },
+      { rel: "icon", type: "image/png", sizes: "48x48", href: "/icons/favicon-48.png?v=2" },
+      { rel: "icon", type: "image/png", sizes: "96x96", href: "/icons/favicon-96.png?v=2" },
+      { rel: "icon", type: "image/png", sizes: "144x144", href: "/icons/favicon-144.png?v=2" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/icon-192.png?v=2" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/icons/apple-touch-icon.png?v=2" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" },
