@@ -177,7 +177,7 @@ function EventDialog({ event, onClose, onSaved }: { event: UniversityEvent | nul
             </label>
           </div>
           <label className="block text-sm font-medium">Lieu
-            <input className={`${inputCls} mt-1 w-full`} value={form.location} onChange={set("location")} placeholder="Ex. Amphithéâtre A, campus d'Antananarivo" />
+            <input className={`${inputCls} mt-1 w-full`} value={form.location} onChange={set("location")} placeholder="Ex. Amphithéâtre A, Université Références" />
           </label>
           <label className="block text-sm font-medium">Description
             <textarea className="mt-1 min-h-28 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"

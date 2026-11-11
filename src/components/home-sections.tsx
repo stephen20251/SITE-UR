@@ -40,7 +40,7 @@ const CAMPUS = [
   { img: `${PHOTO}/campus-esprit-equipe.jpg`, t: "Esprit d'équipe", d: "Une promotion soudée, qui avance ensemble.", cls: "md:col-span-2 md:row-span-2" },
   { img: `${PHOTO}/campus-vie-etudiante.jpg`, t: "Vie étudiante", d: "Entraide, rencontres et projets entre étudiants.", cls: "" },
   { img: `${PHOTO}/campus-travaux-pratiques.jpg`, t: "Travaux pratiques", d: "Apprendre en manipulant, en testant, en construisant.", cls: "" },
-  { img: `${PHOTO}/campus-numerique.jpg`, t: "Campus numérique", d: "Cours, ressources et suivi accessibles en ligne.", cls: "md:col-span-2" },
+  { img: `${PHOTO}/campus-numerique.jpg`, t: "Université numérique", d: "Cours, ressources et suivi accessibles en ligne.", cls: "md:col-span-2" },
 ];
 
 export function CampusGallery() {
@@ -52,7 +52,7 @@ export function CampusGallery() {
       <div className="relative mx-auto max-w-7xl px-4 py-28 sm:px-6 lg:px-8">
         <div className="grid items-end gap-8 lg:grid-cols-2">
           <div>
-            <p className={`${UI.label} text-[#f87171]`}>Vie au campus</p>
+            <p className={`${UI.label} text-[#f87171]`}>Vie à l'université</p>
             <h2 className="mt-4 text-4xl font-semibold leading-[1.1] text-white sm:text-5xl" style={serif}>Plus qu'un lieu d'étude.</h2>
           </div>
           <div className="lg:text-right">
@@ -61,7 +61,7 @@ export function CampusGallery() {
             </p>
             <a href={facebook} target="_blank" rel="noreferrer"
               className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/25 px-5 py-2.5 text-sm font-medium text-white transition hover:border-white hover:bg-white hover:text-[#14204a]">
-              <Facebook className="h-4 w-4" /> Suivre la vie du campus
+              <Facebook className="h-4 w-4" /> Suivre la vie de l'université
             </a>
           </div>
         </div>

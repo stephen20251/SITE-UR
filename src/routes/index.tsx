@@ -296,7 +296,7 @@ function Home() {
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
               <SectionTitle eyebrow="Actualité" title="Agenda de l'université" />
-              <p className={`mt-5 max-w-xl ${textColor}`}>Rentrée, examens, conférences, soutenances : les rendez-vous de l'Université Références.</p>
+              <p className={`mt-5 max-w-xl ${textColor}`}>Les rendez-vous de l'Université Références.</p>
             </div>
             <a href="/actualites" className={`group inline-flex items-center gap-2 border-b border-[#e3262b] pb-1 text-[#e3262b] dark:border-[#f87171] dark:text-[#f87171] ${label}`}>
               Toutes les actualités <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
