@@ -77,11 +77,26 @@ const NAV_ITEMS: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
 ];
 
 function AdminPanel() {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("dashboard");
 
-  if (!user || user.systemRole !== "SUPER_ADMIN") {
+  if (!ready) return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+
+  // Pas (ou plus) connecté : la session a pu expirer, on propose de se reconnecter.
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <div className="max-w-sm text-center">
+          <p className="text-lg font-semibold">Connexion requise</p>
+          <p className="mt-2 text-sm text-muted-foreground">Votre session a expiré ou vous n'êtes pas connecté. Reconnectez-vous avec votre compte Super Admin pour continuer.</p>
+          <Link to="/online/login" className="mt-5 inline-flex rounded-lg grad-online px-4 py-2 text-sm font-medium text-white">Se reconnecter</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.systemRole !== "SUPER_ADMIN") {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -1831,7 +1846,7 @@ function TestimonialList() {
       }
       resetForm();
       qc.invalidateQueries({ queryKey: ["public", "testimonials"] });
-    } catch { toast.error("Erreur"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Enregistrement impossible"); }
   }
 
   if (isLoading) return <Spinner />;

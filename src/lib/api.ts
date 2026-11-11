@@ -106,11 +106,26 @@ async function readBody(res: Response): Promise<any> {
   }
 }
 
+// Session terminée (jeton de renouvellement refusé) : l'application déconnecte l'utilisateur
+// au lieu de laisser la page affichée avec des enregistrements refusés.
+export const SESSION_EXPIRED_EVENT = "us:session-expired";
+export const SESSION_EXPIRED_MESSAGE = "Votre session a expiré : reconnectez-vous pour continuer.";
+
 // Single-flight refresh: concurrent 401s share one refresh round-trip.
 let refreshing: Promise<string | null> | null = null;
 export function refreshAccessToken(): Promise<string | null> {
   const rt = tokenStore.refresh;
   if (!rt) return Promise.resolve(null);
+  // Échec : si un autre onglet a renouvelé la session entre-temps (le jeton a déjà tourné),
+  // on reprend ses jetons au lieu de tout effacer.
+  const failed = (network = false) => {
+    const now = tokenStore.refresh;
+    if (now && now !== rt) return tokenStore.access;
+    if (network) return null; // coupure réseau : on garde la session
+    tokenStore.clear();
+    if (isBrowser) window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    return null;
+  };
   if (!refreshing) {
     refreshing = fetch(`${API_URL}/auth/refresh`, {
       method: "POST",
@@ -118,18 +133,12 @@ export function refreshAccessToken(): Promise<string | null> {
       body: JSON.stringify({ refreshToken: rt }),
     })
       .then(async (res) => {
-        if (!res.ok) {
-          tokenStore.clear();
-          return null;
-        }
+        if (!res.ok) return failed();
         const data = (await res.json()) as AuthPayload;
         tokenStore.set(data);
         return data.accessToken;
       })
-      .catch(() => {
-        tokenStore.clear();
-        return null;
-      })
+      .catch(() => failed(true))
       .finally(() => {
         refreshing = null;
       });
@@ -161,6 +170,7 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
       signal,
     });
 
+  const hadSession = auth && !!(tokenStore.access || tokenStore.refresh);
   let res = await send(tokenStore.access);
 
   // Token expired? Refresh once and retry.
@@ -171,8 +181,10 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
 
   if (!res.ok) {
     const data = await readBody(res);
-    const message =
-      (data && (data.error || data.message)) || `Request failed (${res.status})`;
+    // Session perdue : message clair plutôt que « Invalid or expired token »
+    const expired = res.status === 401 && hadSession && !tokenStore.access;
+    const message = expired ? SESSION_EXPIRED_MESSAGE
+      : (data && (data.error || data.message)) || `Request failed (${res.status})`;
     throw new ApiError(res.status, message, data?.details);
   }
 

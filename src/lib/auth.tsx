@@ -8,7 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, tokenStore, type ApiUser, type AuthPayload, type ClassroomRole } from "./api";
+import { toast } from "sonner";
+import { api, SESSION_EXPIRED_EVENT, SESSION_EXPIRED_MESSAGE, tokenStore, type ApiUser, type AuthPayload, type ClassroomRole } from "./api";
 
 export type RegisterInput = {
   email: string;
@@ -49,6 +50,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoles(tokenStore.getRoles());
     setReady(true);
   }, []);
+
+  // Session expirée (renouvellement refusé) ou connexion / déconnexion dans un autre onglet :
+  // l'état affiché suit les jetons réellement présents.
+  useEffect(() => {
+    const expired = () => {
+      setUser(null);
+      setRoles([]);
+      queryClient.clear();
+      toast.error(SESSION_EXPIRED_MESSAGE, { id: "session-expired" });
+    };
+    const sync = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== "us.user" && e.key !== "us.roles") return;
+      setUser(tokenStore.getUser());
+      setRoles(tokenStore.getRoles());
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, expired);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, expired);
+      window.removeEventListener("storage", sync);
+    };
+  }, [queryClient]);
 
   const login = useCallback(async (email: string, password: string) => {
     const payload = await api<AuthPayload>("/auth/login", {
