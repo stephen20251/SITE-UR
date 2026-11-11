@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Université Références (University Reference) — Antananarivo" },
-      { name: "description", content: "Université Références (University Reference), à Antananarivo : formations en Gestion, en Informatique et en Anglais, en présentiel et en ligne." },
+      { name: "description", content: "Université Références (University Reference), Antananarivo : Licence en Informatique et en Gestion, formation en anglais parlé, en présentiel et en ligne." },
       { property: "og:url", content: "https://univreference.com/" },
     ],
     links: [
@@ -25,8 +25,28 @@ export const Route = createFileRoute("/")({
     // Fiche d'identité lue par Google (nom, logo, adresse, contact, réseaux)
     scripts: [{ type: "application/ld+json", children: JSON.stringify(ORGANIZATION_LD) }],
   }),
+  // Formations chargées côté serveur : elles figurent dans la page lue par Google.
+  loader: () => loadHome(),
   component: Home,
 });
+
+// Données de l'accueil (domaines et mentions) ; l'accueil s'affiche quand même si l'API tarde.
+async function loadHome(): Promise<HomeData | null> {
+  try {
+    return await Promise.race([
+      api<HomeData>("/online/public/home", { auth: false }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+    ]);
+  } catch { return null; }
+}
+
+// Niveau et parcours de chaque mention, repris de l'actualité publiée par l'université
+// (« Gestion et management : préparer son avenir professionnel dès aujourd'hui »).
+const PROGRAMS: Record<string, { level: string; parcours: string[] }> = {
+  Informatique: { level: "Licence · 3 ans (L1, L2, L3)", parcours: ["Système et Ingénierie Logicielle", "Système Intelligent et Robotique", "Télécommunication et Cybersécurité"] },
+  Gestion: { level: "Licence · 3 ans (L1, L2, L3)", parcours: ["Management et Gestion d'Entreprise", "Marketing et Commerce International", "Finance et Comptabilité"] },
+  Anglais: { level: "Formation de 5 mois", parcours: ["Anglais parlé"] },
+};
 
 const ORGANIZATION_LD = {
   "@context": "https://schema.org",
@@ -36,7 +56,27 @@ const ORGANIZATION_LD = {
   url: "https://univreference.com/",
   logo: "https://univreference.com/icons/icon-512.png",
   image: "https://univreference.com/images/partage.jpg",
-  description: "Établissement d'enseignement supérieur à Antananarivo : Gestion, Informatique et Anglais, en présentiel et en ligne.",
+  description: "Établissement d'enseignement supérieur à Antananarivo : Licence en Informatique et en Gestion (3 ans), formation en anglais parlé (5 mois), en présentiel et en ligne.",
+  // Programmes (actualité « Gestion et management : préparer son avenir professionnel dès aujourd'hui »)
+  hasOfferingCatalog: {
+    "@type": "OfferCatalog",
+    name: "Formations de l'Université Références",
+    itemListElement: [
+      { name: "Informatique", credential: "Licence", time: "P3Y" },
+      { name: "Gestion", credential: "Licence", time: "P3Y" },
+      { name: "Anglais", credential: null, time: "P5M" },
+    ].map((p) => ({
+      "@type": "Offer",
+      itemOffered: {
+        "@type": "EducationalOccupationalProgram",
+        name: p.name === "Anglais" ? "Anglais parlé" : `Licence en ${p.name}`,
+        ...(p.credential && { educationalCredentialAwarded: p.credential }),
+        timeToComplete: p.time,
+        educationalProgramMode: ["présentiel", "en ligne"],
+        ...(PROGRAMS[p.name]?.parcours.length > 1 && { hasCourse: PROGRAMS[p.name].parcours.map((name) => ({ "@type": "Course", name })) }),
+      },
+    })),
+  },
   email: CONTACT.email,
   telephone: CONTACT.phone,
   address: {
@@ -67,11 +107,12 @@ const IMG = {
 const FACULTY_IMG: Record<string, string> = {
   "FAC-SEG": `${PHOTO}/mention-gestion.jpg`,
   "FAC-ST": `${PHOTO}/mention-informatique.jpg`,
+  "FAC-SI": `${PHOTO}/mention-informatique.jpg`,
   "FAC-LL": `${PHOTO}/mention-anglais.jpg`,
 };
 const FACULTY_FALLBACK = `${PHOTO}/universite-etudiante.jpg`;
 // Ordre d'affichage : Gestion, Informatique, puis Langues (Anglais) ; les autres ensuite.
-const FACULTY_ORDER = ["FAC-SEG", "FAC-ST", "FAC-LL"];
+const FACULTY_ORDER = ["FAC-SEG", "FAC-ST", "FAC-SI", "FAC-LL"];
 const facultyRank = (code: string) => { const i = FACULTY_ORDER.indexOf(code); return i === -1 ? FACULTY_ORDER.length : i; };
 // Présentation de chaque mention (utilisée si la mention n'a pas de description).
 const MENTION_TEXT: Record<string, string> = {
@@ -110,9 +151,11 @@ function SectionTitle({ eyebrow, title, light = false, center = false }: { eyebr
 // ─── Page ─────────────────────────────────────────────────────────────────────
 function Home() {
   const facebook = useFacebookUrl();
+  const initial = Route.useLoaderData();
   const { data } = useQuery({
     queryKey: ["public", "home"],
     queryFn: () => api<HomeData>("/online/public/home", { auth: false }),
+    initialData: initial ?? undefined,
     staleTime: 60_000,
   });
   // Événements publiés par le Super administrateur / le Secrétariat
@@ -197,7 +240,19 @@ function Home() {
                       <button key={m.id} type="button" onClick={() => open(m.id)} aria-haspopup="dialog"
                         className="group/m mt-4 flex flex-1 flex-col text-left">
                         <h3 className={`text-2xl font-semibold ${titleColor}`} style={serif}>{m.name}</h3>
+                        {PROGRAMS[m.name] && (
+                          <p className="mt-3 inline-flex self-start rounded-full bg-[#14204a] px-3 py-1 text-[11px] font-semibold text-white dark:bg-[#1e2d5e]">{PROGRAMS[m.name].level}</p>
+                        )}
                         <p className={`mt-3 line-clamp-4 text-sm leading-relaxed ${textColor}`}>{m.tagline || MENTION_TEXT[m.name] || m.description}</p>
+                        {(PROGRAMS[m.name]?.parcours.length ?? 0) > 1 && (
+                          <ul className="mt-4 space-y-1.5" aria-label={`Parcours de la mention ${m.name}`}>
+                            {PROGRAMS[m.name].parcours.map((p) => (
+                              <li key={p} className={`flex items-start gap-2.5 text-sm ${titleColor}`}>
+                                <span aria-hidden className="mt-[0.55em] h-1.5 w-1.5 shrink-0 rounded-full bg-[#e3262b] dark:bg-[#f87171]" />{p}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                         <span className={`mt-auto inline-flex items-center gap-2 pt-6 ${label} !text-[10px] text-[#e3262b] dark:text-[#f87171]`}>
                           <span className="border-b border-transparent pb-0.5 transition group-hover/m:border-current">Découvrir la mention</span>
                           <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/m:translate-x-1" />
