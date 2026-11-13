@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Eye, FileText, Loader2, RotateCcw, Search, UserPlus, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Eye, FileText, Loader2, RotateCcw, Search, UserPlus, X } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { StudyModePicker, type StudyMode } from "@/components/classroom/study-mode";
 import { Card, Empty, Loading, PageHeader, Tabs, btnGhost, btnPrimary, inputCls } from "@/components/classroom/cursus-ui";
@@ -14,8 +14,9 @@ import { ApiError } from "@/lib/api";
 
 export const Route = createFileRoute("/classroom/candidatures")({ component: Candidatures });
 
-type Tab = "TODO" | "INSCRIPTION" | "TO_VALIDATE" | "ENROLLED" | "REJECTED" | "DRAFT";
+type Tab = "ALL" | "TODO" | "INSCRIPTION" | "TO_VALIDATE" | "ENROLLED" | "REJECTED" | "DRAFT";
 const TAB_FILTER: Record<Tab, (c: Candidate) => boolean> = {
+  ALL: () => true,
   TODO: (c) => c.status === "SUBMITTED" || c.status === "UNDER_REVIEW",
   INSCRIPTION: (c) => c.status === "ACCEPTED" && !c.inscriptionSubmittedAt,
   TO_VALIDATE: (c) => c.status === "ACCEPTED" && !!c.inscriptionSubmittedAt,
@@ -24,28 +25,69 @@ const TAB_FILTER: Record<Tab, (c: Candidate) => boolean> = {
   DRAFT: (c) => c.status === "DRAFT",
 };
 
+// Où en est le dossier : étape lisible par l'Admin.
+function stageOf(c: Candidate): string {
+  switch (c.status) {
+    case "DRAFT": return "Pré-inscription non envoyée";
+    case "SUBMITTED": return "Pré-inscription reçue, à examiner";
+    case "UNDER_REVIEW": return "Pré-inscription en examen";
+    case "ACCEPTED": return c.inscriptionSubmittedAt ? "Fiche d'inscription reçue, à valider" : "Acceptée, fiche d'inscription attendue";
+    case "ENROLLED": return "Inscription validée";
+    case "REJECTED": return "Candidature refusée";
+  }
+}
+const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
+
 function Candidatures() {
   const { user, ready } = useRequireClassroom(["STAFF", "SUPER_ADMIN"]);
-  const [tab, setTab] = useState<Tab>("TODO");
+  const [tab, setTab] = useState<Tab>("ALL");
   const [search, setSearch] = useState("");
+  const [mentionId, setMentionId] = useState("");
   const all = useCandidates({ search: search || undefined });
   const [openId, setOpenId] = useState<string | null>(null);
 
-  if (!ready || !user) return <Loading />;
-  if (all.isError) return <Empty>Accès réservé au secrétariat (admissions).</Empty>;
-
   const list = all.data?.candidates ?? [];
+  const mentions = useMemo(() => {
+    const m = new Map<string, string>();
+    list.forEach((c) => c.mention && m.set(c.mention.id, c.mention.name));
+    return [...m].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [list]);
+
+  if (!ready || !user) return <Loading />;
+  if (all.isError) return <Empty>Votre compte n'a pas l'autorisation de consulter les candidats (permission « Voir les candidatures »).</Empty>;
+
   const opened = list.find((c) => c.id === openId);
   if (opened) return <CandidateDossier c={opened} onBack={() => setOpenId(null)} />;
 
-  const count = (t: Tab) => list.filter(TAB_FILTER[t]).length;
-  const shown = list.filter(TAB_FILTER[tab]);
+  const byMention = list.filter((c) => !mentionId || c.mention?.id === mentionId);
+  const count = (t: Tab) => byMention.filter(TAB_FILTER[t]).length;
+  const shown = byMention.filter(TAB_FILTER[tab]);
+  const total = all.data?.total ?? list.length;
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Candidatures" subtitle="Analysez les dossiers pièce par pièce, acceptez ou refusez, puis validez les inscriptions." />
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <PageHeader title="Candidats"
+        subtitle="Tous les candidats qui ont créé un compte ou envoyé leur pré-inscription. Cliquez sur un candidat pour consulter son dossier complet." />
+
+      {/* Chiffres clés */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {([
+          ["Candidats", total, "ALL", "text-classroom"],
+          ["À examiner", count("TODO"), "TODO", "text-amber-600"],
+          ["Inscriptions à valider", count("TO_VALIDATE"), "TO_VALIDATE", "text-blue-600"],
+          ["Inscrits", count("ENROLLED"), "ENROLLED", "text-emerald-600"],
+        ] as const).map(([label, value, t, cls]) => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`rounded-2xl border bg-card p-4 text-left transition hover:bg-accent ${tab === t ? "ring-2 ring-classroom/40" : ""}`}>
+            <p className={`text-2xl font-bold leading-none ${cls}`}>{value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
         <Tabs<Tab> value={tab} onChange={setTab} items={[
+          { v: "ALL", label: "Tous", count: count("ALL") },
           { v: "TODO", label: "À examiner", count: count("TODO") },
           { v: "INSCRIPTION", label: "Inscription en cours", count: count("INSCRIPTION") },
           { v: "TO_VALIDATE", label: "Inscription à valider", count: count("TO_VALIDATE") },
@@ -53,41 +95,66 @@ function Candidatures() {
           { v: "REJECTED", label: "Refusés", count: count("REJECTED") },
           { v: "DRAFT", label: "Brouillons", count: count("DRAFT") },
         ]} />
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <input className={`${inputCls} pl-8`} placeholder="Nom ou e-mail" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="flex flex-1 flex-wrap justify-end gap-2">
+          {mentions.length > 1 && (
+            <select className={inputCls} value={mentionId} onChange={(e) => setMentionId(e.target.value)} aria-label="Filtrer par mention">
+              <option value="">Toutes les mentions</option>
+              {mentions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </select>
+          )}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input className={`${inputCls} pl-8`} placeholder="Nom, e-mail ou téléphone" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
         </div>
       </div>
-      {all.isLoading ? <Loading /> : shown.length === 0 ? <Empty>Aucune candidature dans cette catégorie.</Empty> : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {shown.map((c) => {
-            const st = CANDIDATE_STATUS[c.status];
-            const toFix = c.documents.filter((d) => d.reviewStatus === "REJECTED").length;
-            const pending = c.documents.filter((d) => d.reviewStatus === "PENDING").length;
-            return (
-              <Card key={c.id}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-semibold">{c.user.lastName} {c.user.firstName}</div>
-                    <div className="text-xs text-muted-foreground">{c.user.email}{c.user.phone ? ` · ${c.user.phone}` : ""}</div>
-                    <div className="mt-1 text-xs">{c.mention?.name ?? "Mention non choisie"} · niveau {c.level ?? "—"}</div>
-                  </div>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${st.cls}`}>{st.label}</span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-                  <span className="rounded-full bg-muted px-2 py-0.5">{c.documents.length} pièce(s)</span>
-                  {pending > 0 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700">{pending} à vérifier</span>}
-                  {toFix > 0 && <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">{toFix} à corriger</span>}
-                  {c.inscriptionSubmittedAt && c.status === "ACCEPTED" && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700">Dossier d'inscription reçu</span>}
-                </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-[11px] text-muted-foreground">{c.submittedAt ? `Soumis le ${new Date(c.submittedAt).toLocaleDateString("fr-FR")}` : `Créé le ${new Date(c.createdAt).toLocaleDateString("fr-FR")}`}</span>
-                  <button onClick={() => setOpenId(c.id)} className={btnPrimary}><Eye className="h-4 w-4" /> Ouvrir le dossier</button>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+
+      {all.isLoading ? <Loading /> : shown.length === 0 ? <Empty>Aucun candidat dans cette catégorie.</Empty> : (
+        <Card className="overflow-hidden p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Candidat</th>
+                  <th className="hidden px-4 py-3 font-medium md:table-cell">Mention · niveau</th>
+                  <th className="hidden px-4 py-3 font-medium lg:table-cell">Où en est le dossier</th>
+                  <th className="hidden px-4 py-3 font-medium sm:table-cell">Envoyé le</th>
+                  <th className="px-4 py-3 font-medium">Statut</th>
+                  <th className="w-8 px-2 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((c) => {
+                  const st = CANDIDATE_STATUS[c.status];
+                  const toFix = c.documents.filter((d) => d.reviewStatus === "REJECTED").length;
+                  const pending = c.documents.filter((d) => d.reviewStatus === "PENDING").length;
+                  return (
+                    <tr key={c.id} onClick={() => setOpenId(c.id)} title="Ouvrir le dossier"
+                      className="cursor-pointer border-b last:border-0 hover:bg-muted/30">
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{c.user.lastName} {c.user.firstName}</div>
+                        <div className="text-xs text-muted-foreground">{c.user.email}{c.user.phone ? ` · ${c.user.phone}` : ""}</div>
+                        <div className="mt-0.5 text-xs text-muted-foreground md:hidden">{c.mention?.name ?? "Mention non choisie"} · {c.level ?? "—"}</div>
+                      </td>
+                      <td className="hidden px-4 py-3 md:table-cell">{c.mention?.name ?? <span className="text-muted-foreground">Non choisie</span>} · {c.level ?? "—"}</td>
+                      <td className="hidden px-4 py-3 lg:table-cell">
+                        <div className="text-xs">{stageOf(c)}</div>
+                        <div className="mt-1 flex flex-wrap gap-1 text-[11px]">
+                          <span className="rounded-full bg-muted px-2 py-0.5">{c.documents.length} pièce(s)</span>
+                          {pending > 0 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-950 dark:text-amber-300">{pending} à vérifier</span>}
+                          {toFix > 0 && <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700 dark:bg-red-950 dark:text-red-300">{toFix} à corriger</span>}
+                        </div>
+                      </td>
+                      <td className="hidden px-4 py-3 text-xs text-muted-foreground sm:table-cell">{c.submittedAt ? fmt(c.submittedAt) : `Compte créé le ${fmt(c.createdAt)}`}</td>
+                      <td className="px-4 py-3"><span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${st.cls}`}>{st.label}</span></td>
+                      <td className="px-2 py-3 text-muted-foreground"><ChevronRight className="h-4 w-4" /></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
     </div>
   );
@@ -147,6 +214,21 @@ function CandidateDossier({ c, onBack }: { c: Candidate; onBack: () => void }) {
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${st.cls}`}>{st.label}</span>
       </div>
+
+      {/* Informations et suivi du dossier */}
+      <Card>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-4">
+          <div><dt className="text-xs text-muted-foreground">E-mail</dt><dd className="break-all">{c.user.email}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Téléphone</dt><dd>{c.user.phone ?? "—"}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Mention demandée</dt><dd>{c.mention?.name ?? "—"}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Niveau</dt><dd>{c.level ?? "—"}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Compte créé le</dt><dd>{fmt(c.createdAt)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Pré-inscription envoyée le</dt><dd>{fmt(c.submittedAt)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Fiche d'inscription envoyée le</dt><dd>{fmt(c.inscriptionSubmittedAt)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Où en est le dossier</dt><dd className="font-medium">{stageOf(c)}</dd></div>
+        </dl>
+        {c.notes && <p className="mt-3 whitespace-pre-wrap rounded-xl bg-muted/40 p-3 text-xs"><b>Message du candidat :</b> {c.notes}</p>}
+      </Card>
 
       {/* Actions selon l'étape */}
       <Card className="flex flex-wrap items-center gap-2">

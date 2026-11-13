@@ -1,7 +1,7 @@
 // @refresh reset
 import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useAuth, primaryRoleName } from "@/lib/auth";
+import { useAuth, primaryRoleName, hasPermission } from "@/lib/auth";
 import type { LucideProps } from "lucide-react";
 import {
   LayoutDashboard, BookOpen, ClipboardList, UserCheck, Calendar,
@@ -63,10 +63,10 @@ function buildNav(systemRole: string, roleName: string): NavItem[] {
   ];
   if (systemRole === "SUPER_ADMIN") return [
     { label: "Tableau de bord",       path: "admin",          Icon: LayoutDashboard },
+    { label: "Candidats",             path: "candidatures",   Icon: FileText },
     { label: "Utilisateurs",          path: "utilisateurs",   Icon: Users },
     { label: "Années universitaires", path: "annees",         Icon: Calendar },
     { label: "Configuration",         path: "config",         Icon: ClipboardList },
-    { label: "Candidatures",          path: "candidatures",   Icon: FileText },
     { label: "Actualités",            path: "actualites",     Icon: Newspaper },
     { label: "Événements",            path: "evenements",     Icon: PartyPopper },
     { label: "Corps enseignant",      path: "corps-enseignant", Icon: Award },
@@ -114,7 +114,7 @@ function buildNav(systemRole: string, roleName: string): NavItem[] {
   // Secrétaire : inscriptions, présences, suivi des cours (plus de personnel / salaires)
   if (roleName.includes("Secrétaire") || roleName.includes("Administration")) return [
     { label: "Tableau de bord",      path: "secretaire",  Icon: LayoutDashboard },
-    { label: "Candidatures",         path: "candidatures", Icon: FileText },
+    { label: "Candidats",            path: "candidatures", Icon: FileText },
     { label: "Inscriptions",         path: "inscription", Icon: UserPlus },
     { label: "Guichet écolage",      path: "guichet",     Icon: Wallet },
     { label: "Présences",            path: "appel",       Icon: ClipboardCheck },
@@ -138,6 +138,15 @@ function buildNav(systemRole: string, roleName: string): NavItem[] {
     { label: "Tableau de bord", path: "admin", Icon: LayoutDashboard },
     chat, annonces, notifs,
   ];
+}
+
+// Tout compte du personnel autorisé à voir les candidatures (Admin, Direction…)
+// retrouve l'onglet « Candidats », même si son rôle n'a pas de menu dédié.
+function withCandidates(items: NavItem[], systemRole: string, roles: Parameters<typeof hasPermission>[0]): NavItem[] {
+  if (systemRole !== "STAFF" || items.some((i) => i.path === "candidatures")) return items;
+  if (!hasPermission(roles, "VIEW_CANDIDATES")) return items;
+  const entry: NavItem = { label: "Candidats", path: "candidatures", Icon: FileText };
+  return [items[0], entry, ...items.slice(1)];
 }
 
 function ClassroomLayout() {
@@ -184,7 +193,7 @@ function ClassroomLayout() {
 
   const roleName    = primaryRoleName(roles);
   const scope       = roles[0]?.scope;
-  const navItems    = buildNav(user.systemRole, roleName);
+  const navItems    = withCandidates(buildNav(user.systemRole, roleName), user.systemRole, roles);
   const initials    = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
   const displayRole = displayRoleName(roleName) || user.systemRole.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
   const avatarUrl   = (ctx.data?.user as { avatarUrl?: string | null } | undefined)?.avatarUrl ?? user.avatarUrl ?? null;

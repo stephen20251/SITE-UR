@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2, Users, GraduationCap, UserCheck, BookOpen, Layers } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { useReportsOverview, useUsers } from "@/lib/classroom";
@@ -9,6 +9,7 @@ const STAFF_ROLES = ["SUPER_ADMIN", "STAFF"];
 
 function AdminDash() {
   const { user, ready } = useRequireClassroom(STAFF_ROLES);
+  const navigate = useNavigate();
   const enabled = ready && !!user;
 
   const reports = useReportsOverview({ enabled });
@@ -38,11 +39,13 @@ function AdminDash() {
               { label: "Utilisateurs total",   value: stats ? String(stats.users)             : "—", icon: <Users size={18} />,        cls: "text-classroom bg-classroom/10" },
               { label: "Étudiants actifs",     value: stats ? String(stats.students)          : "—", icon: <GraduationCap size={18} />, cls: "text-blue-600 bg-blue-100 dark:bg-blue-950/30" },
               { label: "Enseignants",          value: stats ? String(stats.teachers)          : "—", icon: <UserCheck size={18} />,     cls: "text-emerald-600 bg-emerald-100 dark:bg-emerald-950/30" },
-              { label: "Candidats en attente", value: stats ? String(stats.pendingCandidates) : "—", icon: <Users size={18} />,        cls: "text-amber-600 bg-amber-100 dark:bg-amber-950/30" },
+              { label: "Candidats en attente", value: stats ? String(stats.pendingCandidates) : "—", icon: <Users size={18} />,        cls: "text-amber-600 bg-amber-100 dark:bg-amber-950/30", to: "/classroom/candidatures" },
               { label: "Mentions actives",     value: stats ? String(stats.mentions)          : "—", icon: <BookOpen size={18} />,     cls: "text-violet-600 bg-violet-100 dark:bg-violet-950/30" },
               { label: "Promotions",           value: stats ? String(stats.promotions)        : "—", icon: <Layers size={18} />,       cls: "text-rose-600 bg-rose-100 dark:bg-rose-950/30" },
-            ].map((s) => (
-              <div key={s.label} className="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-elegant">
+            ].map((s: { label: string; value: string; icon: React.ReactNode; cls: string; to?: string }) => (
+              <div key={s.label} onClick={s.to ? () => navigate({ to: s.to! }) : undefined} role={s.to ? "link" : undefined}
+                title={s.to ? "Voir la liste des candidats" : undefined}
+                className={`flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-elegant ${s.to ? "cursor-pointer transition hover:bg-accent" : ""}`}>
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${s.cls}`}>{s.icon}</div>
                 <div>
                   <p className="text-xl font-bold leading-none">{s.value}</p>

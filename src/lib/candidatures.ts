@@ -53,7 +53,7 @@ export const useCandidates = (f: { status?: string; search?: string }) =>
   useQuery({
     queryKey: ["candidates", "list", f],
     queryFn: () => {
-      const p = new URLSearchParams({ limit: "100" });
+      const p = new URLSearchParams({ limit: "500" });
       if (f.status) p.set("status", f.status);
       if (f.search) p.set("search", f.search);
       return api<{ total: number; candidates: Candidate[] }>(`/candidates?${p}`);

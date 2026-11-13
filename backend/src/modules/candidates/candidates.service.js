@@ -11,7 +11,9 @@ const CANDIDATE_INCLUDE = {
 }
 
 export const listCandidates = async (req, res) => {
-  const { status, mentionId, search, page = 1, limit = 20 } = req.query
+  const { status, mentionId, search } = req.query
+  const page = Math.max(1, Number(req.query.page) || 1)
+  const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 20))
   const where = {}
   if (status) where.status = status
   if (mentionId) where.mentionId = mentionId
@@ -20,6 +22,7 @@ export const listCandidates = async (req, res) => {
       { firstName: { contains: search } },
       { lastName: { contains: search } },
       { email: { contains: search } },
+      { phone: { contains: search } },
     ]}
   }
 
@@ -27,7 +30,7 @@ export const listCandidates = async (req, res) => {
     prisma.candidate.count({ where }),
     prisma.candidate.findMany({
       where, include: CANDIDATE_INCLUDE,
-      skip: (Number(page) - 1) * Number(limit), take: Number(limit),
+      skip: (page - 1) * limit, take: limit,
       orderBy: [{ submittedAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
     }),
   ])
