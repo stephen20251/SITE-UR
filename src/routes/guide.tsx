@@ -179,7 +179,7 @@ const GUIDES: RoleGuide[] = [
         steps: [
           "Le cours est examiné par le Super administrateur ou le Responsable de votre mention.",
           "Approuvé, il est publié. Refusé, vous recevez un commentaire : corrigez puis soumettez de nouveau.",
-          "Les revenus des cours certifiants payants sont partagés 50 % enseignant / 50 % université ; le suivi est assuré par la comptabilité.",
+          "Les revenus des cours certifiants payants sont partagés entre l'enseignant (25 % par défaut) et l'université (75 %), répartition réglée par le Super administrateur dans Écolage ; le suivi est assuré par la comptabilité.",
         ],
       },
       COMMS,
@@ -304,7 +304,7 @@ const GUIDES: RoleGuide[] = [
         title: "Personnel et salaires",
         steps: [
           "« Personnel » : fiches du personnel et des enseignants.",
-          "« Gestion des Salaires » : préparez la paie mensuelle et intégrez la part enseignant (50 %) des cours en ligne payants.",
+          "« Gestion des Salaires » : préparez la paie mensuelle et intégrez la part enseignant des cours en ligne payants (25 % par défaut, réglable dans Écolage → Parts enseignants).",
         ],
       },
       COMMS,

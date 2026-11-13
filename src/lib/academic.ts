@@ -396,10 +396,12 @@ export function useSubjects(mentionId?: string) {
   return useQuery({
     queryKey: progKeys.subjects(mentionId),
     queryFn: () => {
-      const p = mentionId ? `?mentionId=${mentionId}` : "";
-      return api<Subject[]>(`/structure/subjects${p}`);
+      // all=1 : la configuration affiche aussi les matières désactivées (pour les réactiver).
+      const qs = new URLSearchParams({ all: "1" });
+      if (mentionId) qs.set("mentionId", mentionId);
+      return api<Subject[]>(`/structure/subjects?${qs}`);
     },
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 }
 

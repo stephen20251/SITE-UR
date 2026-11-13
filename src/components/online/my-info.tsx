@@ -75,7 +75,7 @@ export function MyInfoCard() {
           <div className="flex items-center gap-2 text-sm font-semibold"><Wallet className="h-4 w-4 text-online" /> Activité d'enseignant</div>
           <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
             <div><div className="text-xs text-muted-foreground">Cours créés</div><div className="font-medium">{courses.data?.total ?? "—"}</div></div>
-            <div><div className="text-xs text-muted-foreground">Gains à verser (50 %)</div><div className="font-medium">{fmtMGA(earnings.data?.pending ?? 0)}</div></div>
+            <div><div className="text-xs text-muted-foreground">Gains à verser{earnings.data?.sharePercent != null ? ` (${earnings.data.sharePercent} %)` : ""}</div><div className="font-medium">{fmtMGA(earnings.data?.pending ?? 0)}</div></div>
             <div><div className="text-xs text-muted-foreground">Gains déjà versés</div><div className="font-medium">{fmtMGA(earnings.data?.paid ?? 0)}</div></div>
           </div>
           <Link to="/online/teacher" className="mt-3 inline-block text-xs font-semibold text-online hover:underline">Ouvrir mon studio →</Link>

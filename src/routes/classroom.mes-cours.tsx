@@ -47,11 +47,36 @@ function MyCourses() {
         <Card><div className="text-xs text-muted-foreground">À venir</div><div className="mt-1 text-2xl font-semibold">{d.upcoming.length}</div></Card>
         <Card><div className="text-xs text-muted-foreground">Complétés</div><div className="mt-1 text-2xl font-semibold">{d.completed.length}</div></Card>
         <Card>
-          <div className="text-xs text-muted-foreground">Mes gains (50 % des cours payants)</div>
+          <div className="text-xs text-muted-foreground">Mes gains ({earnings.data?.sharePercent ?? 25} % des cours payants)</div>
           <div className="mt-1 text-2xl font-semibold">{fmtMGA(earnings.data?.pending ?? 0)}</div>
           <div className="text-xs text-muted-foreground">à verser · {fmtMGA(earnings.data?.paid ?? 0)} déjà versés</div>
         </Card>
       </div>
+
+      <Card>
+        <h2 className="font-semibold">Mes matières</h2>
+        <p className="text-xs text-muted-foreground">Matières que l'administration ou le Responsable pédagogique vous a attribuées.</p>
+        {(d.subjects ?? []).length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">Aucune matière ne vous est encore attribuée.</p>
+        ) : (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {(d.subjects ?? []).map((s) => (
+              <div key={s.id} className="flex items-start gap-3 rounded-xl border p-3">
+                <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-classroom" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">{s.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {s.code}{s.mention ? ` · ${s.mention.name}` : ""} · {s.credits} crédits{s.groups.length ? ` · ${s.groups.join(", ")}` : ""}
+                  </div>
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  {s.types.map((t) => <span key={t} className="rounded-md border px-1.5 py-0.5 text-[10px] font-bold">{t}</span>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       {d.assignments.length > 0 && (
         <Card>

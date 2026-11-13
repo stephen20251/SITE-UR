@@ -8,6 +8,8 @@ import { prisma } from '../../database/prisma.js';
 import { HttpError } from '../../utils/asyncHandler.js';
 import { notifyUser, notifyUsers } from '../../utils/notify.js';
 import { loadStaffContext } from '../../middlewares/rbac.js';
+import { ensureSubjectFor, syncTeacherAssignment } from '../structure/subject-sync.js';
+import { getTeacherSharePercent, shareInfo } from '../finance/revenue-share.js';
 import {
   LEVELS, MONTHS, MAX_COURSES_PER_MONTH, MIN_COURSES_PER_MONTH, CURSUS_KINDS,
   semesterOfMonth, nextLevel, getStudentCursusProfile, cursusCoursesWhere, canPayMonth,
@@ -459,7 +461,7 @@ export async function upsertTuitionSetting({ mentionId, level, monthlyAmount, cu
   });
 }
 
-// Parts enseignants (50 %) — vue comptabilité.
+// Parts enseignants (pourcentage réglable) — vue comptabilité.
 export async function earningsOverview() {
   const rows = await prisma.teacherEarning.findMany({
     include: {
@@ -483,7 +485,7 @@ export async function earningsOverview() {
     }
     byTeacher.set(e.teacherId, t);
   }
-  return { teachers: [...byTeacher.values()], recent: rows.slice(0, 50) };
+  return { teachers: [...byTeacher.values()], recent: rows.slice(0, 50), share: shareInfo(await getTeacherSharePercent()) };
 }
 
 export async function myEarnings(user) {
@@ -498,6 +500,7 @@ export async function myEarnings(user) {
     paid: sum(['PAID']),
     total: sum(['PENDING', 'IN_PAYSLIP', 'PAID']),
     items: rows,
+    sharePercent: await getTeacherSharePercent(),
   };
 }
 
@@ -593,17 +596,20 @@ export async function createCurriculumEntry(req, body) {
   await assertMentionScope(req, mentionId);
   await assertMonthCapacity(mentionId, level, month);
   await assertTeacher(body.teacherId);
+  // Chaque cours du cursus est une matière : elle apparaît dans l'emploi du temps et l'affectation.
+  const subjectId = await ensureSubjectFor({ mentionId, title, level, subjectId: body.subjectId || null });
   const entry = await prisma.curriculumEntry.create({
     data: {
       mentionId, level, month, title: title.trim(),
       description: body.description ?? null,
-      subjectId: body.subjectId || null,
+      subjectId,
       teacherId: body.teacherId || null,
       plannedHours: Number(body.plannedHours) > 0 ? Number(body.plannedHours) : 30,
       order: Number(body.order) || 0,
       createdById: req.user.sub,
     },
   });
+  await syncTeacherAssignment({ subjectId, teacherUserId: entry.teacherId, assignedBy: req.user.sub });
   if (entry.teacherId) notifyAssignment(entry.teacherId, entry);
   return entry;
 }
@@ -617,6 +623,14 @@ export async function updateCurriculumEntry(req, id, body) {
   if (!MONTHS.includes(month) || !LEVELS.includes(level)) throw new HttpError(400, 'Mois ou niveau invalide');
   if (month !== entry.month || level !== entry.level) await assertMonthCapacity(entry.mentionId, level, month, id);
   if (body.teacherId !== undefined) await assertTeacher(body.teacherId);
+  // Matière choisie, ou à défaut celle de l'intitulé (créée au besoin).
+  const subjectId = body.subjectId !== undefined || !entry.subjectId
+    ? await ensureSubjectFor({
+      mentionId: entry.mentionId, level,
+      title: body.title !== undefined ? body.title : entry.title,
+      subjectId: body.subjectId !== undefined ? body.subjectId || null : entry.subjectId,
+    })
+    : entry.subjectId;
 
   const updated = await prisma.curriculumEntry.update({
     where: { id },
@@ -624,7 +638,7 @@ export async function updateCurriculumEntry(req, id, body) {
       month, level,
       ...(body.title !== undefined && { title: body.title.trim() }),
       ...(body.description !== undefined && { description: body.description }),
-      ...(body.subjectId !== undefined && { subjectId: body.subjectId || null }),
+      subjectId,
       ...(body.teacherId !== undefined && { teacherId: body.teacherId || null }),
       ...(body.plannedHours !== undefined && { plannedHours: Number(body.plannedHours) || entry.plannedHours }),
       ...(body.order !== undefined && { order: Number(body.order) || 0 }),
@@ -640,6 +654,14 @@ export async function updateCurriculumEntry(req, id, body) {
         ...(body.plannedHours !== undefined && { totalHours: updated.plannedHours }),
       },
     });
+  }
+  await syncTeacherAssignment({
+    subjectId: updated.subjectId, teacherUserId: updated.teacherId, assignedBy: req.user.sub,
+    previousTeacherUserId: entry.subjectId === updated.subjectId ? entry.teacherId : null,
+  });
+  // Changement de matière : l'ancien enseignant est libéré de l'ancienne matière s'il n'y enseigne plus.
+  if (entry.subjectId && entry.subjectId !== updated.subjectId && entry.teacherId) {
+    await syncTeacherAssignment({ subjectId: entry.subjectId, teacherUserId: null, previousTeacherUserId: entry.teacherId });
   }
   if (updated.teacherId && updated.teacherId !== entry.teacherId) notifyAssignment(updated.teacherId, updated);
   return updated;
@@ -705,7 +727,7 @@ export async function supervision(req, { mentionId, level }) {
 // ═════════════════════════════════════════════════════════════════════════════
 export async function teacherCourses(user) {
   const curMonth = await currentCursusMonth();
-  const [courses, assignments] = await Promise.all([
+  const [courses, assignments, subjectRows] = await Promise.all([
     prisma.onlineCourse.findMany({
       where: { teacherId: user.sub, courseKind: { in: CURSUS_KINDS } },
       include: COURSE_PROGRESS_INCLUDE,
@@ -716,14 +738,32 @@ export async function teacherCourses(user) {
       include: { mention: { select: { id: true, name: true } }, subject: { select: { id: true, name: true } } },
       orderBy: [{ level: 'asc' }, { month: 'asc' }],
     }),
+    // Matières attribuées dans « Affectation des matières » (CM / TD / TP, groupe éventuel)
+    prisma.subjectTeacher.findMany({
+      where: { teacher: { userId: user.sub }, subject: { isActive: true } },
+      include: {
+        subject: { select: { id: true, code: true, name: true, credits: true, weeklyHours: true, mention: { select: { id: true, name: true } } } },
+        group: { select: { id: true, name: true } },
+      },
+      orderBy: { assignedAt: 'asc' },
+    }),
   ]);
   const list = courses.map((c) => courseSummary(c, curMonth));
+  // Une ligne par matière, avec ses types de séance
+  const bySubject = new Map();
+  for (const r of subjectRows) {
+    const s = bySubject.get(r.subjectId) ?? { ...r.subject, types: [], groups: [] };
+    if (!s.types.includes(r.type)) s.types.push(r.type);
+    if (r.group && !s.groups.includes(r.group.name)) s.groups.push(r.group.name);
+    bySubject.set(r.subjectId, s);
+  }
   return {
     currentMonth: curMonth,
     present: list.filter((c) => c.progress.status === 'PRESENT'),
     upcoming: list.filter((c) => c.progress.status === 'UPCOMING'),
     completed: list.filter((c) => c.progress.status === 'COMPLETED'),
     assignments,
+    subjects: [...bySubject.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr')),
   };
 }
 

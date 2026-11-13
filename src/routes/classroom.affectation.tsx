@@ -3,11 +3,12 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Loader2, Trash2, UserCheck, BookOpen, ChevronDown,
-  X, Users, Search, CheckCircle2,
+  X, Users, Search, CheckCircle2, UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { isMentionResponsible, useRequireClassroom } from "@/components/classroom/shared";
+import { AccountResult } from "@/components/account-password";
 
 export const Route = createFileRoute("/classroom/affectation")({ component: AffectationPage });
 
@@ -18,7 +19,7 @@ type Mention   = { id: string; name: string; code: string };
 type Semester  = { id: string; name: string; number: number; academicYearId?: string };
 type Group     = { id: string; name: string };
 type Promotion = { id: string; name: string; level: string };
-type Teacher   = { id: string; fullName: string; specialization: string; employeeId?: string | null };
+type Teacher   = { userId: string; id: string | null; fullName: string; email: string; specialization: string; subjectsCount: number };
 type SubjectWithAssignments = {
   id: string; code: string; name: string; credits: number;
   mention: { name: string } | null;
@@ -84,12 +85,125 @@ function useSubjectsWithAssignments(mentionId?: string, semesterId?: string) {
     enabled: !!(mentionId || semesterId),
   });
 }
+// Tous les comptes enseignants (y compris ceux qui n'ont encore aucune matière)
 function useTeacherList(q: string) {
   return useQuery({
-    queryKey: ["letters","teachers", q],
-    queryFn: () => api<Teacher[]>(`/letters/teachers?q=${encodeURIComponent(q)}`),
+    queryKey: ["affectation","teachers", q],
+    queryFn: () => api<Teacher[]>(`/affectation/teachers?q=${encodeURIComponent(q)}`),
     staleTime: 30_000,
   });
+}
+
+const inp = "w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-classroom";
+
+// ── Création d'un enseignant ───────────────────────────────────────────────────
+
+function NewTeacherForm({ mentionId, onCreated, onCancel }: {
+  mentionId?: string; onCreated: (t: Teacher) => void; onCancel: () => void;
+}) {
+  const qc = useQueryClient();
+  const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", specialization: "" });
+  const [result, setResult] = useState<{ email: string; temporaryPassword?: string; emailSent?: boolean; teacher: Teacher } | null>(null);
+  const create = useMutation({
+    mutationFn: () => api<Teacher & { temporaryPassword?: string; emailSent?: boolean }>("/affectation/teachers", { method: "POST", body: { ...f, mentionId } }),
+    onSuccess: (t) => {
+      qc.invalidateQueries({ queryKey: ["affectation","teachers"] });
+      toast.success(`Enseignant créé : ${t.fullName}`);
+      setResult({ email: t.email, temporaryPassword: t.temporaryPassword, emailSent: t.emailSent, teacher: t });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (result) {
+    return (
+      <div className="rounded-xl border bg-muted/20 p-3">
+        <AccountResult email={result.email} temporaryPassword={result.temporaryPassword} emailSent={result.emailSent}
+          onClose={() => onCreated(result.teacher)} />
+      </div>
+    );
+  }
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF((x) => ({ ...x, [k]: e.target.value }));
+  return (
+    <form className="space-y-2 rounded-xl border bg-muted/20 p-3"
+      onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
+      <p className="text-xs font-semibold">Nouvel enseignant</p>
+      <div className="grid grid-cols-2 gap-2">
+        <input className={inp} placeholder="Prénom *" value={f.firstName} onChange={set("firstName")} required />
+        <input className={inp} placeholder="Nom *" value={f.lastName} onChange={set("lastName")} required />
+      </div>
+      <input className={inp} type="email" placeholder="Adresse e-mail *" value={f.email} onChange={set("email")} required />
+      <div className="grid grid-cols-2 gap-2">
+        <input className={inp} placeholder="Téléphone" value={f.phone} onChange={set("phone")} />
+        <input className={inp} placeholder="Spécialité" value={f.specialization} onChange={set("specialization")} />
+      </div>
+      <p className="text-[11px] text-muted-foreground">Un e-mail avec l'identifiant et un mot de passe provisoire est envoyé à l'enseignant.</p>
+      <div className="flex gap-2">
+        <button type="button" onClick={onCancel} className="flex-1 rounded-xl border py-2 text-xs font-medium hover:bg-accent">Annuler</button>
+        <button type="submit" disabled={create.isPending}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl grad-classroom py-2 text-xs font-semibold text-white disabled:opacity-60">
+          {create.isPending ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />} Créer l'enseignant
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ── Création d'une matière ─────────────────────────────────────────────────────
+
+function NewSubjectModal({ mention, onClose }: { mention: Mention; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [f, setF] = useState({ code: "", name: "", credits: 3, weeklyHours: 2 });
+  const create = useMutation({
+    mutationFn: () => api("/affectation/subjects", { method: "POST", body: { ...f, mentionId: mention.id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["affectation","subjects"] });
+      qc.invalidateQueries({ queryKey: ["programme","subjects"] });
+      toast.success(`Matière « ${f.name} » créée`);
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <form onSubmit={(e) => { e.preventDefault(); create.mutate(); }}
+        className="w-full max-w-md space-y-3 rounded-2xl border bg-card p-5 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">Nouvelle matière</h2>
+            <p className="text-xs text-muted-foreground">{mention.name}</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <label className="text-xs text-muted-foreground">Code *
+            <input className={`${inp} mt-1`} placeholder="INF101" value={f.code} required
+              onChange={(e) => setF((x) => ({ ...x, code: e.target.value }))} />
+          </label>
+          <label className="col-span-2 text-xs text-muted-foreground">Intitulé *
+            <input className={`${inp} mt-1`} placeholder="Algorithmique" value={f.name} required
+              onChange={(e) => setF((x) => ({ ...x, name: e.target.value }))} />
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-xs text-muted-foreground">Crédits
+            <input type="number" min={1} max={30} className={`${inp} mt-1`} value={f.credits}
+              onChange={(e) => setF((x) => ({ ...x, credits: +e.target.value }))} />
+          </label>
+          <label className="text-xs text-muted-foreground">Heures / semaine
+            <input type="number" min={0.5} step={0.5} className={`${inp} mt-1`} value={f.weeklyHours}
+              onChange={(e) => setF((x) => ({ ...x, weeklyHours: +e.target.value }))} />
+          </label>
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button type="button" onClick={onClose} className="flex-1 rounded-xl border py-2.5 text-sm font-medium hover:bg-accent">Annuler</button>
+          <button type="submit" disabled={create.isPending}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl grad-classroom py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+            {create.isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Créer la matière
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 }
 
 // ── Shared select ──────────────────────────────────────────────────────────────
@@ -126,6 +240,8 @@ function AssignModal({
   const [type,      setType]      = useState<CourseType>("CM");
   const [teacherQ,  setTeacherQ]  = useState("");
   const [selTeacher, setSelTeacher] = useState<Teacher | null>(null);
+  const [creatingTeacher, setCreatingTeacher] = useState(false);
+  const [listOpen,  setListOpen]  = useState(false);
   const [promoId,   setPromoId]   = useState("");
   const [grpId,     setGrpId]     = useState("");
 
@@ -136,7 +252,8 @@ function AssignModal({
   const assign = useMutation({
     mutationFn: (body: unknown) => api("/affectation", { method: "POST", body }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["affectation","subjects"] });
+      qc.invalidateQueries({ queryKey: ["affectation"] });
+      qc.invalidateQueries({ queryKey: ["cursus"] });
       toast.success("Affectation enregistrée");
       onClose();
     },
@@ -145,7 +262,10 @@ function AssignModal({
 
   function submit() {
     if (!selTeacher) return toast.error("Sélectionnez un enseignant");
-    assign.mutate({ subjectId: subject.id, teacherId: selTeacher.id, groupId: grpId || undefined, type });
+    assign.mutate({
+      subjectId: subject.id, groupId: grpId || undefined, type,
+      ...(selTeacher.id ? { teacherId: selTeacher.id } : { teacherUserId: selTeacher.userId }),
+    });
   }
 
   return (
@@ -185,28 +305,45 @@ function AssignModal({
                 </div>
                 <button onClick={() => { setSelTeacher(null); setTeacherQ(""); }} className="text-muted-foreground hover:text-foreground"><X size={13} /></button>
               </div>
+            ) : creatingTeacher ? (
+              <NewTeacherForm mentionId={mentionId}
+                onCreated={(t) => { setSelTeacher(t); setCreatingTeacher(false); }}
+                onCancel={() => setCreatingTeacher(false)} />
             ) : (
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-3.5 text-muted-foreground" />
-                <input value={teacherQ} onChange={(e) => setTeacherQ(e.target.value)}
-                  placeholder="Rechercher un enseignant…"
-                  className="w-full rounded-xl border bg-background pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-classroom" />
-                {(teachers.data ?? []).length > 0 && (
-                  <div className="absolute z-50 mt-1 w-full rounded-xl border bg-card shadow-lg overflow-hidden">
-                    {(teachers.data ?? []).map((t) => (
-                      <button key={t.id} onClick={() => { setSelTeacher(t); setTeacherQ(""); }}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-accent border-b last:border-0">
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-3.5 text-muted-foreground" />
+                  <input value={teacherQ} onChange={(e) => { setTeacherQ(e.target.value); setListOpen(true); }}
+                    onFocus={() => setListOpen(true)}
+                    placeholder="Rechercher ou choisir un enseignant…"
+                    className="w-full rounded-xl border bg-background pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-classroom" />
+                </div>
+                {listOpen && (
+                  <div className="max-h-56 overflow-y-auto rounded-xl border bg-card">
+                    {teachers.isLoading ? (
+                      <div className="flex justify-center py-4"><Loader2 size={14} className="animate-spin text-muted-foreground" /></div>
+                    ) : (teachers.data ?? []).length === 0 ? (
+                      <p className="px-4 py-3 text-xs text-muted-foreground">
+                        {teacherQ ? "Aucun enseignant ne correspond." : "Aucun compte enseignant pour le moment."}
+                      </p>
+                    ) : (teachers.data ?? []).map((t) => (
+                      <button key={t.userId} type="button" onClick={() => { setSelTeacher(t); setTeacherQ(""); setListOpen(false); }}
+                        className="flex w-full items-center gap-3 border-b px-4 py-2.5 text-left text-sm last:border-0 hover:bg-accent">
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full grad-classroom text-[10px] font-bold text-white">
                           {t.fullName.slice(0, 2)}
                         </div>
-                        <div>
-                          <p className="font-medium">{t.fullName}</p>
-                          <p className="text-xs text-muted-foreground">{t.specialization}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{t.fullName}</p>
+                          <p className="truncate text-xs text-muted-foreground">{t.specialization} · {t.subjectsCount} matière(s)</p>
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
+                <button type="button" onClick={() => setCreatingTeacher(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-classroom hover:underline">
+                  <UserPlus size={12} /> Créer un nouvel enseignant
+                </button>
               </div>
             )}
           </div>
@@ -244,7 +381,8 @@ function SubjectRow({ subject, mentionId }: { subject: SubjectWithAssignments; m
   const remove = useMutation({
     mutationFn: (id: string) => api(`/affectation/${id}`, { method: "DELETE" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["affectation","subjects"] });
+      qc.invalidateQueries({ queryKey: ["affectation"] });
+      qc.invalidateQueries({ queryKey: ["cursus"] });
       toast.success("Affectation supprimée");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -295,8 +433,9 @@ function SubjectRow({ subject, mentionId }: { subject: SubjectWithAssignments; m
 
 // ── Mention dépliable ──────────────────────────────────────────────────────────
 
-function MentionBlock({ mention, q, defaultOpen }: { mention: Mention; q: string; defaultOpen: boolean }) {
+function MentionBlock({ mention, q, defaultOpen, canCreate }: { mention: Mention; q: string; defaultOpen: boolean; canCreate: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [newSubject, setNewSubject] = useState(false);
   const subjects = useSubjectsWithAssignments(open ? mention.id : undefined);
   const list = (subjects.data ?? []).filter((s) =>
     !q || s.name.toLowerCase().includes(q.toLowerCase()) || s.code.toLowerCase().includes(q.toLowerCase()));
@@ -315,10 +454,25 @@ function MentionBlock({ mention, q, defaultOpen }: { mention: Mention; q: string
       {open && (
         subjects.isLoading ? (
           <div className="flex h-20 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-        ) : list.length === 0 ? (
-          <p className="px-4 py-6 text-center text-sm text-muted-foreground">Aucune matière — créez-les dans Configuration → Matières &amp; UE.</p>
-        ) : list.map((s) => <SubjectRow key={s.id} subject={s} mentionId={mention.id} />)
+        ) : (
+          <>
+            {list.length === 0 ? (
+              <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                {q ? "Aucune matière ne correspond à la recherche." : "Aucune matière pour cette mention : créez-en une, ou planifiez un cours dans « Cursus universitaire »."}
+              </p>
+            ) : list.map((s) => <SubjectRow key={s.id} subject={s} mentionId={mention.id} />)}
+            {canCreate && (
+              <div className="border-t px-4 py-3">
+                <button onClick={() => setNewSubject(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold hover:bg-accent">
+                  <Plus size={12} /> Nouvelle matière
+                </button>
+              </div>
+            )}
+          </>
+        )
       )}
+      {newSubject && <NewSubjectModal mention={mention} onClose={() => setNewSubject(false)} />}
     </div>
   );
 }
@@ -344,7 +498,7 @@ export default function AffectationPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Affectation des matières</h1>
           <p className="text-sm text-muted-foreground">
-            Cliquez sur une matière pour l'attribuer à un enseignant · année universitaire {current?.label ?? "en cours"}
+            Cliquez sur une matière pour l'attribuer à un enseignant. Les cours planifiés dans « Cursus universitaire » y figurent aussi · année {current?.label ?? "en cours"}
           </p>
         </div>
         <div className="relative w-64">
@@ -363,7 +517,7 @@ export default function AffectationPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {list.map((m) => <MentionBlock key={m.id} mention={m} q={q} defaultOpen={list.length === 1} />)}
+          {list.map((m) => <MentionBlock key={m.id} mention={m} q={q} defaultOpen={list.length === 1} canCreate />)}
         </div>
       )}
     </div>

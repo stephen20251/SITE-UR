@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/auth.js';
+import { requireAnyPermission } from '../../middlewares/rbac.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as svc from './affectation.service.js';
 
 const r = Router();
 r.use(authenticate);
+
+// Modifier les affectations : Super administrateur et Responsables pédagogiques.
+const canAssign = requireAnyPermission('ASSIGN_TEACHER');
 
 // GET /api/affectation — list assignments with filters
 r.get('/', asyncHandler(async (req, res) => {
@@ -18,24 +22,39 @@ r.get('/subjects', asyncHandler(async (req, res) => {
   res.json(await svc.listSubjectsForAssignment({ mentionId, semesterId }));
 }));
 
+// GET /api/affectation/teachers — tous les comptes enseignants (recherche facultative)
+r.get('/teachers', canAssign, asyncHandler(async (req, res) => {
+  res.json(await svc.listTeachers(req.query.q));
+}));
+
+// POST /api/affectation/teachers — créer un enseignant (compte + fiche), e-mail d'accueil
+r.post('/teachers', canAssign, asyncHandler(async (req, res) => {
+  res.status(201).json(await svc.createTeacher(req, req.body ?? {}));
+}));
+
+// POST /api/affectation/subjects — créer une matière dans une mention de son périmètre
+r.post('/subjects', requireAnyPermission('CREATE_SUBJECT'), asyncHandler(async (req, res) => {
+  res.status(201).json(await svc.createSubject(req, req.body ?? {}));
+}));
+
 // GET /api/affectation/subject/:subjectId
 r.get('/subject/:subjectId', asyncHandler(async (req, res) => {
   res.json(await svc.listBySubject(req.params.subjectId));
 }));
 
 // POST /api/affectation — assign teacher
-r.post('/', asyncHandler(async (req, res) => {
+r.post('/', canAssign, asyncHandler(async (req, res) => {
   const result = await svc.assignTeacher({ ...req.body, assignedBy: req.user.sub });
   res.status(201).json(result);
 }));
 
 // PATCH /api/affectation/:id
-r.patch('/:id', asyncHandler(async (req, res) => {
+r.patch('/:id', canAssign, asyncHandler(async (req, res) => {
   res.json(await svc.updateAssignment(req.params.id, req.body));
 }));
 
 // DELETE /api/affectation/:id
-r.delete('/:id', asyncHandler(async (req, res) => {
+r.delete('/:id', canAssign, asyncHandler(async (req, res) => {
   res.json(await svc.removeAssignment(req.params.id));
 }));
 

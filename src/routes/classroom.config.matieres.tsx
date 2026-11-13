@@ -42,8 +42,8 @@ function CreateSubjectModal({
       });
       toast.success("Matière créée");
       onClose();
-    } catch {
-      toast.error("Erreur lors de la création");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la création");
     }
   }
 
@@ -126,8 +126,8 @@ function CreateUEModal({
       await create.mutateAsync({ mentionId, ...form, credits: form.credits });
       toast.success("UE créée");
       onClose();
-    } catch {
-      toast.error("Erreur lors de la création");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la création");
     }
   }
 
@@ -187,8 +187,8 @@ function SubjectRow({ s }: { s: Subject }) {
     try {
       await update.mutateAsync({ id: s.id, isActive: !s.isActive });
       toast.success(s.isActive ? "Matière désactivée" : "Matière réactivée");
-    } catch {
-      toast.error("Erreur");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur");
     }
   }
 
@@ -199,7 +199,10 @@ function SubjectRow({ s }: { s: Subject }) {
           {s.code}
         </span>
       </td>
-      <td className="px-4 py-3 font-medium text-sm">{s.name}</td>
+      <td className="px-4 py-3 text-sm">
+        <div className="font-medium">{s.name}</div>
+        {s.mention && <div className="text-xs text-muted-foreground">{s.mention.name}</div>}
+      </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">{s.teachingUnit?.name ?? "—"}</td>
       <td className="px-4 py-3 text-sm text-center tabular-nums">{s.credits} cr.</td>
       <td className="px-4 py-3 text-sm text-center tabular-nums">{s.weeklyHours}h</td>

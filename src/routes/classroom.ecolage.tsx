@@ -3,13 +3,14 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Banknote, Check, Search, X } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
+import { useAuth } from "@/lib/auth";
 import { CashDesk } from "@/components/classroom/tuition";
 import {
   Card, Empty, Loading, PageHeader, Pill, Tabs, TuitionBadge, btnGhost, btnPrimary, inputCls,
 } from "@/components/classroom/cursus-ui";
 import {
-  fmtMGA, methodLabel, useEarningsOverview, useRecordCash, useSaveTuitionSetting, useTuitionAction,
-  useTuitionList, useTuitionSettings, useTuitionStats, useTuitionStudents, type CashierStudent, type TuitionPayment,
+  fmtMGA, methodLabel, useEarningsOverview, useRecordCash, useSaveRevenueShare, useSaveTuitionSetting, useTuitionAction,
+  useTuitionList, useTuitionSettings, useTuitionStats, useTuitionStudents, type CashierStudent, type RevenueShare, type TuitionPayment,
 } from "@/lib/cursus";
 import { ApiError } from "@/lib/api";
 import { cursusPlace } from "@/lib/cursus";
@@ -165,15 +166,68 @@ function SettingsTab() {
   );
 }
 
+// Répartition des ventes de cours payants : affichée à tous, modifiable par le Super administrateur.
+function ShareCard({ share, canEdit }: { share: RevenueShare; canEdit: boolean }) {
+  const save = useSaveRevenueShare();
+  const [draft, setDraft] = useState(String(share.teacherPercent));
+  useEffect(() => setDraft(String(share.teacherPercent)), [share.teacherPercent]);
+  const n = Number(draft);
+  const valid = draft.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= 100;
+  const teacher = valid ? n : share.teacherPercent;
+
+  return (
+    <Card className="space-y-4">
+      <div>
+        <h3 className="text-sm font-semibold">Répartition financière</h3>
+        <p className="text-xs text-muted-foreground">Partage de chaque vente d'un cours payant entre l'enseignant et l'université.</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+          <div className="text-xs font-medium text-amber-800 dark:text-amber-300">Enseignant</div>
+          <div className="mt-1 text-3xl font-bold tabular-nums text-amber-700 dark:text-amber-400">{teacher} %</div>
+        </div>
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+          <div className="text-xs font-medium text-blue-800 dark:text-blue-300">Université</div>
+          <div className="mt-1 text-3xl font-bold tabular-nums text-blue-700 dark:text-blue-400">{Math.round((100 - teacher) * 100) / 100} %</div>
+        </div>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-blue-500/80" aria-hidden>
+        <div className="h-full bg-amber-500" style={{ width: `${teacher}%` }} />
+      </div>
+      {canEdit ? (
+        <div className="flex flex-wrap items-end gap-2 border-t pt-4">
+          <label className="text-xs text-muted-foreground">Part de l'enseignant (%)
+            <input type="number" min={0} max={100} step={1} className={`${inputCls} mt-1 block w-32`} value={draft}
+              onChange={(e) => setDraft(e.target.value)} />
+          </label>
+          <button className={btnPrimary} disabled={!valid || n === share.teacherPercent || save.isPending}
+            onClick={() => save.mutateAsync(n)
+              .then((r) => toast.success(`Répartition enregistrée : ${r.teacherPercent} % enseignant / ${r.universityPercent} % université`))
+              .catch((err) => toast.error(err instanceof ApiError ? err.message : "Échec"))}>
+            Enregistrer
+          </button>
+          <p className="w-full text-xs text-muted-foreground">
+            S'applique aux ventes validées à partir de maintenant ; les ventes déjà enregistrées gardent leur répartition.
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Seul le Super administrateur peut modifier cette répartition.</p>
+      )}
+    </Card>
+  );
+}
+
 function EarningsTab() {
   const q = useEarningsOverview();
+  const { user } = useAuth();
   if (q.isLoading) return <Loading />;
   const teachers = q.data?.teachers ?? [];
+  const share = q.data?.share ?? { teacherPercent: 25, universityPercent: 75 };
   return (
     <div className="space-y-3">
+      <ShareCard share={share} canEdit={user?.systemRole === "SUPER_ADMIN"} />
       <p className="text-sm text-muted-foreground">
-        Chaque vente d'un cours payant est partagée 50 % enseignant / 50 % université. La part enseignant
-        en attente est ajoutée automatiquement à sa prochaine fiche de paie (menu Salaires).
+        La part enseignant en attente est ajoutée automatiquement à sa prochaine fiche de paie (menu Salaires).
       </p>
       {teachers.length === 0 ? <Empty>Aucune vente de cours payant pour le moment.</Empty> : (
         <div className="overflow-x-auto rounded-2xl border bg-card shadow-elegant">

@@ -352,7 +352,11 @@ export const createGroup = async (req, res) => {
 
 // ── Subjects ──────────────────────────────────────────────────────
 export const listSubjects = async (req, res) => {
-  const where = req.query.mentionId ? { mentionId: req.query.mentionId, isActive: true } : { isActive: true }
+  // ?all=1 : la configuration affiche aussi les matières désactivées (pour pouvoir les réactiver).
+  const where = {
+    ...(req.query.mentionId && { mentionId: req.query.mentionId }),
+    ...(req.query.all !== '1' && { isActive: true }),
+  }
   const data = await prisma.subject.findMany({
     where,
     include: { mention: { select: { id: true, name: true } }, teachingUnit: { select: { id: true, name: true } } },
@@ -361,7 +365,21 @@ export const listSubjects = async (req, res) => {
   res.json(data)
 }
 export const createSubject = async (req, res) => {
-  const s = await prisma.subject.create({ data: req.body })
+  const b = req.body ?? {}
+  const code = String(b.code ?? '').trim().toUpperCase()
+  const name = String(b.name ?? '').trim()
+  if (!b.mentionId || !code || !name) throw new HttpError(400, 'Mention, code et intitulé obligatoires')
+  const taken = await prisma.subject.findUnique({ where: { code }, select: { name: true } })
+  if (taken) throw new HttpError(409, `Le code ${code} est déjà utilisé par la matière « ${taken.name} »`)
+  const s = await prisma.subject.create({
+    data: {
+      mentionId: b.mentionId, code, name,
+      credits: Number(b.credits) > 0 ? Number(b.credits) : 3,
+      weeklyHours: Number(b.weeklyHours) > 0 ? Number(b.weeklyHours) : 2,
+      teachingUnitId: b.teachingUnitId || null,
+      description: b.description || null,
+    },
+  })
   res.status(201).json(s)
 }
 export const updateSubject = async (req, res) => {

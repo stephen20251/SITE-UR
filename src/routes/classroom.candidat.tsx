@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle, Clock, Download, GraduationCap, Loader2, LogIn, Save, Send, XCircle } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronUp, Clock, Download, GraduationCap, Loader2, LogIn, Save, Send, XCircle } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { DocSlot } from "@/components/classroom/candidate-docs";
 import { useAuth } from "@/lib/auth";
@@ -48,6 +48,8 @@ function CandidatDash() {
 
   const c = q.data;
   const step = currentStep(c);
+  const inscriptionStage = c.status === "ACCEPTED" || c.status === "ENROLLED";
+  const inscriptionOpen = c.status === "ACCEPTED" && !c.inscriptionSubmittedAt;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 py-4">
@@ -77,30 +79,54 @@ function CandidatDash() {
         </div>
       )}
 
-      {/* Progression */}
-      <div className={card}>
-        <h2 className="mb-5 font-semibold">Progression de votre dossier</h2>
-        <ol className="space-y-4">
+      {/* Pré-inscription validée : accès direct à la fiche d'inscription, sans défiler */}
+      {inscriptionOpen && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 p-5 text-emerald-900 sm:flex-row sm:items-center dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
+          <CheckCircle className="h-8 w-8 shrink-0 text-emerald-600" />
+          <div className="flex-1 text-sm">
+            <p className="font-semibold">Pré-inscription validée : votre candidature est acceptée.</p>
+            <p>Dernière étape : remplissez votre fiche d'inscription et déposez les documents demandés.</p>
+          </div>
+          <a href="#inscription" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg grad-classroom px-4 py-2.5 text-sm font-semibold text-white shadow-elegant">
+            <GraduationCap className="h-4 w-4" /> Remplir ma fiche d'inscription
+          </a>
+        </div>
+      )}
+
+      {/* Progression (compacte) */}
+      <div className={`${card} !p-5`}>
+        <h2 className="mb-4 text-sm font-semibold">Progression de votre dossier</h2>
+        <ol className="grid grid-cols-6 gap-1">
           {STEPS.map((st, i) => {
             const done = i < step || c.status === "ENROLLED";
             const current = i === step && c.status !== "ENROLLED";
             return (
-              <li key={st.key} className="flex items-start gap-3">
-                <span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 ${done ? "border-emerald-500 text-emerald-500" : current ? "border-classroom text-classroom" : "border-muted text-muted-foreground"}`}>
-                  {done ? <CheckCircle className="h-4 w-4" /> : current ? <Clock className="h-4 w-4" /> : <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />}
+              <li key={st.key} className="flex flex-col items-center text-center">
+                <span className={`grid h-7 w-7 place-items-center rounded-full border-2 ${done ? "border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40" : current ? "border-classroom text-classroom" : "border-muted text-muted-foreground"}`}>
+                  {done ? <CheckCircle className="h-4 w-4" /> : current ? <Clock className="h-4 w-4" /> : <span className="text-[11px] font-semibold">{i + 1}</span>}
                 </span>
-                <div>
-                  <p className={`font-medium ${!done && !current ? "text-muted-foreground" : ""}`}>{st.label}</p>
-                  {current && "hint" in st && <p className="text-xs text-classroom">{st.hint}</p>}
-                </div>
+                <span className={`mt-1.5 hidden text-[11px] leading-tight sm:block ${current ? "font-semibold text-classroom" : done ? "" : "text-muted-foreground"}`}>{st.label}</span>
               </li>
             );
           })}
         </ol>
+        {c.status !== "ENROLLED" && (
+          <p className="mt-4 rounded-xl bg-muted/40 px-3 py-2 text-xs">
+            <span className="font-semibold">Étape {step + 1} sur {STEPS.length} — {STEPS[step].label}.</span>{" "}
+            {(STEPS[step] as { hint?: string }).hint ?? ""}
+          </p>
+        )}
       </div>
 
-      <PreInscription c={c} />
-      {(c.status === "ACCEPTED" || c.status === "ENROLLED") && <Inscription c={c} />}
+      {/* Une fois la candidature acceptée, la fiche d'inscription passe en premier */}
+      {inscriptionStage ? (
+        <>
+          <Inscription c={c} />
+          <PreInscription c={c} />
+        </>
+      ) : (
+        <PreInscription c={c} />
+      )}
     </div>
   );
 }
@@ -113,6 +139,7 @@ function PreInscription({ c }: { c: Candidate }) {
   const saveMotivation = useSaveMotivation();
   const submit = useSubmitMyCandidature();
   const editable = c.status === "DRAFT" || c.status === "REJECTED";
+  const [open, setOpen] = useState(false);
   const [f, setF] = useState({ mentionId: "", level: "L1", phone: "" });
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
@@ -139,11 +166,42 @@ function PreInscription({ c }: { c: Candidate }) {
     } catch (err) { toast.error(err instanceof ApiError ? err.message : "Soumission impossible"); }
   }
 
+  // Dossier soumis : la pré-inscription est close. Elle se résume en un cadre compact
+  // (détail sur demande) pour laisser la place à l'étape suivante.
+  if (!editable && !open) {
+    const accepted = c.status === "ACCEPTED" || c.status === "ENROLLED";
+    const preDocs = c.documents.filter((d) => preTypes.some(([t]) => t === d.type)).length;
+    return (
+      <div className={`${card} !p-5`}>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${accepted ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40" : "bg-amber-100 text-amber-600 dark:bg-amber-950/40"}`}>
+            {accepted ? <CheckCircle className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold">1. Pré-inscription {accepted ? "validée" : "clôturée"}</h2>
+            <p className="text-xs text-muted-foreground">
+              {accepted ? "Dossier accepté par le secrétariat" : "En cours d'examen par le secrétariat"}
+              {c.submittedAt ? ` · soumis le ${new Date(c.submittedAt).toLocaleDateString("fr-FR")}` : ""}
+              {" · "}{c.mention?.name ?? "—"} {c.level ?? ""} · {preDocs} pièce{preDocs > 1 ? "s" : ""}
+            </p>
+          </div>
+          <button onClick={() => setOpen(true)} className="inline-flex w-full items-center justify-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-accent sm:w-auto">
+            <ChevronDown className="h-3.5 w-3.5" /> Voir le détail
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={card}>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="font-semibold">1. Pré-inscription</h2>
-        {!editable && <span className="text-xs text-muted-foreground">Soumis le {c.submittedAt ? new Date(c.submittedAt).toLocaleDateString("fr-FR") : "—"}</span>}
+        {!editable && (
+          <button onClick={() => setOpen(false)} className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-accent">
+            <ChevronUp className="h-3.5 w-3.5" /> Réduire
+          </button>
+        )}
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -242,7 +300,7 @@ function Inscription({ c }: { c: Candidate }) {
   };
 
   return (
-    <div className={card}>
+    <div id="inscription" className={`${card} scroll-mt-20`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-semibold">2. Inscription</h2>
         <a href="/modeles/fiche-inscription.docx" download className="inline-flex items-center gap-1 text-xs font-medium text-classroom hover:underline">

@@ -482,7 +482,7 @@ export async function calculatePayroll(periodId) {
         }
       }
 
-      // Part enseignant (50 %) des cours payants, en attente de versement.
+      // Part enseignant des cours payants (pourcentage en vigueur à chaque vente), en attente de versement.
       let earningIds = [];
       if (emp.userId) {
         const earnings = await tx.teacherEarning.findMany({
@@ -491,7 +491,7 @@ export async function calculatePayroll(periodId) {
         });
         const share = earnings.reduce((sum, e) => sum + e.teacherShare, 0);
         if (share > 0) {
-          items.push({ type: 'GAIN', code: 'COURS_EN_LIGNE', label: `Part cours payants (50 %) — ${earnings.length} vente(s)`, amount: share, isPercent: false });
+          items.push({ type: 'GAIN', code: 'COURS_EN_LIGNE', label: `Part enseignant des cours payants — ${earnings.length} vente(s)`, amount: share, isPercent: false });
           gains += share;
           earningIds = earnings.map((e) => e.id);
         }

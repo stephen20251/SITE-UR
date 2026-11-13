@@ -459,7 +459,7 @@ function PlanningBuilder() {
                   )}
                   {slotForm.type !== ACTIVITY && !resources?.subjects.length && (
                     <p className="mt-1 text-xs text-amber-600">
-                      Aucune matière — configurez-les dans Configuration → Matières
+                      Aucune matière pour cette mention : créez-les dans « Affectation des matières » ou planifiez les cours dans « Cursus universitaire ».
                     </p>
                   )}
                 </div>

@@ -4,6 +4,7 @@ import { authenticate, requireRole } from '../../middlewares/auth.js';
 import { requireAnyPermission } from '../../middlewares/rbac.js';
 import { prisma } from '../../database/prisma.js';
 import * as svc from './cursus.service.js';
+import { getTeacherSharePercent, setTeacherSharePercent, shareInfo } from '../finance/revenue-share.js';
 import { reviewQueue, assertCanReview, transitionCourseStatus } from '../online/course-review.service.js';
 import { getCourseDetail } from '../online/courses.service.js';
 
@@ -89,6 +90,14 @@ r.put('/tuition/settings', tuition, asyncHandler(async (req, res) => {
 }));
 r.get('/earnings', tuition, asyncHandler(async (req, res) => {
   res.json(await svc.earningsOverview());
+}));
+// Répartition enseignant / université des ventes de cours : lue par la comptabilité,
+// modifiée par le Super administrateur uniquement.
+r.get('/earnings/share', tuition, asyncHandler(async (req, res) => {
+  res.json(shareInfo(await getTeacherSharePercent()));
+}));
+r.put('/earnings/share', requireRole('SUPER_ADMIN'), asyncHandler(async (req, res) => {
+  res.json(await setTeacherSharePercent(req.body?.teacherPercent));
 }));
 
 // ─── Responsable : plan du cursus, supervision, passage ──────────────────────

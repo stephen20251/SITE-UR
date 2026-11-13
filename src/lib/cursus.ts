@@ -198,19 +198,39 @@ export const useEarningsOverview = () =>
     queryFn: () => api<{
       teachers: { teacher: Person; pending: number; inPayslip: number; paid: number; gross: number; universityShare: number; sales: number }[];
       recent: Earning[];
+      share?: RevenueShare;
     }>("/cursus/earnings"),
   });
 export const useMyEarnings = (enabled = true) =>
   useQuery({
     queryKey: qk.myEarnings,
-    queryFn: () => api<{ pending: number; paid: number; total: number; items: Earning[] }>("/cursus/teacher/earnings"),
+    queryFn: () => api<{ pending: number; paid: number; total: number; items: Earning[]; sharePercent?: number }>("/cursus/teacher/earnings"),
     enabled,
   });
+
+// Répartition enseignant / université des ventes de cours (réglée par le Super administrateur)
+export type RevenueShare = { teacherPercent: number; universityPercent: number };
+export const useSaveRevenueShare = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (teacherPercent: number) =>
+      api<RevenueShare>("/cursus/earnings/share", { method: "PUT", body: { teacherPercent } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.earnings });
+      qc.invalidateQueries({ queryKey: qk.myEarnings });
+    },
+  });
+};
 
 // ─── Enseignant ──────────────────────────────────────────────────────────────
 export type Assignment = {
   id: string; title: string; level: string; month: number; plannedHours: number;
   mention: { id: string; name: string }; subject?: { id: string; name: string } | null;
+};
+// Matière attribuée dans « Affectation des matières »
+export type TeacherSubject = {
+  id: string; code: string; name: string; credits: number; weeklyHours: number;
+  mention: { id: string; name: string } | null; types: string[]; groups: string[];
 };
 export const useTeacherCourses = (enabled = true) =>
   useQuery({
@@ -219,6 +239,7 @@ export const useTeacherCourses = (enabled = true) =>
       currentMonth: number | null;
       present: CursusCourse[]; upcoming: CursusCourse[]; completed: CursusCourse[];
       assignments: Assignment[];
+      subjects?: TeacherSubject[];
     }>("/cursus/teacher/courses"),
     enabled,
   });

@@ -5,6 +5,9 @@ import { notifyUser } from '../../utils/notify.js';
 import { validateCoupon, redeemCoupon } from './coupon.service.js';
 import { sendEmail, renderEmail } from '../../utils/mailer.js';
 import { cursusAccess } from '../cursus/cursus.access.js';
+// Partage des revenus d'un cours payant : pourcentage enseignant réglable par le
+// Super administrateur (25 % par défaut), le reste pour l'université.
+import { getTeacherSharePercent } from '../finance/revenue-share.js';
 
 async function makeReference() {
   // `reference` is globally unique, so count across all payments (not per
@@ -15,8 +18,6 @@ async function makeReference() {
   return `PAY-${year}-${String(count + 1).padStart(6, '0')}-${rand}`;
 }
 
-// Partage des revenus d'un cours payant : 50 % enseignant, 50 % université.
-export const TEACHER_SHARE_RATE = 0.5;
 
 const INCLUDE = {
   course: { select: { id: true, title: true, price: true, thumbnail: true } },
@@ -126,6 +127,7 @@ export async function getPayment(id) {
 export async function validatePayment(id, adminId) {
   const payment = await prisma.coursePayment.findUniqueOrThrow({ where: { id } });
   if (payment.status !== 'PENDING') throw new HttpError(400, 'Ce paiement n\'est pas en attente');
+  const sharePercent = await getTeacherSharePercent();
 
   return prisma.$transaction(async (tx) => {
     const updated = await tx.coursePayment.update({
@@ -143,10 +145,10 @@ export async function validatePayment(id, adminId) {
       });
     }
 
-    // Part enseignant (50 %) — reversée via la fiche de paie.
+    // Part enseignant (pourcentage en vigueur) — reversée via la fiche de paie.
     if (updated.amount > 0) {
       const course = await tx.onlineCourse.findUnique({ where: { id: payment.courseId }, select: { teacherId: true } });
-      const teacherShare = Math.round(updated.amount * TEACHER_SHARE_RATE * 100) / 100;
+      const teacherShare = Math.round(updated.amount * (sharePercent / 100) * 100) / 100;
       await tx.teacherEarning.upsert({
         where: { paymentId: id },
         update: {},
