@@ -124,6 +124,12 @@ r.get('/semesters', curriculum, asyncHandler(async (req, res) => {
 r.post('/semesters', curriculum, asyncHandler(async (req, res) => {
   res.status(201).json(await sem.createSemester(req, req.body));
 }));
+r.get('/semesters/all', curriculum, asyncHandler(async (req, res) => {
+  res.json(await sem.allSemesters(req, req.query));
+}));
+r.post('/semesters/init-all', curriculum, asyncHandler(async (req, res) => {
+  res.json(await sem.initAllSemesters(req, req.body ?? {}));
+}));
 r.post('/semesters/init', curriculum, asyncHandler(async (req, res) => {
   res.json(await sem.initSemesters(req, req.body ?? {}));
 }));

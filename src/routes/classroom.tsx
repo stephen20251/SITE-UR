@@ -72,6 +72,7 @@ function buildNav(systemRole: string, roleName: string): NavItem[] {
     { label: "Corps enseignant",      path: "corps-enseignant", Icon: Award },
     { label: "Inscriptions",          path: "inscription",    Icon: UserPlus },
     { label: "Cursus universitaire",  path: "cursus-plan",    Icon: GraduationCap },
+    { label: "Semestres",             path: "semestres",      Icon: CalendarDays },
     { label: "Validation des cours",  path: "validation-cours", Icon: CheckSquare },
     { label: "Suivi des cours",       path: "suivi-cours",    Icon: ListChecks },
     { label: "Présences",             path: "appel",          Icon: ClipboardCheck },
@@ -101,6 +102,7 @@ function buildNav(systemRole: string, roleName: string): NavItem[] {
   if (isMentionResponsible(roleName)) return [
     { label: "Tableau de bord",      path: "chef-mention", Icon: LayoutDashboard },
     { label: "Cursus universitaire", path: "cursus-plan",  Icon: GraduationCap },
+    { label: "Semestres",            path: "semestres",    Icon: CalendarDays },
     { label: "Validation des cours", path: "validation-cours", Icon: CheckSquare },
     { label: "Suivi des cours",      path: "suivi-cours",  Icon: ListChecks },
     { label: "Affectation des matières", path: "affectation",  Icon: Users },

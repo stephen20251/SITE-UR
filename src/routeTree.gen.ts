@@ -49,6 +49,7 @@ import { Route as ClassroomTeacherRouteImport } from './routes/classroom.teacher
 import { Route as ClassroomTarifsRouteImport } from './routes/classroom.tarifs'
 import { Route as ClassroomSuiviCoursRouteImport } from './routes/classroom.suivi-cours'
 import { Route as ClassroomStudentRouteImport } from './routes/classroom.student'
+import { Route as ClassroomSemestresRouteImport } from './routes/classroom.semestres'
 import { Route as ClassroomSecretaireRouteImport } from './routes/classroom.secretaire'
 import { Route as ClassroomSalairesRouteImport } from './routes/classroom.salaires'
 import { Route as ClassroomRhRouteImport } from './routes/classroom.rh'
@@ -315,6 +316,11 @@ const ClassroomSuiviCoursRoute = ClassroomSuiviCoursRouteImport.update({
 const ClassroomStudentRoute = ClassroomStudentRouteImport.update({
   id: '/student',
   path: '/student',
+  getParentRoute: () => ClassroomRoute,
+} as any)
+const ClassroomSemestresRoute = ClassroomSemestresRouteImport.update({
+  id: '/semestres',
+  path: '/semestres',
   getParentRoute: () => ClassroomRoute,
 } as any)
 const ClassroomSecretaireRoute = ClassroomSecretaireRouteImport.update({
@@ -702,6 +708,7 @@ export interface FileRoutesByFullPath {
   '/classroom/rh': typeof ClassroomRhRoute
   '/classroom/salaires': typeof ClassroomSalairesRoute
   '/classroom/secretaire': typeof ClassroomSecretaireRoute
+  '/classroom/semestres': typeof ClassroomSemestresRoute
   '/classroom/student': typeof ClassroomStudentRoute
   '/classroom/suivi-cours': typeof ClassroomSuiviCoursRoute
   '/classroom/tarifs': typeof ClassroomTarifsRoute
@@ -804,6 +811,7 @@ export interface FileRoutesByTo {
   '/classroom/rh': typeof ClassroomRhRoute
   '/classroom/salaires': typeof ClassroomSalairesRoute
   '/classroom/secretaire': typeof ClassroomSecretaireRoute
+  '/classroom/semestres': typeof ClassroomSemestresRoute
   '/classroom/student': typeof ClassroomStudentRoute
   '/classroom/suivi-cours': typeof ClassroomSuiviCoursRoute
   '/classroom/tarifs': typeof ClassroomTarifsRoute
@@ -910,6 +918,7 @@ export interface FileRoutesById {
   '/classroom/rh': typeof ClassroomRhRoute
   '/classroom/salaires': typeof ClassroomSalairesRoute
   '/classroom/secretaire': typeof ClassroomSecretaireRoute
+  '/classroom/semestres': typeof ClassroomSemestresRoute
   '/classroom/student': typeof ClassroomStudentRoute
   '/classroom/suivi-cours': typeof ClassroomSuiviCoursRoute
   '/classroom/tarifs': typeof ClassroomTarifsRoute
@@ -1020,6 +1029,7 @@ export interface FileRouteTypes {
     | '/classroom/rh'
     | '/classroom/salaires'
     | '/classroom/secretaire'
+    | '/classroom/semestres'
     | '/classroom/student'
     | '/classroom/suivi-cours'
     | '/classroom/tarifs'
@@ -1122,6 +1132,7 @@ export interface FileRouteTypes {
     | '/classroom/rh'
     | '/classroom/salaires'
     | '/classroom/secretaire'
+    | '/classroom/semestres'
     | '/classroom/student'
     | '/classroom/suivi-cours'
     | '/classroom/tarifs'
@@ -1227,6 +1238,7 @@ export interface FileRouteTypes {
     | '/classroom/rh'
     | '/classroom/salaires'
     | '/classroom/secretaire'
+    | '/classroom/semestres'
     | '/classroom/student'
     | '/classroom/suivi-cours'
     | '/classroom/tarifs'
@@ -1583,6 +1595,13 @@ declare module '@tanstack/react-router' {
       path: '/student'
       fullPath: '/classroom/student'
       preLoaderRoute: typeof ClassroomStudentRouteImport
+      parentRoute: typeof ClassroomRoute
+    }
+    '/classroom/semestres': {
+      id: '/classroom/semestres'
+      path: '/semestres'
+      fullPath: '/classroom/semestres'
+      preLoaderRoute: typeof ClassroomSemestresRouteImport
       parentRoute: typeof ClassroomRoute
     }
     '/classroom/secretaire': {
@@ -2153,6 +2172,7 @@ interface ClassroomRouteChildren {
   ClassroomRhRoute: typeof ClassroomRhRoute
   ClassroomSalairesRoute: typeof ClassroomSalairesRoute
   ClassroomSecretaireRoute: typeof ClassroomSecretaireRoute
+  ClassroomSemestresRoute: typeof ClassroomSemestresRoute
   ClassroomStudentRoute: typeof ClassroomStudentRoute
   ClassroomSuiviCoursRoute: typeof ClassroomSuiviCoursRoute
   ClassroomTarifsRoute: typeof ClassroomTarifsRoute
@@ -2200,6 +2220,7 @@ const ClassroomRouteChildren: ClassroomRouteChildren = {
   ClassroomRhRoute: ClassroomRhRoute,
   ClassroomSalairesRoute: ClassroomSalairesRoute,
   ClassroomSecretaireRoute: ClassroomSecretaireRoute,
+  ClassroomSemestresRoute: ClassroomSemestresRoute,
   ClassroomStudentRoute: ClassroomStudentRoute,
   ClassroomSuiviCoursRoute: ClassroomSuiviCoursRoute,
   ClassroomTarifsRoute: ClassroomTarifsRoute,

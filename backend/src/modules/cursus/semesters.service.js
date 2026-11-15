@@ -96,3 +96,27 @@ export async function initSemesters(req, { mentionId, level }) {
   }
   return semestersFor(mentionId, level);
 }
+
+// Tous les semestres d'une mention, niveau par niveau (L1 → M2) : S1…S10 par défaut.
+export async function allSemesters(req, { mentionId }) {
+  if (!mentionId) throw new HttpError(400, 'mentionId requis');
+  await assertStaffMention(req, mentionId);
+  const mention = await prisma.mention.findUnique({ where: { id: mentionId }, select: { id: true, name: true, code: true } });
+  if (!mention) throw new HttpError(404, 'Mention introuvable');
+  const levels = [];
+  for (const level of LEVELS) levels.push({ level, semesters: await semestersFor(mentionId, level) });
+  return { mention, levels };
+}
+
+// Crée d'un coup les semestres de tous les niveaux (S1 à S10) d'une mention, pour les renommer ensuite.
+export async function initAllSemesters(req, { mentionId }) {
+  if (!mentionId) throw new HttpError(400, 'mentionId requis');
+  await assertStaffMention(req, mentionId);
+  for (const level of LEVELS) {
+    if (await prisma.cursusSemester.count({ where: { mentionId, level } })) continue;
+    for (const s of defaultSemesters(level)) {
+      await prisma.cursusSemester.create({ data: { mentionId, level, name: s.name, startMonth: s.startMonth, endMonth: s.endMonth, createdById: req.user.sub } });
+    }
+  }
+  return allSemesters(req, { mentionId });
+}
