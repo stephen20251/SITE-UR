@@ -489,7 +489,7 @@ export function UsersManager({ embedded = false }: { embedded?: boolean }) {
               <tr className="border-b bg-muted/30 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide backdrop-blur-sm">
                 <th className="px-4 py-3">Utilisateur</th>
                 <th className="px-4 py-3 hidden md:table-cell">Rôle système</th>
-                <th className="px-4 py-3 hidden lg:table-cell">Rôles fonctionnels</th>
+                <th className="px-4 py-3 hidden md:table-cell">Rôles et mention</th>
                 <th className="px-4 py-3 hidden sm:table-cell">Statut</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -517,11 +517,12 @@ export function UsersManager({ embedded = false }: { embedded?: boolean }) {
                       {roleLabel(u.systemRole)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 hidden lg:table-cell">
+                  <td className="px-4 py-3 hidden md:table-cell">
                     <div className="flex flex-wrap gap-1">
                       {u.userRoles.slice(0, 3).map((r) => (
                         <span key={r.role.id} className="rounded-full bg-muted border px-2 py-0.5 text-[10px] font-medium">
                           {r.role.name}
+                          {r.mention?.name && <span className="ml-1 font-semibold text-classroom">· {r.mention.name}</span>}
                         </span>
                       ))}
                       {u.userRoles.length > 3 && (
