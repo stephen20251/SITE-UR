@@ -54,10 +54,10 @@ function CandidatDash() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 py-4">
       <div className="flex items-center gap-4 rounded-2xl border bg-card p-6 shadow-elegant">
-        <img src="/logo-ur.jpg" alt="University Reference" className="h-14 w-14 rounded-xl object-cover" />
+        <img src="/logo-ur.jpg" alt="Université Références" className="h-14 w-14 rounded-xl object-cover" />
         <div className="flex-1">
           <h1 className="text-xl font-bold">Bienvenue, {user.firstName} !</h1>
-          <p className="text-sm text-muted-foreground">Suivez et complétez votre dossier pour devenir étudiant(e) de l'University Reference.</p>
+          <p className="text-sm text-muted-foreground">Suivez et complétez votre dossier pour devenir étudiant(e) de l'Université Références.</p>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${CANDIDATE_STATUS[c.status].cls}`}>{CANDIDATE_STATUS[c.status].label}</span>
       </div>

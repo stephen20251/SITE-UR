@@ -19,6 +19,26 @@ export const monthSemesterLabel = (level: string | null | undefined, month: numb
 // « L2 · S4 · mois 6 »
 export const cursusPlace = (level: string | null | undefined, month: number | null | undefined) =>
   level ? `${level} · ${monthSemesterLabel(level, month)}${month ? ` · mois ${month}` : ""}` : "";
+// Semestres du cursus propres à chaque mention (sinon S1 = mois 1-4, S2 = mois 5-8).
+export type CursusSemester = {
+  id: string | null; name: string; description?: string | null;
+  startMonth: number; endMonth: number; isDefault?: boolean;
+};
+type MonthLike = { month: number; semester: number; semesterId?: string | null; semesterName?: string | null };
+/** Regroupe les mois par semestre (noms choisis par la mention), dans l'ordre des mois. */
+export function groupBySemester<T extends MonthLike>(months: T[], level: string | null | undefined) {
+  const groups: { key: string; name: string; first: number; last: number; months: T[] }[] = [];
+  for (const m of [...months].sort((a, b) => a.month - b.month)) {
+    const name = m.semesterName ?? (m.semesterId === null && m.semesterName === null ? "Hors semestre" : semesterLabel(level, m.semester));
+    const key = m.semesterId ?? (m.semesterName ? `name:${m.semesterName}` : `sem:${name}`);
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) { last.months.push(m); last.last = m.month; }
+    else groups.push({ key, name, first: m.month, last: m.month, months: [m] });
+  }
+  return groups;
+}
+export const monthsRange = (first: number, last: number) => (first === last ? `mois ${first}` : `mois ${first} à ${last}`);
+
 export const fmtMGA = (n?: number | null, cur = "MGA") =>
   n == null ? "—" : `${Math.round(n).toLocaleString("fr-FR")} ${cur}`;
 
@@ -62,7 +82,7 @@ export type TuitionPayment = {
 };
 
 export type CursusMonth = {
-  month: number; semester: number;
+  month: number; semester: number; semesterId?: string | null; semesterName?: string | null;
   status: "PAID" | "PENDING" | "REFUSED" | "UNPAID";
   payment: TuitionPayment | null;
   courses: (CursusCourse & { myProgress: number; completed: boolean; relatedCourseIds: string[] })[];
@@ -291,7 +311,7 @@ export type CurriculumEntry = {
 export const useCurriculum = (mentionId: string, level: string) =>
   useQuery({
     queryKey: qk.curriculum(mentionId, level),
-    queryFn: () => api<{ months: { month: number; semester: number; entries: CurriculumEntry[]; warning: string | null }[]; total: number; currentMonth: number | null }>(
+    queryFn: () => api<{ months: { month: number; semester: number; semesterId: string | null; semesterName: string | null; entries: CurriculumEntry[]; warning: string | null }[]; semesters: CursusSemester[]; total: number; currentMonth: number | null }>(
       `/cursus/curriculum${qs({ mentionId, level })}`),
     enabled: !!mentionId && !!level,
   });
@@ -310,6 +330,28 @@ export function useCurriculumMutations() {
     onSuccess: inv,
   });
   return { create, update, remove };
+}
+export function useSemesterMutations() {
+  const inv = useInvalidate();
+  const create = useMutation({
+    mutationFn: (b: { mentionId: string; level: string; name: string; startMonth: number; endMonth: number; description?: string }) =>
+      api<CursusSemester>("/cursus/semesters", { method: "POST", body: b }),
+    onSuccess: inv,
+  });
+  const init = useMutation({
+    mutationFn: (b: { mentionId: string; level: string }) => api<CursusSemester[]>("/cursus/semesters/init", { method: "POST", body: b }),
+    onSuccess: inv,
+  });
+  const update = useMutation({
+    mutationFn: ({ id, ...b }: { id: string; name?: string; startMonth?: number; endMonth?: number; description?: string }) =>
+      api<CursusSemester>(`/cursus/semesters/${id}`, { method: "PUT", body: b }),
+    onSuccess: inv,
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => api(`/cursus/semesters/${id}`, { method: "DELETE" }),
+    onSuccess: inv,
+  });
+  return { create, init, update, remove };
 }
 export type SupervisedCourse = CursusCourse & { students: number; avgStudentProgress: number; studentsCompleted: number };
 export const useSupervision = (f: { mentionId?: string; level?: string }) =>

@@ -69,6 +69,11 @@ export async function syncTeacherAssignment({ subjectId, teacherUserId, previous
   if (teacherUserId) {
     const teacherId = await teacherProfileId(teacherUserId);
     if (teacherId) {
+      // Enseignant encore sans mention : rattaché à la mention de la matière.
+      const subject = await prisma.subject.findUnique({ where: { id: subjectId }, select: { mentionId: true } });
+      if (subject?.mentionId) {
+        await prisma.teacherProfile.updateMany({ where: { id: teacherId, mentionId: null }, data: { mentionId: subject.mentionId } });
+      }
       const exists = await prisma.subjectTeacher.findFirst({ where: { subjectId, teacherId }, select: { id: true } });
       if (!exists) {
         await prisma.subjectTeacher.create({ data: { subjectId, teacherId, type: 'CM', groupId: null, assignedBy: assignedBy ?? null } })

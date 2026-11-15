@@ -325,6 +325,7 @@ model Mention {
   feeGrids        FinanceFeeGrid[] @relation("MentionFeeGrids")
 
   curriculumEntries CurriculumEntry[]
+  cursusSemesters   CursusSemester[]
   tuitionSettings   TuitionSetting[]
 }
 
@@ -2597,6 +2598,26 @@ model FaqItem {
 
 // Plan du cursus défini par le Responsable de mention : pour un niveau et un
 // mois (1..8), quels cours (2 à 4) et quel enseignant en est chargé.
+// Semestres du cursus en présentiel, propres à chaque mention et à chaque niveau :
+// nom libre (« Semestre 1 », « Semestre d'automne »…) et mois couverts (1 à 8).
+// L'écolage reste mensuel : un semestre regroupe des mois et leurs cours.
+model CursusSemester {
+  id          String   @id @default(uuid())
+  mentionId   String
+  level       String // L1 | L2 | L3 | M1 | M2
+  name        String   @db.Text
+  description String?  @db.Text
+  startMonth  Int
+  endMonth    Int
+  createdById String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  mention Mention @relation(fields: [mentionId], references: [id], onDelete: Cascade)
+
+  @@index([mentionId, level])
+}
+
 model CurriculumEntry {
   id           String   @id @default(uuid())
   mentionId    String

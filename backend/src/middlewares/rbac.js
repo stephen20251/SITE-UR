@@ -48,13 +48,38 @@ export async function loadStaffContext(req) {
     if (ur.mentionId) mentionIds.add(ur.mentionId)
     for (const rp of ur.role.rolePermissions) perms.add(rp.permission.code)
   }
+  // Périmètre : un Responsable pédagogique (ou tout rôle rattaché à une mention) ne voit
+  // QUE sa ou ses mentions — jamais celles des autres, même s'il n'a pas encore de
+  // mention (il ne voit alors rien). Les autres rôles (secrétariat, comptabilité…)
+  // travaillent sur toutes les mentions.
+  const scoped = !isAdmin && (mentionIds.size > 0 || roleNames.some(isMentionScopedRole))
   req.staff = {
     isAdmin,
     roleNames,
     mentionIds: [...mentionIds],
+    scope: scoped ? [...mentionIds] : null,
     has: (code) => isAdmin || perms.has(code),
   }
   return req.staff
+}
+
+// Rôle limité à une mention : « Responsable Gestion », « Responsable pédagogique Info »…
+// (le Responsable Présence travaille sur toutes les mentions).
+export const isMentionScopedRole = (name) => /^responsable/i.test(name ?? '') && !/pr[ée]sence/i.test(name ?? '')
+
+// Mentions visibles (null = toutes). Lève une erreur claire pour un Responsable sans mention.
+export async function staffMentionScope(req) {
+  const staff = await loadStaffContext(req)
+  return staff.scope
+}
+
+export async function assertStaffMention(req, mentionId) {
+  const scope = await staffMentionScope(req)
+  if (!scope) return
+  if (scope.length === 0) {
+    throw new HttpError(403, "Votre compte de Responsable n'est rattaché à aucune mention : demandez au Super Admin de l'associer à sa mention (Utilisateurs → rôles).")
+  }
+  if (!mentionId || !scope.includes(mentionId)) throw new HttpError(403, 'Cette mention ne fait pas partie de votre périmètre')
 }
 
 // Allow if the user holds AT LEAST ONE of the permission codes.

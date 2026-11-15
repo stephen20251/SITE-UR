@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { authenticate } from '../../middlewares/auth.js'
-import { requirePermission } from '../../middlewares/rbac.js'
+import { requirePermission, assertStaffMention, staffMentionScope } from '../../middlewares/rbac.js'
+import { prisma } from '../../database/prisma.js'
 import { asyncHandler } from '../../utils/asyncHandler.js'
 import * as svc from './candidates.service.js'
 import fs from 'fs'
@@ -24,6 +25,15 @@ const upload = multer({
 
 const r = Router()
 r.use(authenticate)
+
+// Un Responsable pédagogique ne gère que les candidats de SA mention.
+async function candidateInScope(req, candidateId) {
+  if (!(await staffMentionScope(req))) return
+  const c = await prisma.candidate.findUnique({ where: { id: candidateId }, select: { mentionId: true } })
+  if (!c) return // 404 renvoyé par le service
+  await assertStaffMention(req, c.mentionId)
+}
+const scopeCandidate = asyncHandler(async (req, res, next) => { await candidateInScope(req, req.params.id); next() })
 
 r.get('/',                    requirePermission('VIEW_CANDIDATES'), asyncHandler(svc.listCandidates))
 r.get('/my',                  asyncHandler(svc.myCandidature))
@@ -54,17 +64,17 @@ r.get('/documents/:docId/file', asyncHandler(async (req, res) => {
   res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(f.name)}"`)
   res.sendFile(f.file)
 }))
-r.put('/:id/documents/:docId/review', requirePermission('REVIEW_CANDIDATE'), asyncHandler(async (req, res) => {
+r.put('/:id/documents/:docId/review', requirePermission('REVIEW_CANDIDATE'), scopeCandidate, asyncHandler(async (req, res) => {
   res.json(await dossier.reviewDocument(req.user.sub, req.params.id, req.params.docId, req.body))
 }))
-r.put('/:id/inscription/return', requirePermission('ENROLL_STUDENT'), asyncHandler(async (req, res) => {
+r.put('/:id/inscription/return', requirePermission('ENROLL_STUDENT'), scopeCandidate, asyncHandler(async (req, res) => {
   res.json(await dossier.returnInscription(req.params.id, req.body.reason))
 }))
-r.get('/:id',                 requirePermission('VIEW_CANDIDATES'), asyncHandler(svc.getCandidate))
-r.put('/:id/review',          requirePermission('REVIEW_CANDIDATE'), asyncHandler(svc.reviewCandidate))
-r.put('/:id/accept',          requirePermission('ACCEPT_CANDIDATE'), asyncHandler(svc.acceptCandidate))
-r.put('/:id/reject',          requirePermission('ACCEPT_CANDIDATE'), asyncHandler(svc.rejectCandidate))
-r.post('/:id/enroll',         requirePermission('ENROLL_STUDENT'), asyncHandler(svc.enrollStudent))
+r.get('/:id',                 requirePermission('VIEW_CANDIDATES'), scopeCandidate, asyncHandler(svc.getCandidate))
+r.put('/:id/review',          requirePermission('REVIEW_CANDIDATE'), scopeCandidate, asyncHandler(svc.reviewCandidate))
+r.put('/:id/accept',          requirePermission('ACCEPT_CANDIDATE'), scopeCandidate, asyncHandler(svc.acceptCandidate))
+r.put('/:id/reject',          requirePermission('ACCEPT_CANDIDATE'), scopeCandidate, asyncHandler(svc.rejectCandidate))
+r.post('/:id/enroll',         requirePermission('ENROLL_STUDENT'), scopeCandidate, asyncHandler(svc.enrollStudent))
 r.put('/my/mention',          asyncHandler(svc.chooseMention))
 r.put('/my/submit',           asyncHandler(svc.submitCandidature))
 

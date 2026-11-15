@@ -1,5 +1,6 @@
 import { prisma } from '../../database/prisma.js';
 import { HttpError } from '../../utils/asyncHandler.js';
+import { isMentionScopedRole } from '../../middlewares/rbac.js';
 
 const DAYS_ORDER = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
 
@@ -31,6 +32,31 @@ function assertChefOrAdmin(user) {
   }
 }
 
+// Mentions gérées par un membre du personnel (null = toutes). Un Responsable
+// pédagogique ne voit et ne modifie que les emplois du temps de SA mention.
+async function staffScope(user) {
+  if (user.systemRole === 'SUPER_ADMIN') return null;
+  const roles = await prisma.userRole.findMany({ where: { userId: user.sub }, select: { mentionId: true, role: { select: { name: true } } } });
+  const ids = [...new Set(roles.map((r) => r.mentionId).filter(Boolean))];
+  const scoped = ids.length > 0 || roles.some((r) => isMentionScopedRole(r.role.name));
+  return scoped ? ids : null;
+}
+
+async function assertPeriodScope(user, mentionId) {
+  assertChefOrAdmin(user);
+  const scope = await staffScope(user);
+  if (!scope) return;
+  if (!scope.length) throw new HttpError(403, "Votre compte de Responsable n'est rattaché à aucune mention : demandez au Super Admin de l'associer à sa mention.");
+  if (!scope.includes(mentionId)) throw new HttpError(403, 'Cet emploi du temps appartient à une autre mention');
+}
+
+async function periodInScope(user, periodId) {
+  const period = await prisma.schedulePeriod.findUnique({ where: { id: periodId } });
+  if (!period) throw new HttpError(404, 'Période non trouvée');
+  await assertPeriodScope(user, period.mentionId);
+  return period;
+}
+
 // Enseignants rattachés à une mention : profil, affectation des matières, plan de cursus, cours
 async function teacherUserIdsForMention(mentionId) {
   const [profiles, subjectTeachers, cursus, courses] = await Promise.all([
@@ -51,60 +77,116 @@ async function teacherUserIdsForMention(mentionId) {
 }
 
 // Detect conflicts for a candidate slot
+// Les blocs cochés contigus (ex. 07h-09h + 09h-11h) couvrent un créneau de 07h à 11h
+function covers(avail, day, startTime, endTime) {
+  const list = avail.filter((a) => a.day === day && a.isAvailable).sort((a, b) => a.startTime.localeCompare(b.startTime));
+  let cursor = startTime;
+  let moved = true;
+  while (cursor < endTime && moved) {
+    moved = false;
+    for (const a of list) if (a.startTime <= cursor && a.endTime > cursor) { cursor = a.endTime; moved = true; }
+  }
+  return cursor >= endTime;
+}
+
+// Disponibilités d'un enseignant pour une période. S'il ne les a pas encore données pour
+// cette semaine, on reprend les dernières qu'il a données (autre période), signalées comme telles.
+export async function teacherAvailabilityFor(periodId, teacherUserId) {
+  const current = await prisma.teacherAvailability.findMany({ where: { schedulePeriodId: periodId, teacherUserId } });
+  if (current.length) return { source: 'CURRENT', slots: current, fromPeriod: null };
+  const last = await prisma.teacherAvailability.findFirst({
+    where: { teacherUserId, schedulePeriodId: { not: periodId } },
+    orderBy: { updatedAt: 'desc' },
+    select: { schedulePeriodId: true, schedulePeriod: { select: { name: true } } },
+  }).catch(() => null);
+  if (!last) return { source: 'NONE', slots: [], fromPeriod: null };
+  const slots = await prisma.teacherAvailability.findMany({ where: { schedulePeriodId: last.schedulePeriodId, teacherUserId } });
+  return { source: 'PREVIOUS', slots, fromPeriod: { id: last.schedulePeriodId, name: last.schedulePeriod?.name ?? '' } };
+}
+
+// Conflits d'un créneau. Bloquants : enseignant / salle / promotion déjà occupés (y compris
+// dans l'emploi du temps d'une autre mention la même semaine) et créneau hors des
+// disponibilités que l'enseignant a données pour cette semaine.
+// Non bloquants (avertissements) : disponibilités pas encore données, ou reprises d'une
+// semaine précédente.
 async function detectConflicts(periodId, { teacherUserId, roomId, promotionId, day, startTime, endTime, excludeSlotId }) {
   const conflicts = [];
-  const where = { schedulePeriodId: periodId, day, id: { not: excludeSlotId ?? '' } };
-
   const overlap = (s1, e1, s2, e2) => s1 < e2 && e1 > s2;
+  const period = await prisma.schedulePeriod.findUnique({ where: { id: periodId }, select: { weekStart: true } });
 
-  const slots = await prisma.scheduleSlot.findMany({ where });
+  const slots = await prisma.scheduleSlot.findMany({
+    where: {
+      day, id: { not: excludeSlotId ?? '' },
+      OR: [
+        { schedulePeriodId: periodId },
+        // Même semaine, autre emploi du temps (une autre mention) : enseignant et salle partagés
+        ...(period?.weekStart ? [{ schedulePeriod: { weekStart: period.weekStart, id: { not: periodId } } }] : []),
+      ],
+    },
+    include: { schedulePeriod: { select: { id: true, name: true, mention: { select: { name: true } } } } },
+  });
   for (const s of slots) {
     if (!overlap(startTime, endTime, s.startTime, s.endTime)) continue;
-    if (s.teacherUserId === teacherUserId) conflicts.push({ type: 'TEACHER_BUSY', slot: s });
-    if (roomId && s.roomId === roomId) conflicts.push({ type: 'ROOM_BUSY', slot: s });
-    if (s.promotionId === promotionId) conflicts.push({ type: 'PROMOTION_BUSY', slot: s });
+    const other = s.schedulePeriodId !== periodId ? { otherPeriod: s.schedulePeriod?.name, otherMention: s.schedulePeriod?.mention?.name } : {};
+    if (teacherUserId && s.teacherUserId === teacherUserId) conflicts.push({ type: 'TEACHER_BUSY', slot: s, ...other });
+    if (roomId && s.roomId === roomId) conflicts.push({ type: 'ROOM_BUSY', slot: s, ...other });
+    if (s.schedulePeriodId === periodId && s.promotionId === promotionId) conflicts.push({ type: 'PROMOTION_BUSY', slot: s });
   }
 
-  // Check teacher availability
   if (teacherUserId) {
-    // Les blocs cochés contigus (ex. 07h-09h + 09h-11h) couvrent un créneau de 07h à 11h
-    const avail = await prisma.teacherAvailability.findMany({
-      where: { schedulePeriodId: periodId, teacherUserId, day, isAvailable: true },
-      orderBy: { startTime: 'asc' },
-    });
-    let cursor = startTime;
-    let moved = true;
-    while (cursor < endTime && moved) {
-      moved = false;
-      for (const a of avail) {
-        if (a.startTime <= cursor && a.endTime > cursor) { cursor = a.endTime; moved = true; }
-      }
+    const avail = await teacherAvailabilityFor(periodId, teacherUserId);
+    if (avail.source === 'NONE') conflicts.push({ type: 'AVAILABILITY_MISSING', blocking: false });
+    else if (!covers(avail.slots, day, startTime, endTime)) {
+      conflicts.push(avail.source === 'CURRENT'
+        ? { type: 'TEACHER_UNAVAILABLE' }
+        : { type: 'OUTSIDE_PREVIOUS_AVAILABILITY', blocking: false, fromPeriod: avail.fromPeriod });
     }
-    if (cursor < endTime) conflicts.push({ type: 'TEACHER_UNAVAILABLE' });
   }
 
   return conflicts;
 }
 
+const CONFLICT_MESSAGES = {
+  TEACHER_BUSY: 'Ce professeur a déjà un cours à ce créneau',
+  ROOM_BUSY: 'Cette salle est déjà réservée à ce créneau',
+  PROMOTION_BUSY: 'Cette promotion a déjà un cours à ce créneau',
+  TEACHER_UNAVAILABLE: "Ce professeur n'est pas disponible à ce créneau (hors des disponibilités qu'il a données pour cette semaine)",
+};
+function conflictMessage(c) {
+  const base = CONFLICT_MESSAGES[c.type] ?? c.type;
+  return c.otherMention ? `${base} — emploi du temps « ${c.otherPeriod} » (${c.otherMention})` : base;
+}
+const isBlocking = (c) => c.blocking !== false;
+
 // ─── Helpers (teacher-to-mention reverse lookup) ──────────────
 
+// Mentions d'un enseignant : sa fiche, ses matières (affectation), ses cours du cursus,
+// ses anciens cours. Il voit les emplois du temps de toutes ces mentions.
 async function mentionIdsForTeacher(teacherUserId) {
   const tp = await prisma.teacherProfile.findUnique({
     where: { userId: teacherUserId },
-    select: { id: true },
+    select: { id: true, mentionId: true, subjectTeachers: { select: { subject: { select: { mentionId: true } } } } },
   });
-  if (!tp) return [];
-  const rows = await prisma.courseTeacher.findMany({
-    where: { teacherId: tp.id },
-    select: { course: { select: { promotion: { select: { mentionId: true } } } } },
-  });
-  return [...new Set(rows.map(r => r.course?.promotion?.mentionId).filter(Boolean))];
+  const [cursus, legacy] = await Promise.all([
+    prisma.curriculumEntry.findMany({ where: { teacherId: teacherUserId }, select: { mentionId: true } }),
+    tp ? prisma.courseTeacher.findMany({
+      where: { teacherId: tp.id },
+      select: { course: { select: { promotion: { select: { mentionId: true } } } } },
+    }) : [],
+  ]);
+  return [...new Set([
+    tp?.mentionId,
+    ...(tp?.subjectTeachers ?? []).map((s) => s.subject.mentionId),
+    ...cursus.map((c) => c.mentionId),
+    ...legacy.map((r) => r.course?.promotion?.mentionId),
+  ].filter(Boolean))];
 }
 
 // ─── Schedule Periods ─────────────────────────────────────────
 
 export async function createPeriod(user, { mentionId, semesterId, name, availabilityDeadline, publishAt, weekStart }) {
-  assertChefOrAdmin(user);
+  if (!mentionId) throw new HttpError(400, 'Choisissez la mention de cet emploi du temps');
+  await assertPeriodScope(user, mentionId);
   const monday = weekStart ? new Date(weekStart) : nextMonday();
   const period = await prisma.schedulePeriod.create({
     data: {
@@ -143,6 +225,14 @@ export async function createPeriod(user, { mentionId, semesterId, name, availabi
 export async function listPeriods(user, mentionId) {
   const where = {};
   if (mentionId) where.mentionId = mentionId;
+  // Responsable pédagogique : uniquement les emplois du temps de sa mention
+  if (user.systemRole === 'STAFF') {
+    const scope = await staffScope(user);
+    if (scope) {
+      if (mentionId && !scope.includes(mentionId)) return [];
+      if (!mentionId) where.mentionId = { in: scope };
+    }
+  }
 
   if (user.systemRole === 'TEACHER') {
     // Teachers see: open periods for mentions they teach in
@@ -200,10 +290,21 @@ export async function getPeriod(user, periodId) {
     },
   });
   if (!period) throw new HttpError(404, 'Période non trouvée');
+  if (user.systemRole === 'STAFF') await assertPeriodScope(user, period.mentionId);
 
   // Build invited-teacher response tracker
   const invitedIds = await teacherUserIdsForMention(period.mentionId);
   const submittedSet = new Set(period.availabilities.map(a => a.teacherUserId));
+  // Enseignants qui n'ont pas encore répondu pour cette semaine : on reprend leurs
+  // dernières disponibilités connues (signalées « reprises »), sans les enregistrer.
+  const reused = new Map();
+  for (const tid of invitedIds) {
+    if (submittedSet.has(tid)) continue;
+    const a = await teacherAvailabilityFor(periodId, tid);
+    if (a.source === 'PREVIOUS') reused.set(tid, a);
+  }
+  const reusedAvailabilities = [...reused.entries()].flatMap(([tid, a]) =>
+    a.slots.map((s) => ({ ...s, id: `reuse-${s.id}`, schedulePeriodId: periodId, reused: true, fromPeriodName: a.fromPeriod?.name ?? '' })));
   const invitedUsers = invitedIds.length
     ? await prisma.user.findMany({
         where: { id: { in: invitedIds } },
@@ -219,6 +320,7 @@ export async function getPeriod(user, periodId) {
     email:            u.email,
     hasSubmitted:     submittedSet.has(u.id),
     availabilityCount: period.availabilities.filter(a => a.teacherUserId === u.id).length,
+    reusedFrom:       reused.get(u.id)?.fromPeriod?.name ?? null,
   }));
 
   const confUsers = period.confirmations.length
@@ -226,33 +328,31 @@ export async function getPeriod(user, periodId) {
     : [];
   const confirmations = period.confirmations.map((c) => ({ ...c, teacher: confUsers.find((u) => u.id === c.teacherUserId) ?? null }));
 
-  return { ...period, confirmations, invitedTeachers };
+  return { ...period, availabilities: [...period.availabilities, ...reusedAvailabilities], confirmations, invitedTeachers };
 }
 
 export async function updatePeriodStatus(user, periodId, status) {
-  assertChefOrAdmin(user);
-  const period = await prisma.schedulePeriod.findUnique({ where: { id: periodId } });
-  if (!period) throw new HttpError(404, 'Période non trouvée');
+  await periodInScope(user, periodId);
   return prisma.schedulePeriod.update({ where: { id: periodId }, data: { status }, include: PERIOD_INCLUDE });
 }
 
-export async function remindPendingTeachers(user, periodId) {
-  assertChefOrAdmin(user);
+export async function remindPendingTeachers(user, periodId, teacherUserId = null) {
+  await periodInScope(user, periodId);
   const period = await prisma.schedulePeriod.findUnique({
     where: { id: periodId },
     include: { mention: { select: { name: true } } },
   });
-  if (!period) throw new HttpError(404, 'Période non trouvée');
-  if (period.status !== 'PREPARING') throw new HttpError(400, 'Les relances ne sont possibles qu\'en phase PREPARING');
+  if (!['PREPARING', 'BUILDING'].includes(period.status)) throw new HttpError(400, "Cet emploi du temps est déjà validé : les disponibilités ne sont plus demandées");
 
-  const allIds    = await teacherUserIdsForMention(period.mentionId);
+  const allIds    = teacherUserId ? [teacherUserId] : await teacherUserIdsForMention(period.mentionId);
   const submitted = await prisma.teacherAvailability.findMany({
     where: { schedulePeriodId: periodId },
     select: { teacherUserId: true },
     distinct: ['teacherUserId'],
   });
   const submittedSet = new Set(submitted.map(s => s.teacherUserId));
-  const pendingIds   = allIds.filter(id => !submittedSet.has(id));
+  // Demande ciblée : l'enseignant est relancé même s'il a déjà répondu (pour compléter).
+  const pendingIds   = teacherUserId ? [teacherUserId] : allIds.filter(id => !submittedSet.has(id));
 
   if (!pendingIds.length) return { reminded: 0, message: 'Tous les enseignants ont déjà répondu' };
 
@@ -264,8 +364,10 @@ export async function remindPendingTeachers(user, periodId) {
     data: pendingIds.map(userId => ({
       userId,
       type: 'INFO',
-      title: `⏰ Rappel — ${period.name}`,
-      body: `Vos disponibilités pour l'emploi du temps de la mention ${period.mention?.name ?? ''} n'ont pas encore été soumises.${deadlineStr ? ` Date limite : ${deadlineStr}.` : ''}`,
+      title: `⏰ Disponibilités demandées — ${period.name}`,
+      body: submittedSet.has(userId)
+        ? `Votre Responsable pédagogique (${period.mention?.name ?? ''}) vous demande de compléter vos disponibilités pour cet emploi du temps.`
+        : `Vos disponibilités pour l'emploi du temps de la mention ${period.mention?.name ?? ''} n'ont pas encore été données.${deadlineStr ? ` Date limite : ${deadlineStr}.` : ''}`,
       link: `/classroom/planning/disponibilites`,
     })),
     skipDuplicates: false,
@@ -281,9 +383,9 @@ export async function submitAvailability(user, periodId, slots) {
   const period = await prisma.schedulePeriod.findUnique({ where: { id: periodId } });
   if (!period) throw new HttpError(404, 'Période non trouvée');
   if (!['PREPARING', 'BUILDING'].includes(period.status)) throw new HttpError(400, 'Cette période n\'accepte plus de disponibilités');
-  if (period.availabilityDeadline && new Date() > period.availabilityDeadline) {
-    throw new HttpError(400, 'La date limite de soumission est dépassée');
-  }
+  // La date limite est indicative : un enseignant relancé par son Responsable peut
+  // toujours compléter ses disponibilités tant que l'emploi du temps est en construction.
+  if (!Array.isArray(slots) || !slots.length) throw new HttpError(400, 'Cochez au moins un créneau');
 
   // Upsert each slot
   await Promise.all(slots.map((s) =>
@@ -319,9 +421,7 @@ export async function submitPreference(user, periodId, { courseId, preferredDay,
 // ─── Schedule Building ────────────────────────────────────────
 
 export async function addSlot(user, periodId, input) {
-  assertChefOrAdmin(user);
-  const period = await prisma.schedulePeriod.findUnique({ where: { id: periodId } });
-  if (!period) throw new HttpError(404, 'Période non trouvée');
+  const period = await periodInScope(user, periodId);
   if (!['PREPARING', 'BUILDING'].includes(period.status)) throw new HttpError(400, 'Période verrouillée');
 
   // Validate required FK entities exist before INSERT
@@ -342,17 +442,11 @@ export async function addSlot(user, periodId, input) {
     if (!sub) throw new HttpError(404, 'Matière introuvable');
   }
 
+  if (!input.teacherUserId) throw new HttpError(400, 'Choisissez le professeur');
   const conflicts = await detectConflicts(periodId, input);
-  const blocking = conflicts;
+  const blocking = conflicts.filter(isBlocking);
   if (blocking.length) {
-    const msgs = {
-      TEACHER_BUSY:    'Ce professeur a déjà un cours à ce créneau',
-      ROOM_BUSY:       'Cette salle est déjà réservée à ce créneau',
-      PROMOTION_BUSY:  'Cette promotion a déjà un cours à ce créneau',
-      TEACHER_UNAVAILABLE: "Ce professeur n'est pas disponible à ce créneau (il ne l'a pas coché dans ses disponibilités)",
-    };
-    const msg = blocking.map((c) => msgs[c.type] ?? c.type).join('; ');
-    throw new HttpError(409, msg, { conflicts: blocking });
+    throw new HttpError(409, blocking.map(conflictMessage).join(' ; '), { conflicts: blocking });
   }
 
   // Auto-set to BUILDING
@@ -383,22 +477,20 @@ export async function addSlot(user, periodId, input) {
     },
   });
 
-  // Return slot; if teacher had no declared availability, include a non-blocking warning
-  const warnings = conflicts.filter((c) => c.type === 'TEACHER_UNAVAILABLE');
-  return { ...slot, _warnings: warnings.length ? ['TEACHER_UNAVAILABLE'] : [] };
+  // Avertissements non bloquants (disponibilités pas encore données / reprises)
+  return { ...slot, _warnings: conflicts.filter((c) => !isBlocking(c)).map((c) => c.type) };
 }
 
 export async function updateSlot(user, slotId, input) {
-  assertChefOrAdmin(user);
   const slot = await prisma.scheduleSlot.findUnique({ where: { id: slotId } });
   if (!slot) throw new HttpError(404, 'Créneau non trouvé');
+  await periodInScope(user, slot.schedulePeriodId);
 
   const merged = { ...slot, ...input };
   const conflicts = await detectConflicts(slot.schedulePeriodId, { ...merged, excludeSlotId: slotId });
-  const blocking = conflicts;
+  const blocking = conflicts.filter(isBlocking);
   if (blocking.length) {
-    const msgs = { TEACHER_BUSY: 'Professeur déjà occupé', ROOM_BUSY: 'Salle déjà réservée', PROMOTION_BUSY: 'Promotion déjà en cours', TEACHER_UNAVAILABLE: "Professeur non disponible à ce créneau" };
-    throw new HttpError(409, blocking.map((c) => msgs[c.type] ?? c.type).join('; '), { conflicts: blocking });
+    throw new HttpError(409, blocking.map(conflictMessage).join(' ; '), { conflicts: blocking });
   }
 
   return prisma.scheduleSlot.update({
@@ -424,23 +516,26 @@ export async function updateSlot(user, slotId, input) {
 }
 
 export async function deleteSlot(user, slotId) {
-  assertChefOrAdmin(user);
   const slot = await prisma.scheduleSlot.findUnique({ where: { id: slotId } });
   if (!slot) throw new HttpError(404, 'Créneau non trouvé');
+  await periodInScope(user, slot.schedulePeriodId);
   await prisma.scheduleSlot.delete({ where: { id: slotId } });
 }
 
 export async function checkConflicts(user, periodId, input) {
-  return detectConflicts(periodId, input);
+  await periodInScope(user, periodId);
+  const conflicts = await detectConflicts(periodId, input);
+  return conflicts.map((c) => ({ ...c, blocking: isBlocking(c), message: CONFLICT_MESSAGES[c.type] ? conflictMessage(c) : null }));
 }
 
 // ─── Validation & Publication ─────────────────────────────────
 
 export async function validatePeriod(user, periodId, notes) {
-  assertChefOrAdmin(user);
-  const period = await prisma.schedulePeriod.findUnique({ where: { id: periodId } });
-  if (!period) throw new HttpError(404, 'Période non trouvée');
+  const period = await periodInScope(user, periodId);
   if (period.status !== 'BUILDING') throw new HttpError(400, 'L\'emploi du temps doit être en construction pour être validé');
+  if (!(await prisma.scheduleSlot.count({ where: { schedulePeriodId: periodId } }))) {
+    throw new HttpError(400, 'Ajoutez au moins un créneau avant de valider');
+  }
 
   await prisma.$transaction([
     prisma.schedulePeriod.update({ where: { id: periodId }, data: { status: 'VALIDATED' } }),
@@ -455,7 +550,7 @@ export async function validatePeriod(user, periodId, notes) {
 }
 
 export async function publishPeriod(user, periodId) {
-  assertChefOrAdmin(user);
+  await periodInScope(user, periodId);
   const period = await prisma.schedulePeriod.findUnique({
     where: { id: periodId },
     include: { slots: { include: { teacher: { select: { id: true } } } }, mention: true },
@@ -556,10 +651,18 @@ export async function getPeriodView(periodId) {
 
 // Resources for schedule builder
 export async function getBuilderResources(user, mentionId) {
+  const mentionTeachers = mentionId ? await teacherUserIdsForMention(mentionId) : null;
   const [teachers, rooms, promotions, subjects] = await Promise.all([
-    // All active teachers with their TeacherProfile for display
+    // Enseignants de la mention, et enseignants pas encore rattachés à une mention
     prisma.user.findMany({
-      where: { systemRole: 'TEACHER', isActive: true },
+      where: {
+        systemRole: 'TEACHER', isActive: true,
+        ...(mentionTeachers && { OR: [
+          { id: { in: mentionTeachers } },
+          { teacherProfile: null },
+          { teacherProfile: { mentionId: null } },
+        ] }),
+      },
       select: { id: true, firstName: true, lastName: true, email: true },
       orderBy: { lastName: 'asc' },
     }),
@@ -596,7 +699,7 @@ export async function getBuilderResources(user, mentionId) {
 // Le Responsable Pédagogique envoie à chaque enseignant concerné les créneaux
 // qu'il lui a attribués ; chaque enseignant doit valider (ou signaler un problème).
 export async function sendToTeachers(user, periodId) {
-  assertChefOrAdmin(user);
+  await periodInScope(user, periodId);
   const period = await prisma.schedulePeriod.findUnique({
     where: { id: periodId },
     include: { slots: { select: { teacherUserId: true } }, mention: { select: { name: true } } },

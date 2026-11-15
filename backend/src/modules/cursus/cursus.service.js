@@ -7,7 +7,8 @@ import crypto from 'crypto';
 import { prisma } from '../../database/prisma.js';
 import { HttpError } from '../../utils/asyncHandler.js';
 import { notifyUser, notifyUsers } from '../../utils/notify.js';
-import { loadStaffContext } from '../../middlewares/rbac.js';
+import { loadStaffContext, staffMentionScope, assertStaffMention } from '../../middlewares/rbac.js';
+import { semestersFor, semesterOfMonthIn } from './semesters.service.js';
 import { ensureSubjectFor, syncTeacherAssignment } from '../structure/subject-sync.js';
 import { getTeacherSharePercent, shareInfo } from '../finance/revenue-share.js';
 import {
@@ -58,13 +59,12 @@ async function usersWithPermission(code) {
 }
 
 // Mentions visibles par un membre du personnel (scope de ses rôles).
+// Un Responsable pédagogique ne voit que sa mention (voir middlewares/rbac.js).
 async function scopedMentionIds(req) {
-  const staff = await loadStaffContext(req);
-  return staff.isAdmin || staff.mentionIds.length === 0 ? null : staff.mentionIds;
+  return staffMentionScope(req);
 }
 async function assertMentionScope(req, mentionId) {
-  const ids = await scopedMentionIds(req);
-  if (ids && !ids.includes(mentionId)) throw new HttpError(403, 'Cette mention ne fait pas partie de votre périmètre');
+  await assertStaffMention(req, mentionId);
 }
 
 // ─── Progression d'un cours : syllabus + volume horaire ───────────────────────
@@ -122,6 +122,7 @@ function courseSummary(course, curMonth) {
 // ═════════════════════════════════════════════════════════════════════════════
 async function buildStudentOverview(profile) {
   const { level, mentionId } = profile;
+  const semesters = await semestersFor(mentionId, level);
   const [setting, payments, courses] = await Promise.all([
     level && mentionId
       ? prisma.tuitionSetting.findUnique({ where: { mentionId_level: { mentionId, level } } })
@@ -161,9 +162,12 @@ async function buildStudentOverview(profile) {
         relatedCourseIds: c.relatedCourseIds,
       };
     });
+    const s = semesterOfMonthIn(semesters, month);
     months.push({
       month,
       semester: semesterOfMonth(month),
+      semesterId: s?.id ?? null,
+      semesterName: s?.name ?? null,
       status: validated ? 'PAID' : pending ? 'PENDING' : latest?.status === 'REFUSED' ? 'REFUSED' : 'UNPAID',
       payment: latest,
       courses: monthCourses,
@@ -516,8 +520,17 @@ export async function curriculumOptions(req, mentionId) {
   });
   const mid = mentionId ?? mentions[0]?.id;
   const [teachers, subjects, courses] = await Promise.all([
+    // Responsable : enseignants de sa mention et enseignants pas encore rattachés.
     prisma.user.findMany({
-      where: { systemRole: { in: ['TEACHER', 'TEACHER_ONLINE'] }, isActive: true },
+      where: {
+        systemRole: { in: ['TEACHER', 'TEACHER_ONLINE'] }, isActive: true,
+        ...(scope && { OR: [
+          { teacherProfile: null },
+          { teacherProfile: { mentionId: null } },
+          { teacherProfile: { mentionId: { in: scope } } },
+          { teacherProfile: { subjectTeachers: { some: { subject: { mentionId: { in: scope } } } } } },
+        ] }),
+      },
       select: { ...PERSON, email: true, systemRole: true },
       orderBy: { lastName: 'asc' },
     }),
@@ -544,7 +557,9 @@ export async function listCurriculum(req, { mentionId, level }) {
     },
     orderBy: [{ month: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
   });
+  const semesters = await semestersFor(mentionId, level);
   const months = MONTHS.map((month) => {
+    const sem = semesterOfMonthIn(semesters, month);
     const list = entries.filter((e) => e.month === month).map((e) => ({
       id: e.id, title: e.title, description: e.description, month: e.month, level: e.level,
       plannedHours: e.plannedHours, order: e.order,
@@ -554,13 +569,15 @@ export async function listCurriculum(req, { mentionId, level }) {
     return {
       month,
       semester: semesterOfMonth(month),
+      semesterId: sem?.id ?? null,
+      semesterName: sem?.name ?? null,
       entries: list,
       warning: list.length < MIN_COURSES_PER_MONTH
         ? `Moins de ${MIN_COURSES_PER_MONTH} cours ce mois-ci`
         : null,
     };
   });
-  return { mentionId, level, currentMonth: curMonth, months, total: entries.length };
+  return { mentionId, level, currentMonth: curMonth, months, semesters, total: entries.length };
 }
 
 async function assertMonthCapacity(mentionId, level, month, excludeId) {

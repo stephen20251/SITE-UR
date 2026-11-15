@@ -37,7 +37,7 @@ export const DOC_TYPES = {
 
 // Questionnaire de motivation (pré-inscription)
 export const MOTIVATION_QUESTIONS = [
-  { key: 'why', label: "Pourquoi souhaitez-vous intégrer l'University Reference ?" },
+  { key: 'why', label: "Pourquoi souhaitez-vous intégrer l'Université Références ?" },
   { key: 'project', label: 'Quel est votre projet professionnel ?' },
   { key: 'mention', label: 'Pourquoi avez-vous choisi cette mention ?' },
   { key: 'strengths', label: 'Quels sont vos points forts pour réussir dans cette formation ?' },
@@ -121,11 +121,12 @@ export async function assertNoRejectedDocs(candidateId, stage) {
 }
 
 export async function documentFile(req, docId) {
-  const d = await prisma.candidateDocument.findUnique({ where: { id: docId }, include: { candidate: { select: { userId: true } } } })
+  const d = await prisma.candidateDocument.findUnique({ where: { id: docId }, include: { candidate: { select: { userId: true, mentionId: true } } } })
   if (!d) throw new HttpError(404, 'Pièce introuvable')
   if (d.candidate.userId !== req.user.sub) {
     const staff = await loadStaffContext(req)
     if (!staff.has('VIEW_CANDIDATES')) throw new HttpError(403, 'Accès refusé')
+    if (staff.scope && !staff.scope.includes(d.candidate.mentionId)) throw new HttpError(403, 'Ce candidat ne relève pas de votre mention')
   }
   const file = path.join(PRIVATE_DIR, path.basename(d.url))
   if (!fs.existsSync(file)) throw new HttpError(404, 'Fichier introuvable sur le serveur')
@@ -189,8 +190,12 @@ export async function submitInscription(userId) {
 
   const updated = await prisma.candidate.update({ where: { id: c.id }, data: { inscriptionSubmittedAt: new Date() } })
   // Prévenir le personnel des admissions
+  // Secrétariat (toutes mentions) et Responsable de la mention du candidat
   const staff = await prisma.userRole.findMany({
-    where: { role: { rolePermissions: { some: { permission: { code: 'ENROLL_STUDENT' } } } } },
+    where: {
+      role: { rolePermissions: { some: { permission: { code: 'ENROLL_STUDENT' } } } },
+      OR: [{ mentionId: null }, ...(c.mentionId ? [{ mentionId: c.mentionId }] : [])],
+    },
     select: { userId: true },
   })
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true } })

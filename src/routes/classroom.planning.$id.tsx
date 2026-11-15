@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import {
   ArrowLeft, CheckCircle2, Send, Plus, Trash2, AlertTriangle,
@@ -20,7 +21,7 @@ type Group      = { id: string; name: string; type?: string };
 type Promotion  = { id: string; name: string; level: string; groups: Group[] };
 type SubjectTeacherRef = { type: string; teacher: { user: User_ } };
 type Subject    = { id: string; code: string; name: string; credits: number; weeklyHours: number; subjectTeachers: SubjectTeacherRef[] };
-type Avail      = { teacherUserId: string; day: string; startTime: string; endTime: string; isAvailable: boolean; teacher: User_ };
+type Avail      = { teacherUserId: string; day: string; startTime: string; endTime: string; isAvailable: boolean; teacher: User_; reused?: boolean; fromPeriodName?: string };
 type Slot       = {
   id: string; subjectId?: string; subjectName: string; day: string;
   startTime: string; endTime: string; type: string;
@@ -33,6 +34,8 @@ type Slot       = {
 type InvitedTeacher = {
   id: string; firstName: string; lastName: string; email: string;
   hasSubmitted: boolean; availabilityCount: number;
+  /** Disponibilités reprises d'un emploi du temps précédent (pas encore données pour cette semaine) */
+  reusedFrom?: string | null;
 };
 type Period = {
   id: string; name: string; status: string;
@@ -52,7 +55,9 @@ type Period = {
   _count: { slots: number; availabilities: number };
 };
 type Resources  = { teachers: User_[]; rooms: Room[]; promotions: Promotion[]; subjects: Subject[] };
-type Conflict   = { type: string; slot?: Slot };
+type Conflict   = { type: string; slot?: Slot; otherMention?: string; otherPeriod?: string };
+// État des disponibilités d'un professeur pour un créneau
+type AvailState = "yes" | "no" | "missing" | "reused-yes" | "reused-no";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -92,6 +97,8 @@ const STATUS_META: Record<string, { label: string; color: string; dot: string }>
 
 const CONFLICT_LABELS: Record<string, string> = {
   TEACHER_UNAVAILABLE: "❌ Ce professeur n'est pas disponible à ce créneau",
+  AVAILABILITY_MISSING: "⚠ Ce professeur n'a pas encore donné ses disponibilités",
+  OUTSIDE_PREVIOUS_AVAILABILITY: "⚠ Hors de ses disponibilités précédentes",
   TEACHER_BUSY:   "❌ Ce professeur a déjà un cours à ce créneau",
   ROOM_BUSY:      "❌ Cette salle est déjà réservée",
   PROMOTION_BUSY: "❌ Cette promotion a déjà un cours à ce créneau",
@@ -145,20 +152,20 @@ function PlanningBuilder() {
 
   // Teacher availability lookup
   // Le professeur doit avoir coché ce créneau (des blocs contigus 07h-09h + 09h-11h couvrent 07h-11h)
-  function teacherAvailableAt(teacherUserId: string, day: string, start: string, end: string): boolean | null {
-    if (!period) return null;
-    const avails = period.availabilities
-      .filter((a) => a.teacherUserId === teacherUserId && a.day === day && a.isAvailable)
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
-    const declared = period.availabilities.some((a) => a.teacherUserId === teacherUserId);
-    if (!declared) return null; // aucune disponibilité soumise
+  function teacherAvailableAt(teacherUserId: string, day: string, start: string, end: string): AvailState {
+    if (!period) return "missing";
+    const mine = period.availabilities.filter((a) => a.teacherUserId === teacherUserId);
+    if (!mine.length) return "missing"; // aucune disponibilité connue
+    const reused = mine.every((a) => a.reused);
+    const avails = mine.filter((a) => a.day === day && a.isAvailable).sort((a, b) => a.startTime.localeCompare(b.startTime));
     let cursor = start;
     let moved = true;
     while (cursor < end && moved) {
       moved = false;
       for (const a of avails) if (a.startTime <= cursor && a.endTime > cursor) { cursor = a.endTime; moved = true; }
     }
-    return cursor >= end;
+    const ok = cursor >= end;
+    return reused ? (ok ? "reused-yes" : "reused-no") : ok ? "yes" : "no";
   }
 
   // Professeurs attitrés de la matière choisie (affectation des matières)
@@ -221,8 +228,8 @@ function PlanningBuilder() {
       } : p);
       setShowSlotForm(false);
       setSlotForm(emptyForm());
-      if (_warnings?.length) {
-        // Non-blocking — slot was created, just show info
+      if (_warnings?.includes("AVAILABILITY_MISSING")) {
+        toast.warning("Créneau ajouté. Ce professeur n'a pas encore donné ses disponibilités : demandez-lui de les compléter (onglet Disponibilités).");
       }
     } catch (e: unknown) {
       const err = e as { message?: string; conflicts?: Conflict[] };
@@ -236,13 +243,13 @@ function PlanningBuilder() {
     if (!slotForm.subjectName || !slotForm.teacherUserId || !slotForm.promotionId) {
       setSlotError("Matière, professeur et promotion sont requis"); return;
     }
-    // Le professeur doit être disponible à ce créneau
-    if (availStatus !== true) {
-      setSlotError(availStatus === null
-        ? "Ce professeur n'a pas encore donné ses disponibilités : relancez-le avant de lui attribuer un créneau."
-        : "Ce professeur n'est pas disponible à ce créneau. Choisissez un autre jour / horaire parmi ses disponibilités.");
+    // Seule une indisponibilité déclarée pour cette semaine bloque. Sans disponibilités
+    // (ou avec celles d'une semaine précédente), le créneau est accepté avec un avertissement.
+    if (availStatus === "no") {
+      setSlotError("Ce professeur n'est pas disponible à ce créneau (d'après les disponibilités qu'il a données pour cette semaine). Choisissez un autre horaire, ou demandez-lui de les compléter.");
       return;
     }
+    if (availStatus === "reused-no" && !confirm("Ce créneau est hors des disponibilités que ce professeur avait données pour un emploi du temps précédent. L'ajouter quand même ?")) return;
     await doAddSlot();
   }
 
@@ -291,9 +298,18 @@ function PlanningBuilder() {
     setReminding(true);
     try {
       const r = await api<{ reminded: number; message?: string }>(`/schedule/periods/${id}/remind`, { method: "POST" });
-      alert(r.reminded > 0 ? `Relance envoyée à ${r.reminded} enseignant(s).` : r.message ?? "Tous les enseignants ont répondu.");
-    } catch (e: unknown) { alert((e as Error).message); }
+      toast.success(r.reminded > 0 ? `Demande envoyée à ${r.reminded} enseignant(s).` : r.message ?? "Tous les enseignants ont répondu.");
+    } catch (e: unknown) { toast.error((e as Error).message); }
     finally { setReminding(false); }
+  }
+
+  // Demander à un enseignant de donner (ou compléter) ses disponibilités
+  async function requestAvailability(teacherUserId: string) {
+    try {
+      await api(`/schedule/periods/${id}/remind`, { method: "POST", body: { teacherUserId } });
+      const t = period?.invitedTeachers.find((x) => x.id === teacherUserId) ?? resources?.teachers.find((x) => x.id === teacherUserId);
+      toast.success(`Demande envoyée${t ? ` à ${t.firstName} ${t.lastName}` : ""} : il est notifié pour compléter ses disponibilités.`);
+    } catch (e: unknown) { toast.error((e as Error).message); }
   }
 
   if (!ready || !user || loading) {
@@ -428,7 +444,7 @@ function PlanningBuilder() {
                     <span className="font-medium">{slotError}</span>
                   </div>
                   {conflicts.map((c, i) => (
-                    <p key={i} className="pl-5 text-xs text-red-600">{CONFLICT_LABELS[c.type] ?? c.type}</p>
+                    <p key={i} className="pl-5 text-xs text-red-600">{CONFLICT_LABELS[c.type] ?? c.type}{c.otherMention ? ` (emploi du temps « ${c.otherPeriod} », ${c.otherMention})` : ""}</p>
                   ))}
                 </div>
               )}
@@ -483,8 +499,8 @@ function PlanningBuilder() {
                       {(assignedTeachers.length ? assignedTeachers : resources?.teachers ?? []).map((t) => {
                         const ok = teacherAvailableAt(t.id, slotForm.day, slotForm.startTime, slotForm.endTime);
                         return (
-                          <option key={t.id} value={t.id} disabled={ok !== true}>
-                            {t.lastName.toUpperCase()} {t.firstName} {ok === true ? "— disponible" : ok === false ? "— indisponible" : "— pas de disponibilités"}
+                          <option key={t.id} value={t.id} disabled={ok === "no"}>
+                            {t.lastName.toUpperCase()} {t.firstName} {ok === "yes" || ok === "reused-yes" ? "— disponible" : ok === "no" ? "— indisponible" : ok === "reused-no" ? "— hors disponibilités précédentes" : "— disponibilités pas encore données"}
                           </option>
                         );
                       })}
@@ -595,18 +611,29 @@ function PlanningBuilder() {
                 {/* Live availability indicator */}
                 {slotForm.teacherUserId && (
                   <div className="sm:col-span-2">
-                    {availStatus === null && (
-                      <p className="flex items-center gap-1.5 text-xs text-red-600">
-                        <Info size={12} /> Ce professeur n'a soumis aucune disponibilité : impossible de lui attribuer un créneau
+                    {availStatus === "missing" && (
+                      <p className="flex flex-wrap items-center gap-1.5 text-xs text-amber-600">
+                        <Info size={12} /> Ce professeur n'a pas encore donné ses disponibilités : le créneau sera accepté.
+                        <button type="button" onClick={() => requestAvailability(slotForm.teacherUserId)} className="font-semibold underline">Lui demander</button>
                       </p>
                     )}
-                    {availStatus === true && (
+                    {availStatus === "yes" && (
                       <p className="flex items-center gap-1.5 text-xs text-green-600">
                         <CheckCircle size={12} /> Disponible à ce créneau
                       </p>
                     )}
-                    {availStatus === false && (
+                    {availStatus === "reused-yes" && (
+                      <p className="flex items-center gap-1.5 text-xs text-green-600">
+                        <CheckCircle size={12} /> Disponible d'après ses disponibilités précédentes (pas encore données pour cette semaine)
+                      </p>
+                    )}
+                    {availStatus === "reused-no" && (
                       <p className="flex items-center gap-1.5 text-xs text-amber-600">
+                        <AlertTriangle size={12} /> Hors de ses disponibilités précédentes — vérifiez avec lui
+                      </p>
+                    )}
+                    {availStatus === "no" && (
+                      <p className="flex items-center gap-1.5 text-xs text-red-600">
                         <AlertTriangle size={12} /> Indisponible à ce créneau — choisissez un horaire parmi ses disponibilités
                       </p>
                     )}
@@ -729,7 +756,7 @@ function PlanningBuilder() {
                 );
               })()}
             </div>
-            {isChef && period.status === "PREPARING" && (period.invitedTeachers ?? []).some(t => !t.hasSubmitted) && (
+            {isChef && ["PREPARING", "BUILDING"].includes(period.status) && (period.invitedTeachers ?? []).some(t => !t.hasSubmitted) && (
               <button onClick={remind} disabled={reminding}
                 className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-60">
                 {reminding ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
@@ -748,7 +775,7 @@ function PlanningBuilder() {
           ) : (
             <div className="space-y-3">
               {(period.invitedTeachers ?? []).map((teacher) => {
-                const avails = period.availabilities.filter(a => a.teacherUserId === teacher.id && a.isAvailable);
+                const avails = period.availabilities.filter(a => a.teacherUserId === teacher.id && a.isAvailable && !a.reused);
                 return (
                   <div key={teacher.id}
                     className={`rounded-2xl border p-4 transition-colors ${teacher.hasSubmitted ? "border-green-200 bg-green-50/30 dark:border-green-900/30 dark:bg-green-950/10" : "border-gray-200 bg-card"}`}>
@@ -770,7 +797,18 @@ function PlanningBuilder() {
                         <span className={`h-1.5 w-1.5 rounded-full ${teacher.hasSubmitted ? "bg-green-500" : "bg-amber-400"}`} />
                         {teacher.hasSubmitted ? `Envoyé · ${teacher.availabilityCount} créneau${teacher.availabilityCount !== 1 ? "x" : ""}` : "En attente"}
                       </span>
+                      {isChef && ["PREPARING", "BUILDING"].includes(period.status) && (
+                        <button onClick={() => requestAvailability(teacher.id)}
+                          className="rounded-lg border px-2.5 py-1 text-xs font-medium hover:bg-accent">
+                          {teacher.hasSubmitted ? "Demander de compléter" : "Demander ses disponibilités"}
+                        </button>
+                      )}
                     </div>
+                    {!teacher.hasSubmitted && teacher.reusedFrom && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Pas encore données pour cette semaine : ses disponibilités de « {teacher.reusedFrom} » sont utilisées en attendant.
+                      </p>
+                    )}
                     {teacher.hasSubmitted && avails.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {avails.map((a, i) => (

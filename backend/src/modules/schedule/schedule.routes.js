@@ -45,7 +45,7 @@ r.get('/periods/:id/conflicts', asyncHandler(async (req, res) => {
 }));
 
 r.post('/periods/:id/remind', asyncHandler(async (req, res) => {
-  res.json(await svc.remindPendingTeachers(req.user, req.params.id));
+  res.json(await svc.remindPendingTeachers(req.user, req.params.id, req.body?.teacherUserId ?? null));
 }));
 
 // ─── Envoi aux enseignants / validation par l'enseignant ─────

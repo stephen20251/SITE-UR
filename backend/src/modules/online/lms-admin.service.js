@@ -27,7 +27,7 @@ const DEFAULT_SETTINGS = {
   metaTitle: 'UR Online — Apprenez avec l\'université',
   metaDescription: 'Plateforme de cours en ligne de l\'Université Références.',
   metaKeywords: '',
-  footerText: '© 2025 Université Références. Tous droits réservés.',
+  footerText: '© 2026 Université Références. Tous droits réservés.',
   defaultLanguage: 'fr',
   defaultCurrency: 'MGA',
   timezone: 'Indian/Antananarivo',
@@ -45,9 +45,12 @@ const DEFAULT_SETTINGS = {
   cashInstructions: "Présentez-vous à la caisse de l'Université Références avec votre référence de paiement. Le cours s'ouvre dès que la caisse a encaissé le montant.",
 };
 
+// Le nom de l'université s'affiche toujours en français sur le site.
+const frenchName = (v) => (typeof v === 'string' ? v.replace(/University Reference(s)?/g, 'Université Références') : v);
+
 export async function getSettings() {
   const rows = await prisma.lmsSetting.findMany();
-  const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  const map = Object.fromEntries(rows.map((r) => [r.key, frenchName(r.value)]));
   return { ...DEFAULT_SETTINGS, ...map };
 }
 

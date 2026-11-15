@@ -57,7 +57,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Université Références — Antananarivo" },
-      { name: "description", content: "Université Références (University Reference), Antananarivo : Licence en Informatique et en Gestion, formation en anglais parlé, en présentiel et en ligne." },
+      { name: "description", content: "Université Références, Antananarivo : Licence en Informatique et en Gestion, formation en anglais parlé, en présentiel et en ligne." },
       { property: "og:title", content: "Université Références" },
       { property: "og:description", content: "Licence en Informatique et en Gestion, anglais parlé : étudier à Antananarivo ou en ligne." },
       { property: "og:type", content: "website" },

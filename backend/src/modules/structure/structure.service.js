@@ -1,5 +1,6 @@
 import { prisma } from '../../database/prisma.js'
 import { HttpError } from '../../utils/asyncHandler.js'
+import { staffMentionScope } from '../../middlewares/rbac.js'
 
 // ── Campus ───────────────────────────────────────────────────────
 export const listCampuses = async (req, res) => {
@@ -102,8 +103,14 @@ export const deleteDepartment = async (req, res) => {
 
 // ── Mention ───────────────────────────────────────────────────────
 export const listMentions = async (req, res) => {
+  // « ?mine=1 » : seulement les mentions gérées par le Responsable connecté
+  const scope = req.query.mine && req.user?.systemRole === 'STAFF' ? await staffMentionScope(req) : null
   const data = await prisma.mention.findMany({
-    where: req.query.departmentId ? { departmentId: req.query.departmentId, isActive: true } : { isActive: true },
+    where: {
+      ...(req.query.departmentId ? { departmentId: req.query.departmentId } : {}),
+      isActive: true,
+      ...(scope && { id: { in: scope } }),
+    },
     include: { department: { include: { faculty: { include: { campus: true } } } } },
     orderBy: { name: 'asc' },
   })

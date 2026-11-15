@@ -14,8 +14,8 @@ import { mediaUrl } from "@/components/online/mooc-card";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Université Références (University Reference) — Antananarivo" },
-      { name: "description", content: "Université Références (University Reference), Antananarivo : Licence en Informatique et en Gestion, formation en anglais parlé, en présentiel et en ligne." },
+      { title: "Université Références — Antananarivo" },
+      { name: "description", content: "Université Références, Antananarivo : Licence en Informatique et en Gestion, formation en anglais parlé, en présentiel et en ligne." },
       { property: "og:url", content: "https://univreference.com/" },
     ],
     links: [

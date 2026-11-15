@@ -20,7 +20,7 @@ type UserRow = {
   createdAt: string; lastLoginAt?: string | null;
   userRoles: { role: Role; mention?: { id?: string; name: string } | null }[];
   studentProfile?: { matricule: string; status: string; mention?: { name: string } } | null;
-  teacherProfile?: { employeeId?: string; specialization?: string } | null;
+  teacherProfile?: { employeeId?: string; specialization?: string; mentionId?: string | null; mention?: { id: string; name: string } | null } | null;
   staffProfile?: { employeeId?: string } | null;
 };
 type Page = { total: number; page: number; limit: number; users: UserRow[] };
@@ -88,6 +88,12 @@ function UserModal({
     email: user.email, phone: user.phone ?? "",
     systemRole: user.systemRole, password: "",
   } : { ...EMPTY_FORM });
+  // Mention de rattachement d'un enseignant
+  const [teacherMentionId, setTeacherMentionId] = useState(user?.teacherProfile?.mentionId ?? "");
+  const mentions = useQuery({
+    queryKey: ["structure", "mentions"],
+    queryFn: () => api<{ id: string; name: string }[]>("/structure/mentions"),
+  });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [created, setCreated] = useState<{ email: string; temporaryPassword?: string; emailSent?: boolean } | null>(null);
@@ -103,6 +109,7 @@ function UserModal({
         systemRole: form.systemRole,
       };
       if (form.password) body.password = form.password;
+      if (user && form.systemRole === "TEACHER") body.teacherMentionId = teacherMentionId;
       if (user) {
         await api(`/admin/users/${user.id}`, { method: "PUT", body });
         toast.success("Utilisateur mis à jour");
@@ -173,6 +180,17 @@ function UserModal({
               <ChevronDown size={13} className="pointer-events-none absolute right-3 top-3.5 text-gray-400" />
             </div>
           </div>
+          {user && form.systemRole === "TEACHER" && (
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Mention de l'enseignant</label>
+              <select value={teacherMentionId} onChange={(e) => setTeacherMentionId(e.target.value)}
+                className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-classroom">
+                <option value="">— Aucune mention —</option>
+                {(mentions.data ?? []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+              <p className="mt-1 text-[11px] text-muted-foreground">Le Responsable de cette mention lui attribue ses matières et ses créneaux d'emploi du temps.</p>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">
               {user ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : "Mot de passe (facultatif)"}

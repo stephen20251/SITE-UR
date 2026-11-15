@@ -1,5 +1,6 @@
 import { prisma } from '../../database/prisma.js'
 import { HttpError } from '../../utils/asyncHandler.js'
+import { staffMentionScope } from '../../middlewares/rbac.js'
 import { hashPassword } from '../../utils/hash.js'
 import { generateMatricule } from '../inscriptions/inscriptions.service.js'
 import { assertNoRejectedDocs, assertPreInscriptionComplete } from './dossier.service.js'
@@ -12,11 +13,15 @@ const CANDIDATE_INCLUDE = {
 
 export const listCandidates = async (req, res) => {
   const { status, mentionId, search } = req.query
+  // Responsable pédagogique : uniquement les candidats de sa mention.
+  const scope = await staffMentionScope(req)
+  if (scope && mentionId && !scope.includes(mentionId)) throw new HttpError(403, 'Cette mention ne fait pas partie de votre périmètre')
   const page = Math.max(1, Number(req.query.page) || 1)
   const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 20))
   const where = {}
   if (status) where.status = status
   if (mentionId) where.mentionId = mentionId
+  else if (scope) where.mentionId = { in: scope }
   if (search) {
     where.user = { OR: [
       { firstName: { contains: search } },

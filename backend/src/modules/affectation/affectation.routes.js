@@ -19,12 +19,12 @@ r.get('/', asyncHandler(async (req, res) => {
 // GET /api/affectation/subjects — subjects with their current assignments
 r.get('/subjects', asyncHandler(async (req, res) => {
   const { mentionId, semesterId } = req.query;
-  res.json(await svc.listSubjectsForAssignment({ mentionId, semesterId }));
+  res.json(await svc.listSubjectsForAssignment({ mentionId, semesterId }, req));
 }));
 
 // GET /api/affectation/teachers — tous les comptes enseignants (recherche facultative)
 r.get('/teachers', canAssign, asyncHandler(async (req, res) => {
-  res.json(await svc.listTeachers(req.query.q));
+  res.json(await svc.listTeachers(req.query.q, req));
 }));
 
 // POST /api/affectation/teachers — créer un enseignant (compte + fiche), e-mail d'accueil
@@ -44,18 +44,18 @@ r.get('/subject/:subjectId', asyncHandler(async (req, res) => {
 
 // POST /api/affectation — assign teacher
 r.post('/', canAssign, asyncHandler(async (req, res) => {
-  const result = await svc.assignTeacher({ ...req.body, assignedBy: req.user.sub });
+  const result = await svc.assignTeacher({ ...req.body, assignedBy: req.user.sub }, req);
   res.status(201).json(result);
 }));
 
 // PATCH /api/affectation/:id
 r.patch('/:id', canAssign, asyncHandler(async (req, res) => {
-  res.json(await svc.updateAssignment(req.params.id, req.body));
+  res.json(await svc.updateAssignment(req.params.id, req.body, req));
 }));
 
 // DELETE /api/affectation/:id
 r.delete('/:id', canAssign, asyncHandler(async (req, res) => {
-  res.json(await svc.removeAssignment(req.params.id));
+  res.json(await svc.removeAssignment(req.params.id, req));
 }));
 
 export default r;

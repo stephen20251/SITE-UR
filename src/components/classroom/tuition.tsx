@@ -10,7 +10,7 @@ import {
 } from "@/lib/cursus";
 import { ApiError } from "@/lib/api";
 import { useMobileMoneySettings } from "@/lib/payments";
-import { semesterLabel } from "@/lib/cursus";
+import { groupBySemester } from "@/lib/cursus";
 
 // Paiement en espèces au guichet : validé immédiatement, reçu émis.
 export function CashDesk() {
@@ -170,8 +170,10 @@ const MONTH_STATUS: Record<CursusMonth["status"], { label: string; cls: string; 
 export function tuitionSummary(data: CursusOverview) {
   const months = data.months;
   const ref = data.currentMonth ?? data.nextPayableMonth ?? months.find((m) => m.status !== "PAID")?.month ?? 1;
+  // Semestre en cours (semestres de la mention, sinon S1 / S2)
+  const group = groupBySemester(months, data.student.level).find((g) => g.months.some((m) => m.month === ref));
   const semester = ref <= 4 ? 1 : 2;
-  const semMonths = months.filter((m) => m.semester === semester);
+  const semMonths = group?.months ?? months.filter((m) => m.semester === semester);
   const semDue = semMonths.filter((m) => m.status === "UNPAID" || m.status === "REFUSED");
   return {
     paid: months.filter((m) => m.status === "PAID").length,
@@ -179,6 +181,7 @@ export function tuitionSummary(data: CursusOverview) {
     unpaid: months.filter((m) => m.status === "UNPAID" || m.status === "REFUSED").length,
     total: months.length,
     semester,
+    semesterName: group?.name ?? "",
     semDueCount: semDue.length,
     semDueAmount: data.monthlyAmount ? semDue.length * data.monthlyAmount : null,
   };
@@ -200,7 +203,7 @@ export function TuitionPanel({ data, onPay }: { data: CursusOverview; onPay?: (m
           {s.pending > 0 && <div className="text-xs text-amber-600">+ {s.pending} en attente de validation</div>}
         </Card>
         <Card className="sm:col-span-2">
-          <div className="text-xs text-muted-foreground">Reste à payer — {semesterLabel(data.student.level, s.semester)}</div>
+          <div className="text-xs text-muted-foreground">Reste à payer — {s.semesterName}</div>
           <div className="mt-1 text-2xl font-semibold text-classroom">{fmtMGA(s.semDueAmount, cur)}</div>
           <div className="text-xs text-muted-foreground">
             {s.semDueCount} mois restant{s.semDueCount > 1 ? "s" : ""} · {fmtMGA(data.monthlyAmount, cur)} / mois
@@ -208,11 +211,11 @@ export function TuitionPanel({ data, onPay }: { data: CursusOverview; onPay?: (m
         </Card>
       </div>
 
-      {[1, 2].map((sem) => (
-        <Card key={sem} className="overflow-hidden p-0">
-          <div className="border-b bg-muted/30 px-4 py-2.5 text-sm font-semibold">{semesterLabel(data.student.level, sem)}</div>
+      {groupBySemester(data.months, data.student.level).map((g) => (
+        <Card key={g.key} className="overflow-hidden p-0">
+          <div className="border-b bg-muted/30 px-4 py-2.5 text-sm font-semibold">{g.name}</div>
           <div className="divide-y">
-            {data.months.filter((m) => m.semester === sem).map((m) => {
+            {g.months.map((m) => {
               const st = MONTH_STATUS[m.status];
               return (
                 <div key={m.month} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">

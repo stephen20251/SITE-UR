@@ -65,7 +65,7 @@ function PlanningHub() {
     if (!ready) return;
     Promise.all([
       api<Period[]>("/schedule/periods").catch(() => []),
-      api<Mention[]>("/structure/mentions").catch(() => []),
+      api<Mention[]>("/structure/mentions?mine=1").catch(() => []),
       api<Semester[]>("/structure/semesters").catch(() => []),
       api<AcYear[]>("/structure/academic-years").catch(() => []),
     ]).then(([p, m, s, y]) => {
@@ -88,7 +88,7 @@ function PlanningHub() {
       const [years, sems, mns, promos, grps] = await Promise.all([
         api<AcYear[]>("/structure/academic-years").catch(() => [] as AcYear[]),
         api<Semester[]>("/structure/semesters").catch(() => [] as Semester[]),
-        api<Mention[]>("/structure/mentions").catch(() => [] as Mention[]),
+        api<Mention[]>("/structure/mentions?mine=1").catch(() => [] as Mention[]),
         api<unknown[]>("/structure/promotions").catch(() => [] as unknown[]),
         api<unknown[]>("/structure/groups").catch(() => [] as unknown[]),
       ]);

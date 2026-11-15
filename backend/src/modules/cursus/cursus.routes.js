@@ -4,6 +4,7 @@ import { authenticate, requireRole } from '../../middlewares/auth.js';
 import { requireAnyPermission } from '../../middlewares/rbac.js';
 import { prisma } from '../../database/prisma.js';
 import * as svc from './cursus.service.js';
+import * as sem from './semesters.service.js';
 import { getTeacherSharePercent, setTeacherSharePercent, shareInfo } from '../finance/revenue-share.js';
 import { reviewQueue, assertCanReview, transitionCourseStatus } from '../online/course-review.service.js';
 import { getCourseDetail } from '../online/courses.service.js';
@@ -116,6 +117,23 @@ r.patch('/curriculum/:id', curriculum, asyncHandler(async (req, res) => {
 r.delete('/curriculum/:id', curriculum, asyncHandler(async (req, res) => {
   res.json(await svc.deleteCurriculumEntry(req, req.params.id));
 }));
+// ── Semestres du cursus (propres à chaque mention) ─────────────────────────
+r.get('/semesters', curriculum, asyncHandler(async (req, res) => {
+  res.json(await sem.listSemesters(req, req.query));
+}));
+r.post('/semesters', curriculum, asyncHandler(async (req, res) => {
+  res.status(201).json(await sem.createSemester(req, req.body));
+}));
+r.post('/semesters/init', curriculum, asyncHandler(async (req, res) => {
+  res.json(await sem.initSemesters(req, req.body ?? {}));
+}));
+r.put('/semesters/:id', curriculum, asyncHandler(async (req, res) => {
+  res.json(await sem.updateSemester(req, req.params.id, req.body));
+}));
+r.delete('/semesters/:id', curriculum, asyncHandler(async (req, res) => {
+  res.json(await sem.deleteSemester(req, req.params.id));
+}));
+
 r.get('/supervision', supervise, asyncHandler(async (req, res) => {
   res.json(await svc.supervision(req, req.query));
 }));

@@ -5,7 +5,7 @@ import { CheckCircle2, GraduationCap, Lock, PlayCircle, Wallet } from "lucide-re
 import type { CourseCard } from "@/lib/online";
 import { useAuth } from "@/lib/auth";
 import {
-  fmtMGA, semesterLabel, semesterOf, useMyCursus, type CursusOverview,
+  fmtMGA, groupBySemester, semesterLabel, semesterOf, useMyCursus, type CursusOverview,
 } from "@/lib/cursus";
 import { MoocCard, type CardStatus } from "@/components/online/mooc-card";
 
@@ -97,11 +97,11 @@ export function MyCursusBoard({ overview }: { overview: CursusOverview }) {
         </Link>
       </div>
 
-      {[1, 2].map((sem) => (
-        <div key={sem} className="mt-6">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{semesterLabel(level, sem)}</h3>
+      {groupBySemester(overview.months, level).map((g) => (
+        <div key={g.key} className="mt-6">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{g.name}</h3>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {overview.months.filter((m) => m.semester === sem).map((m) => {
+            {g.months.map((m) => {
               const paid = m.status === "PAID";
               return (
                 <div key={m.month} className={`rounded-xl border p-4 ${paid ? "" : "bg-muted/30"}`}>

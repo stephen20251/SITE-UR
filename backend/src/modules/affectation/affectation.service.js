@@ -1,6 +1,6 @@
 import { prisma } from '../../database/prisma.js';
 import { HttpError } from '../../utils/asyncHandler.js';
-import { loadStaffContext } from '../../middlewares/rbac.js';
+import { loadStaffContext, staffMentionScope, assertStaffMention } from '../../middlewares/rbac.js';
 import { ensureProfile } from '../me/ensure-profile.js';
 import { hashPassword } from '../../utils/hash.js';
 import { generateTempPassword } from '../../utils/password.js';
@@ -10,23 +10,29 @@ import { assignCurriculumFromSubject, releaseCurriculumFromSubject } from '../st
 
 // Mentions du périmètre de l'utilisateur (null = toutes : Super administrateur).
 async function scopeMentionIds(req) {
-  const staff = await loadStaffContext(req);
-  return staff.isAdmin || staff.mentionIds.length === 0 ? null : staff.mentionIds;
+  return staffMentionScope(req);
 }
 async function assertMention(req, mentionId) {
-  const ids = await scopeMentionIds(req);
-  if (ids && !ids.includes(mentionId)) throw new HttpError(403, 'Cette mention ne fait pas partie de votre périmètre');
+  await assertStaffMention(req, mentionId);
 }
 
 // ── Enseignants ──────────────────────────────────────────────────────────────
 
 // Tous les comptes enseignants actifs, y compris ceux dont la fiche n'existe pas encore.
-export async function listTeachers(q = '') {
+// Responsable pédagogique : enseignants de sa mention et enseignants pas encore rattachés.
+export async function listTeachers(q = '', req = null) {
   const s = String(q ?? '').trim();
+  const scope = req ? await scopeMentionIds(req) : null;
   const users = await prisma.user.findMany({
     where: {
       systemRole: 'TEACHER', isActive: true,
       ...(s && { OR: [{ firstName: { contains: s } }, { lastName: { contains: s } }, { email: { contains: s } }] }),
+      ...(scope && { AND: [{ OR: [
+        { teacherProfile: null },
+        { teacherProfile: { mentionId: null } },
+        { teacherProfile: { mentionId: { in: scope } } },
+        { teacherProfile: { subjectTeachers: { some: { subject: { mentionId: { in: scope } } } } } },
+      ] }] }),
     },
     select: {
       id: true, firstName: true, lastName: true, email: true,
@@ -149,9 +155,10 @@ export async function listAssignments({ semesterId, mentionId, subjectId, teache
 
 // ── Assign teacher to subject ─────────────────────────────────────────────────
 
-export async function assignTeacher({ subjectId, teacherId, teacherUserId, groupId, type, assignedBy }) {
+export async function assignTeacher({ subjectId, teacherId, teacherUserId, groupId, type, assignedBy }, req = null) {
   const subject = await prisma.subject.findUnique({ where: { id: subjectId } });
   if (!subject) throw new HttpError(404, 'Matière introuvable');
+  if (req) await assertMention(req, subject.mentionId);
 
   // L'enseignant peut être désigné par son compte : sa fiche est créée au besoin.
   if (!teacherId && teacherUserId) {
@@ -167,6 +174,11 @@ export async function assignTeacher({ subjectId, teacherId, teacherUserId, group
     where: { subjectId, teacherId, groupId: groupId || null, type: type ?? 'CM' },
   });
   if (existing) throw new HttpError(409, 'Cette affectation existe déjà');
+
+  // Un enseignant encore sans mention est rattaché à la mention de sa matière.
+  if (!teacher.mentionId && subject.mentionId) {
+    await prisma.teacherProfile.update({ where: { id: teacher.id }, data: { mentionId: subject.mentionId } });
+  }
 
   const created = await prisma.subjectTeacher.create({
     data: {
@@ -191,9 +203,10 @@ export async function assignTeacher({ subjectId, teacherId, teacherUserId, group
 
 // ── Remove an assignment ──────────────────────────────────────────────────────
 
-export async function removeAssignment(id) {
-  const aff = await prisma.subjectTeacher.findUnique({ where: { id } });
+export async function removeAssignment(id, req = null) {
+  const aff = await prisma.subjectTeacher.findUnique({ where: { id }, include: { subject: { select: { mentionId: true } } } });
   if (!aff) throw new HttpError(404, 'Affectation introuvable');
+  if (req) await assertMention(req, aff.subject.mentionId);
   await prisma.subjectTeacher.delete({ where: { id } });
   await releaseCurriculumFromSubject({ subjectId: aff.subjectId, teacherProfileId: aff.teacherId });
   return { success: true };
@@ -201,9 +214,10 @@ export async function removeAssignment(id) {
 
 // ── Update assignment type ────────────────────────────────────────────────────
 
-export async function updateAssignment(id, { type, groupId }) {
-  const aff = await prisma.subjectTeacher.findUnique({ where: { id } });
+export async function updateAssignment(id, { type, groupId }, req = null) {
+  const aff = await prisma.subjectTeacher.findUnique({ where: { id }, include: { subject: { select: { mentionId: true } } } });
   if (!aff) throw new HttpError(404, 'Affectation introuvable');
+  if (req) await assertMention(req, aff.subject.mentionId);
   return prisma.subjectTeacher.update({
     where: { id },
     data: { type: type ?? aff.type, groupId: groupId !== undefined ? (groupId || null) : aff.groupId },
@@ -213,10 +227,12 @@ export async function updateAssignment(id, { type, groupId }) {
 
 // ── List subjects for cascade ─────────────────────────────────────────────────
 
-export async function listSubjectsForAssignment({ mentionId, semesterId } = {}) {
+export async function listSubjectsForAssignment({ mentionId, semesterId } = {}, req = null) {
+  const scope = req ? await scopeMentionIds(req) : null;
+  if (scope && mentionId && !scope.includes(mentionId)) throw new HttpError(403, 'Cette mention ne fait pas partie de votre périmètre');
   return prisma.subject.findMany({
     where: {
-      ...(mentionId  && { mentionId }),
+      ...(mentionId ? { mentionId } : scope ? { mentionId: { in: scope } } : {}),
       ...(semesterId && { teachingUnit: { semesterId } }),
       isActive: true,
     },

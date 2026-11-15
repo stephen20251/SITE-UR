@@ -220,7 +220,7 @@ function ClassroomLayout() {
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-gray-900 dark:text-white">Université Références</p>
-            <p className="text-[10px] text-muted-foreground">Système Classroom</p>
+            <p className="text-[10px] text-muted-foreground">Espace université</p>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="ml-auto text-muted-foreground lg:hidden">
             <X size={18} />

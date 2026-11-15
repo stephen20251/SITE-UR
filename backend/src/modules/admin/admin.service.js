@@ -3,6 +3,8 @@ import { HttpError } from '../../utils/asyncHandler.js'
 import { hashPassword } from '../../utils/hash.js'
 import { generateTempPassword } from '../../utils/password.js'
 import { ensureProfile } from '../me/ensure-profile.js'
+import { isMentionScopedRole } from '../../middlewares/rbac.js'
+import { mentionFromRoleName } from '../structure/mention-sync.js'
 import { sendAccountCreatedEmail, sendPasswordResetByAdminEmail } from '../../utils/account-emails.js'
 
 const SYSTEM_ROLES = ['SUPER_ADMIN', 'STAFF', 'TEACHER', 'STUDENT', 'PARENT', 'CANDIDATE', 'STUDENT_ONLINE', 'TEACHER_ONLINE']
@@ -41,7 +43,7 @@ const USER_INCLUDE = {
     },
   },
   studentProfile: { select: { matricule: true, status: true, mention: { select: { name: true } } } },
-  teacherProfile: { select: { employeeId: true, specialization: true } },
+  teacherProfile: { select: { employeeId: true, specialization: true, mentionId: true, mention: { select: { id: true, name: true } } } },
   staffProfile: { select: { employeeId: true, department: true } },
   candidateProfile: { select: { status: true } },
 }
@@ -117,7 +119,13 @@ export const updateUser = async (req, res) => {
     if (String(b.password).length < 8) throw new HttpError(400, 'Mot de passe trop court (8 caractères minimum)')
     data.passwordHash = await hashPassword(String(b.password))
   }
-  const user = await prisma.user.update({ where: { id: req.params.id }, data, include: USER_INCLUDE })
+  let user = await prisma.user.update({ where: { id: req.params.id }, data, include: USER_INCLUDE })
+  // Enseignant : mention de rattachement (ses matières, ses emplois du temps, son Responsable).
+  if (b.teacherMentionId !== undefined && user.systemRole === 'TEACHER') {
+    await ensureProfile(user.id, 'TEACHER')
+    await prisma.teacherProfile.update({ where: { userId: user.id }, data: { mentionId: b.teacherMentionId || null } })
+    user = await prisma.user.findUnique({ where: { id: user.id }, include: USER_INCLUDE })
+  }
   if (data.systemRole === 'SUPER_ADMIN') await attachSuperAdminRole(user.id)
   if (data.passwordHash) await prisma.refreshToken.deleteMany({ where: { userId: user.id } })
   res.json(sanitize(user))
@@ -162,7 +170,16 @@ export const resetPassword = async (req, res) => {
 }
 
 export const assignRole = async (req, res) => {
-  const { roleId, mentionId, facultyId, departmentId, campusId } = req.body
+  const { roleId, facultyId, departmentId, campusId } = req.body
+  let mentionId = req.body.mentionId || null
+  const role = await prisma.role.findUnique({ where: { id: roleId }, select: { name: true } })
+  if (!role) throw new HttpError(404, 'Rôle introuvable')
+  // Un Responsable pédagogique est toujours associé à sa mention (déduite du nom du rôle au besoin).
+  if (isMentionScopedRole(role.name) && !mentionId) {
+    const mentions = await prisma.mention.findMany({ select: { id: true, name: true, code: true } })
+    mentionId = mentionFromRoleName(role.name, mentions)?.id ?? null
+    if (!mentionId) throw new HttpError(400, `Choisissez la mention gérée par ce ${role.name}.`)
+  }
   const ur = await prisma.userRole.create({
     data: { userId: req.params.id, roleId, mentionId, facultyId, departmentId, campusId },
     include: { role: { select: { name: true, color: true } }, mention: { select: { name: true } } },

@@ -9,7 +9,7 @@ import {
   Bar, Card, Empty, Loading, PageHeader, TuitionBadge, btnPrimary, inputCls,
 } from "@/components/classroom/cursus-ui";
 import { fmtMGA, methodLabel, useMyCursus, type CursusMonth } from "@/lib/cursus";
-import { semesterLabel } from "@/lib/cursus";
+import { groupBySemester, monthsRange } from "@/lib/cursus";
 
 export const Route = createFileRoute("/classroom/cursus")({ component: MyCursus });
 
@@ -141,11 +141,11 @@ function CursusView({ data, onPay }: { data: NonNullable<ReturnType<typeof useMy
         {totalCourses === 0 && " Aucun cours n'est encore publié pour votre niveau."}
       </p>
 
-      {[1, 2].map((sem) => (
-        <div key={sem} className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{semesterLabel(data.student.level, sem)} · mois {sem === 1 ? "1 à 4" : "5 à 8"}</h2>
+      {groupBySemester(data.months, data.student.level).map((g) => (
+        <div key={g.key} className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{g.name} · {monthsRange(g.first, g.last)}</h2>
           <div className="grid gap-3 lg:grid-cols-2">
-            {data.months.filter((m) => m.semester === sem).map((m) => (
+            {g.months.map((m) => (
               <MonthCard key={m.month} m={m} current={data.currentMonth === m.month} onPay={() => onPay(m)} />
             ))}
           </div>
