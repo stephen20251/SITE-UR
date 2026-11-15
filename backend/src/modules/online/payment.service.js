@@ -24,7 +24,25 @@ const INCLUDE = {
   student: { select: { id: true, firstName: true, lastName: true, email: true } },
 };
 
-export async function createPayment({ studentId, courseId, method, senderNumber, transactionRef, amount, currency, remark, screenshotUrl, couponCode }) {
+export const PAYMENT_METHODS = ['MVOLA', 'ORANGE_MONEY', 'AIRTEL_MONEY', 'CARD', 'CASH'];
+
+// Vérifie le mode de paiement. En espèces, aucun numéro ni référence Mobile Money :
+// l'étudiant reçoit une référence à présenter à la caisse.
+export async function normalizePaymentMethod({ method, senderNumber, transactionRef }) {
+  if (!PAYMENT_METHODS.includes(method)) throw new HttpError(400, 'Mode de paiement invalide');
+  if (method === 'CASH') {
+    const s = await getSettings();
+    if (s.cashEnabled !== 'true') throw new HttpError(400, "Le paiement en espèces n'est pas disponible pour le moment.");
+    return { method, senderNumber: '', transactionRef: '' };
+  }
+  if (!String(senderNumber ?? '').trim() || !String(transactionRef ?? '').trim()) {
+    throw new HttpError(400, 'Numéro expéditeur et référence de la transaction requis');
+  }
+  return { method, senderNumber: String(senderNumber).trim(), transactionRef: String(transactionRef).trim() };
+}
+
+export async function createPayment({ studentId, courseId, method: rawMethod, senderNumber: rawSender, transactionRef: rawRef, amount, currency, remark, screenshotUrl, couponCode }) {
+  const { method, senderNumber, transactionRef } = await normalizePaymentMethod({ method: rawMethod, senderNumber: rawSender, transactionRef: rawRef });
   const course = await prisma.onlineCourse.findUniqueOrThrow({
     where: { id: courseId },
     select: { id: true, price: true, courseKind: true, cursusLevel: true, mentionId: true, relatedCourseIds: true, cursusMonth: true },
@@ -79,6 +97,9 @@ export async function createPayment({ studentId, courseId, method, senderNumber,
     },
     include: INCLUDE,
   });
+
+  // Espèces : rien n'est encore payé, le cours s'ouvre à la validation par la caisse.
+  if (method === 'CASH') return payment;
 
   // Instant access: enroll the student immediately so they can start right
   // away. The payment still awaits admin validation; if it's later refused,
@@ -170,6 +191,7 @@ export async function validatePayment(id, adminId) {
       type: 'PAYMENT',
       title: 'Paiement validé ✅',
       body: `Votre inscription au cours "${updated.course.title}" est confirmée. Bonne formation !`,
+      link: `/online/course/${updated.course.id}`,
     }).catch(() => {});
 
     sendEmail({
@@ -285,6 +307,8 @@ export async function approveRefund(paymentId, adminId) {
       type: 'PAYMENT',
       title: 'Remboursement approuvé 💸',
       body: `Votre remboursement pour « ${updated.course.title} » a été traité. L'accès au cours a été retiré.`,
+      link: '/online/profile',
+      link: '/online/profile',
     }).catch(() => {});
     return updated;
   });
@@ -306,6 +330,7 @@ export async function rejectRefund(paymentId, adminId, reason) {
     type: 'PAYMENT',
     title: 'Demande de remboursement refusée',
     body: reason ?? 'Votre demande de remboursement a été refusée.',
+    link: `/online/course/${p.courseId}`,
   }).catch(() => {});
   return updated;
 }
@@ -316,6 +341,7 @@ export async function getMobileMoneySettings() {
     mvola:       { numero: s.mvolaNumero ?? '',       nom: s.mvolaNom ?? '' },
     orangeMoney: { numero: s.orangeMoneyNumero ?? '', nom: s.orangeMoneyNom ?? '' },
     airtelMoney: { numero: s.airtelMoneyNumero ?? '', nom: s.airtelMoneyNom ?? '' },
+    cash:        { enabled: s.cashEnabled === 'true', instructions: s.cashInstructions ?? '' },
   };
 }
 

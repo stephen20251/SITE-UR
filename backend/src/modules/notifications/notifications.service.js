@@ -5,6 +5,7 @@ import { prisma } from '../../database/prisma.js';
 function shape(n) {
   return {
     ...n,
+    data: { link: n.link ?? null },
     readAt: n.isRead ? n.createdAt : null,
   };
 }

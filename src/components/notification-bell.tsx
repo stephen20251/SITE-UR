@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bell, CheckCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead, type AppNotification } from "@/lib/notifications";
+import { useNotifications, useMarkAllNotificationsRead, useOpenNotification, notificationLink, type AppNotification } from "@/lib/notifications";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -23,7 +23,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const enabled = ready && !!user;
   const notifications = useNotifications(enabled);
-  const markRead = useMarkNotificationRead();
+  const openNotif = useOpenNotification();
   const markAll = useMarkAllNotificationsRead();
 
   if (!enabled) {
@@ -90,7 +90,7 @@ export function NotificationBell() {
                   <NotificationRow
                     key={n.id}
                     n={n}
-                    onClick={() => { if (!n.readAt) markRead.mutate(n.id); setOpen(false); }}
+                    onClick={() => openNotif(n, () => setOpen(false))}
                   />
                 ))
               )}
@@ -114,6 +114,7 @@ function NotificationRow({ n, onClick }: { n: AppNotification; onClick: () => vo
         {n.body && <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{n.body}</div>}
         <div className="mt-1 text-[10px] text-muted-foreground">
           {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: fr })}
+          {notificationLink(n) && <span className="ml-2 font-medium text-classroom">Ouvrir →</span>}
         </div>
       </div>
       {!n.readAt && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500" />}

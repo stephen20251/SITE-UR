@@ -13,14 +13,22 @@ export const ProtectedContext = createContext(false);
 export const useProtectedContent = () => useContext(ProtectedContext);
 
 let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
-function loadPdfjs() {
+/** Charge pdf.js (navigateur uniquement). Partagé avec la présentation des sessions live. */
+export function loadPdfjs() {
   if (!pdfjsPromise) {
+    // Le moteur PDF est chargé depuis son code (fichier .js) puis lancé à partir d'une
+    // URL « blob: ». L'hébergeur sert les fichiers .mjs en « text/plain », ce que le
+    // navigateur refuse d'exécuter : les PDF des cours du cursus ne s'affichaient pas.
     pdfjsPromise = Promise.all([
       import("pdfjs-dist"),
-      import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
+      import("pdfjs-dist/build/pdf.worker.min.mjs?raw"),
     ]).then(([lib, worker]) => {
-      lib.GlobalWorkerOptions.workerSrc = worker.default;
+      const blob = new Blob([worker.default], { type: "text/javascript" });
+      lib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
       return lib;
+    }).catch((err) => {
+      pdfjsPromise = null; // nouvel essai à la prochaine ouverture
+      throw err;
     });
   }
   return pdfjsPromise;

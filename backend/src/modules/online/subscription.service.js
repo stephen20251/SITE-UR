@@ -195,6 +195,7 @@ export async function refuseSubscription(userId, id, reason) {
     type: 'PAYMENT',
     title: 'Abonnement refusé',
     body: `Votre abonnement « ${sub.plan.name} » a été refusé.${reason ? ` Motif : ${reason}` : ''} L'accès a été retiré.`,
+    link: '/online/subscription',
   }).catch(() => {});
   return updated;
 }

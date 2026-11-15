@@ -10,25 +10,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { PDFDocumentProxy } from "pdfjs-dist";
+import { loadPdfjs } from "@/components/online/protected-content";
 import { useRequireOnline } from "@/components/online/shared";
 import { getSocket, useSocketEvent } from "@/lib/socket";
 import { API_ORIGIN } from "@/lib/env";
 
 // pdfjs touches DOM globals (DOMMatrix) at import time, which crashes SSR —
 // load it lazily on the client only, the first time a presentation is shown.
-let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
-function loadPdfjs() {
-  if (!pdfjsPromise) {
-    pdfjsPromise = Promise.all([
-      import("pdfjs-dist"),
-      import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
-    ]).then(([lib, worker]) => {
-      lib.GlobalWorkerOptions.workerSrc = worker.default;
-      return lib;
-    });
-  }
-  return pdfjsPromise;
-}
+// (même chargeur que les cours : voir protected-content.tsx)
 
 const API_BASE = API_ORIGIN;
 const absUrl = (u: string) => (u.startsWith("http") ? u : `${API_BASE}${u}`);

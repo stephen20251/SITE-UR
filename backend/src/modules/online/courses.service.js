@@ -2,7 +2,7 @@ import { prisma } from '../../database/prisma.js';
 import { HttpError } from '../../utils/asyncHandler.js';
 import { uniqueSlug } from '../../utils/slug.js';
 import { broadcast } from '../../realtime/events.js';
-import { getCourseOwned } from './online.guards.js';
+import { getCourseOwned, isSuperAdmin } from './online.guards.js';
 import { ratingsForCourses, ratingSummary } from './reviews.service.js';
 import { hasActiveSubscription } from './subscription.service.js';
 import { isOnlineStudent, isOnlineTeacher } from '../../middlewares/auth.js';
@@ -473,6 +473,13 @@ export async function updateCourse(courseId, teacherId, patch) {
   // eslint-disable-next-line no-unused-vars
   const { status, publishedAt, price, ...rest } = patch; // le prix est géré par le Super Admin
   const data = { ...rest, ...(await normalizeCursusFields(patch, current)) };
+  if (price !== undefined && await isSuperAdmin(teacherId)) {
+    const kind = data.courseKind ?? current.courseKind;
+    if (kind === 'UNIVERSITY' && Number(price) > 0) {
+      throw new HttpError(400, "Un cours du cursus universitaire est couvert par l'écolage : il n'a pas de prix de vente.");
+    }
+    data.price = Number(price);
+  }
   if (status === 'PUBLISHED' && current.status !== 'PUBLISHED' && !(await canReviewCourse(teacherId, current))) {
     throw new HttpError(403, 'Soumettez votre cours à validation : il sera publié par le Responsable de la mention ou le Super Admin.');
   }

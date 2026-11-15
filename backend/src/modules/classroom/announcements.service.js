@@ -41,6 +41,7 @@ export async function create(user, input) {
     type: 'ANNOUNCEMENT',
     title: input.title,
     body: input.body.slice(0, 140),
+    link: '/classroom/announcements',
     data: { announcementId: announcement.id, scope: input.scope, classId: announcement.classId },
   }).catch(() => {});
   broadcast('announcement:new', { id: announcement.id, scope: announcement.scope, classId: announcement.classId, title: announcement.title });

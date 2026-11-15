@@ -48,8 +48,9 @@ export async function enroll(studentId, courseId, user) {
 
   notifyUser(course.teacherId, {
     type: 'INFO',
-    title: 'New enrollment',
-    body: `A student enrolled in "${course.title}"`,
+    title: 'Nouvelle inscription',
+    body: `Un étudiant s'est inscrit au cours « ${course.title} »`,
+    link: `/online/studio/${courseId}`,
     data: { courseId },
   }).catch(() => {});
 

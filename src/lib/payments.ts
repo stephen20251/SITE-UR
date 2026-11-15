@@ -4,7 +4,7 @@ import { api } from "@/lib/api";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type PaymentStatus = "PENDING" | "VALIDATED" | "REFUSED" | "REFUND_REQUESTED" | "REFUNDED";
-export type PaymentMethod = "MVOLA" | "ORANGE_MONEY" | "AIRTEL_MONEY" | "CARD";
+export type PaymentMethod = "MVOLA" | "ORANGE_MONEY" | "AIRTEL_MONEY" | "CARD" | "CASH";
 
 export type CoursePayment = {
   id: string;
@@ -62,6 +62,8 @@ export type MobileMoneySettings = {
   mvola: { numero: string; nom: string };
   orangeMoney: { numero: string; nom: string };
   airtelMoney: { numero: string; nom: string };
+  /** Paiement en espèces à la caisse, activé par le Super Admin. */
+  cash?: { enabled: boolean; instructions: string };
 };
 
 export type PaymentStats = {

@@ -56,8 +56,9 @@ export async function createAssignment(courseId, teacherId, input) {
     enrolled.map((e) => e.studentId),
     {
       type: 'ANNOUNCEMENT',
-      title: 'New assignment',
-      body: `${input.title} — due ${new Date(input.dueDate).toLocaleDateString('fr-FR')}`,
+      title: 'Nouveau devoir',
+      body: `${input.title} — à rendre le ${new Date(input.dueDate).toLocaleDateString('fr-FR')}`,
+      link: `/online/course/${courseId}`,
       data: { courseId, assignmentId: assignment.id },
     },
   ).catch(() => {});
@@ -187,8 +188,9 @@ export async function submitAssignment(assignmentId, studentId, input) {
 
   notifyUser(asgn.course.teacherId, {
     type: 'INFO',
-    title: 'New submission',
-    body: `A student submitted assignment`,
+    title: 'Nouveau devoir rendu',
+    body: 'Un étudiant a rendu un devoir : il attend votre correction.',
+    link: `/online/studio/${asgn.courseId}`,
     data: { courseId: asgn.courseId, assignmentId },
   }).catch(() => {});
 
@@ -211,8 +213,9 @@ export async function gradeSubmission(submissionId, teacherId, { score, feedback
 
   notifyUser(sub.studentId, {
     type: 'SUCCESS',
-    title: 'Assignment graded',
-    body: `Score: ${score}/${sub.assignment.maxScore}`,
+    title: 'Devoir corrigé',
+    body: `Note : ${score}/${sub.assignment.maxScore}`,
+    link: `/online/course/${sub.assignment.courseId}`,
     data: { assignmentId: sub.assignmentId },
   }).catch(() => {});
 

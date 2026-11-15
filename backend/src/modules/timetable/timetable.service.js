@@ -134,8 +134,9 @@ export async function reject(user, classId, reason) {
   const creators = [...new Set(pending.map((p) => p.createdById))];
   notifyUsers(creators, {
     type: 'GENERIC',
-    title: 'Timetable changes requested',
-    body: reason || 'Your submitted timetable was rejected and needs changes',
+    title: 'Emploi du temps à corriger',
+    body: reason || 'L\'emploi du temps soumis a été refusé : il doit être corrigé.',
+    link: '/classroom/planning',
     data: { classId },
   }).catch(() => {});
 
@@ -160,8 +161,9 @@ export async function publish(user, classId) {
 
   notifyUsers(recipients, {
     type: 'TIMETABLE_PUBLISHED',
-    title: 'Timetable published',
-    body: `The timetable for ${klass.name} is now available`,
+    title: 'Emploi du temps publié',
+    body: `L'emploi du temps de ${klass.name} est disponible.`,
+    link: '/classroom/timetable',
     data: { classId },
   }).catch(() => {});
   broadcast('timetable:published', { classId, name: klass.name });

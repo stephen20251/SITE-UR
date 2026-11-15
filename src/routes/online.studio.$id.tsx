@@ -32,6 +32,7 @@ import { CursusFields, cursusValueOf, cursusPayload, cursusIncomplete } from "@/
 import { CategorySelect, MentionSelect } from "@/components/online/category-select";
 import { useUploadManager, UploadManagerUI, DropZone } from "@/components/online/studio/upload-manager";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { BackHomeButtons } from "@/components/nav-buttons";
 import { API_ORIGIN } from "@/lib/env";
 
@@ -1136,9 +1137,11 @@ function AnalyticsTab({ course }: { course: CourseDetail }) {
 
 function SettingsTab({ course }: { course: CourseDetail }) {
   const updateCourse = useUpdateCourse(course.id);
+  const isSuperAdmin = useAuth().user?.systemRole === "SUPER_ADMIN";
   const [form, setForm] = useState({
     hasCertificate: course.hasCertificate,
     estimatedHours: course.estimatedHours ?? "",
+    price: String(course.price ?? 0),
     cursus: cursusValueOf(course),
   });
   const { state, flush } = useAutoSave(
@@ -1149,9 +1152,10 @@ function SettingsTab({ course }: { course: CourseDetail }) {
       await updateCourse.mutateAsync({
         hasCertificate: f.cursus.courseKind === "UNIVERSITY" ? false : f.hasCertificate,
         estimatedHours: f.estimatedHours ? Number(f.estimatedHours) : null,
+        ...(isSuperAdmin && f.cursus.courseKind !== "UNIVERSITY" && { price: Number(f.price) || 0 }),
         ...cursusPayload(f.cursus),
       });
-    }, []),
+    }, [isSuperAdmin]),
   );
   const university = form.cursus.courseKind === "UNIVERSITY";
 
@@ -1188,11 +1192,18 @@ function SettingsTab({ course }: { course: CourseDetail }) {
             <input type="number" min={0} step={0.5} value={form.estimatedHours}
               onChange={e => setForm(p => ({ ...p, estimatedHours: e.target.value }))} className={inp} />
           </Field>
-          {<Field label={university ? "Prix pour les non-étudiants" : "Prix de vente"}>
-            <div className={`${inp} flex items-center bg-muted/40 text-muted-foreground`}>
-              {(course.price ?? 0) > 0 ? `${(course.price ?? 0).toLocaleString("fr-FR")} MGA` : "Gratuit"} — fixé par le Super Admin
-            </div>
-          </Field>}
+          <Field label="Prix de vente (MGA)">
+            {university ? (
+              <div className={`${inp} flex items-center bg-muted/40 text-muted-foreground`}>Couvert par l'écolage</div>
+            ) : isSuperAdmin ? (
+              <input type="number" min={0} value={form.price}
+                onChange={e => setForm(p => ({ ...p, price: e.target.value }))} className={inp} />
+            ) : (
+              <div className={`${inp} flex items-center bg-muted/40 text-muted-foreground`}>
+                {(course.price ?? 0) > 0 ? `${(course.price ?? 0).toLocaleString("fr-FR")} MGA` : "Gratuit"} — fixé par le Super Admin
+              </div>
+            )}
+          </Field>
         </div>
       </Section>
 

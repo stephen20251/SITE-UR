@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Bell, BookOpen, CalendarCheck, Loader2, TrendingUp, Wallet } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { useMyChildren, useChildGrades, useChildAttendance, type ChildUser } from "@/lib/classroom";
-import { useNotifications, useMarkNotificationRead } from "@/lib/notifications";
+import { useNotifications, useOpenNotification } from "@/lib/notifications";
 import { ParentCursusSection } from "@/components/classroom/parent-cursus";
 import { tuitionSummary } from "@/components/classroom/tuition";
 import { Card } from "@/components/classroom/cursus-ui";
@@ -24,7 +24,7 @@ function ParentDash() {
   const childAttendance = useChildAttendance(childId, { enabled: !!childId });
   const cursus = useParentCursus(enabled);
   const notifications = useNotifications(enabled);
-  const markRead = useMarkNotificationRead();
+  const openNotif = useOpenNotification();
 
   if (!ready || !user) {
     return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -152,7 +152,7 @@ function ParentDash() {
               ) : (
                 <ul className="mt-3 space-y-2 text-sm">
                   {notifs.map((n) => (
-                    <li key={n.id} onClick={() => !n.readAt && markRead.mutate(n.id)}
+                    <li key={n.id} onClick={() => openNotif(n)}
                       className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${!n.readAt ? "bg-muted/30" : ""}`}>
                       <Bell className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0">

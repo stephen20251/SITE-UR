@@ -12,8 +12,10 @@ export const Route = createFileRoute("/classroom/tarifs")({ component: Tarifs })
 
 type SellableCourse = {
   id: string; title: string; price: number | null; status: string; courseKind: string;
+  estimatedHours: number | null; totalHours: number | null;
   teacher: { firstName: string; lastName: string } | null;
 };
+const KIND_LABEL: Record<string, string> = { CERTIFYING: "Certifiant", BOTH: "Universitaire + certifiant", UNIVERSITY: "Universitaire" };
 type Pack = {
   id: string; title: string; description: string | null; price: number; currency: string; isActive: boolean;
   individualTotal: number; saving: number;
@@ -30,8 +32,8 @@ function Tarifs() {
   if (!ready || !user) return <Loading />;
   return (
     <div className="space-y-6">
-      <PageHeader title="Tarifs & packs" subtitle="Prix de vente des cours certifiants et des packs de cours (ex. Java I + II + III à prix réduit)." />
-      <Tabs<"COURSES" | "PACKS"> value={tab} onChange={setTab} items={[{ v: "COURSES", label: "Prix des cours" }, { v: "PACKS", label: "Packs de cours" }]} />
+      <PageHeader title="Tarifs & packs" subtitle="Durée et prix de vente de chaque cours, et packs de cours (ex. Java I + II + III à prix réduit)." />
+      <Tabs<"COURSES" | "PACKS"> value={tab} onChange={setTab} items={[{ v: "COURSES", label: "Durée et prix des cours" }, { v: "PACKS", label: "Packs de cours" }]} />
       {tab === "COURSES" ? <CoursePrices /> : <Packs />}
     </div>
   );
@@ -41,57 +43,100 @@ function CoursePrices() {
   const qc = useQueryClient();
   const courses = useCourses();
   const [q, setQ] = useState("");
-  const [editing, setEditing] = useState<Record<string, string>>({});
+  const [kind, setKind] = useState<"ALL" | "SOLD" | "UNIVERSITY">("ALL");
+  const [editing, setEditing] = useState<Record<string, { price: string; hours: string }>>({});
   const save = useMutation({
-    mutationFn: ({ id, price }: { id: string; price: number }) => api(`/online/pricing/courses/${id}/price`, { method: "PATCH", body: { price } }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["pricing"] }); toast.success("Prix enregistré"); },
+    mutationFn: ({ id, body }: { id: string; body: { price?: number; estimatedHours: number | null } }) =>
+      api(`/online/pricing/courses/${id}`, { method: "PATCH", body }),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["pricing"] });
+      qc.invalidateQueries({ queryKey: ["online"] });
+      setEditing(({ [v.id]: _, ...rest }) => rest);
+      toast.success("Durée et prix enregistrés");
+    },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : "Erreur"),
   });
 
   if (courses.isLoading) return <Loading />;
-  const list = (courses.data ?? []).filter((c) => !q || c.title.toLowerCase().includes(q.toLowerCase()));
+  const list = (courses.data ?? [])
+    .filter((c) => !q || c.title.toLowerCase().includes(q.toLowerCase()))
+    .filter((c) => kind === "ALL" || (kind === "UNIVERSITY" ? c.courseKind === "UNIVERSITY" : c.courseKind !== "UNIVERSITY"));
+
+  function submit(c: SellableCourse) {
+    const e = editing[c.id];
+    if (!e) return;
+    const hours = e.hours.trim() === "" ? null : Number(e.hours.replace(",", "."));
+    if (hours !== null && (!Number.isFinite(hours) || hours <= 0)) { toast.error("Durée invalide : nombre d'heures supérieur à 0"); return; }
+    const price = Number(e.price.replace(/\s/g, "")) || 0;
+    save.mutate({ id: c.id, body: { estimatedHours: hours, ...(c.courseKind !== "UNIVERSITY" && { price }) } });
+  }
 
   return (
     <Card className="p-0">
-      <div className="flex items-center gap-2 border-b p-3">
+      <div className="flex flex-wrap items-center gap-2 border-b p-3">
         <Search className="h-4 w-4 text-muted-foreground" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher un cours…" className="flex-1 bg-transparent text-sm outline-none" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher un cours…" className="min-w-40 flex-1 bg-transparent text-sm outline-none" />
+        <select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)} className={inputCls} aria-label="Type de cours">
+          <option value="ALL">Tous les cours</option>
+          <option value="SOLD">Cours vendus (certifiants)</option>
+          <option value="UNIVERSITY">Cours du cursus universitaire</option>
+        </select>
       </div>
-      {list.length === 0 ? <div className="p-6"><Empty>Aucun cours vendable (certifiant ou « les deux »).</Empty></div> : (
-        <table className="w-full text-sm">
-          <thead><tr className="border-b bg-muted/30 text-left text-xs text-muted-foreground">
-            <th className="px-4 py-2">Cours</th><th className="px-4 py-2">Enseignant</th><th className="px-4 py-2">Type</th><th className="px-4 py-2 text-right">Prix (MGA)</th><th className="w-24" />
-          </tr></thead>
-          <tbody>
-            {list.map((c) => {
-              const edit = editing[c.id];
-              return (
-                <tr key={c.id} className="border-b last:border-0">
-                  <td className="px-4 py-2 font-medium">{c.title} {c.status !== "PUBLISHED" && <span className="text-xs text-muted-foreground">(brouillon)</span>}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{c.teacher ? `${c.teacher.lastName} ${c.teacher.firstName}` : "—"}</td>
-                  <td className="px-4 py-2 text-xs">{c.courseKind === "BOTH" ? "Universitaire + certifiant" : "Certifiant"}</td>
-                  <td className="px-4 py-2 text-right">
-                    {edit !== undefined ? (
-                      <input type="number" min={0} autoFocus value={edit} onChange={(e) => setEditing((s) => ({ ...s, [c.id]: e.target.value }))}
-                        className={`${inputCls} w-32 text-right`} />
-                    ) : (c.price ?? 0) > 0 ? fmtMGA(c.price) : <span className="text-muted-foreground">Gratuit</span>}
-                  </td>
-                  <td className="px-2 py-2 text-right">
-                    {edit !== undefined ? (
-                      <div className="flex justify-end gap-1">
-                        <button onClick={() => { save.mutate({ id: c.id, price: Number(edit) || 0 }); setEditing(({ [c.id]: _, ...rest }) => rest); }}
-                          className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50"><Check className="h-4 w-4" /></button>
-                        <button onClick={() => setEditing(({ [c.id]: _, ...rest }) => rest)} className="rounded-lg p-1.5 hover:bg-accent"><X className="h-4 w-4" /></button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setEditing((s) => ({ ...s, [c.id]: String(c.price ?? 0) }))} className="rounded-lg p-1.5 hover:bg-accent"><Pencil className="h-4 w-4" /></button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <p className="border-b px-4 py-2 text-xs text-muted-foreground">
+        Cliquez sur le crayon pour modifier la durée (en heures) et le prix. Les cours du cursus universitaire sont couverts par l'écolage : seule leur durée se règle ici.
+      </p>
+      {list.length === 0 ? <div className="p-6"><Empty>Aucun cours.</Empty></div> : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b bg-muted/30 text-left text-xs text-muted-foreground">
+              <th className="px-4 py-2">Cours</th><th className="hidden px-4 py-2 md:table-cell">Enseignant</th><th className="hidden px-4 py-2 sm:table-cell">Type</th>
+              <th className="px-4 py-2 text-right">Durée</th><th className="px-4 py-2 text-right">Prix (MGA)</th><th className="w-24" />
+            </tr></thead>
+            <tbody>
+              {list.map((c) => {
+                const edit = editing[c.id];
+                const university = c.courseKind === "UNIVERSITY";
+                const hours = c.estimatedHours ?? c.totalHours;
+                return (
+                  <tr key={c.id} className="border-b last:border-0">
+                    <td className="px-4 py-2 font-medium">{c.title} {c.status !== "PUBLISHED" && <span className="text-xs text-muted-foreground">(brouillon)</span>}</td>
+                    <td className="hidden px-4 py-2 text-muted-foreground md:table-cell">{c.teacher ? `${c.teacher.lastName} ${c.teacher.firstName}` : "—"}</td>
+                    <td className="hidden px-4 py-2 text-xs sm:table-cell">{KIND_LABEL[c.courseKind] ?? c.courseKind}</td>
+                    <td className="px-4 py-2 text-right">
+                      {edit ? (
+                        <input type="number" min={0.5} step={0.5} value={edit.hours} placeholder="h" aria-label="Durée en heures"
+                          onChange={(e) => setEditing((s) => ({ ...s, [c.id]: { ...edit, hours: e.target.value } }))}
+                          onKeyDown={(e) => { if (e.key === "Enter") submit(c); }}
+                          className={`${inputCls} w-20 text-right`} />
+                      ) : hours ? `${hours} h` : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      {university ? <span className="text-xs text-muted-foreground">Écolage</span>
+                        : edit ? (
+                          <input type="number" min={0} value={edit.price} aria-label="Prix en MGA"
+                            onChange={(e) => setEditing((s) => ({ ...s, [c.id]: { ...edit, price: e.target.value } }))}
+                            onKeyDown={(e) => { if (e.key === "Enter") submit(c); }}
+                            className={`${inputCls} w-32 text-right`} />
+                        ) : (c.price ?? 0) > 0 ? fmtMGA(c.price) : <span className="text-muted-foreground">Gratuit</span>}
+                    </td>
+                    <td className="px-2 py-2 text-right">
+                      {edit ? (
+                        <div className="flex justify-end gap-1">
+                          <button onClick={() => submit(c)} disabled={save.isPending} title="Enregistrer"
+                            className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"><Check className="h-4 w-4" /></button>
+                          <button onClick={() => setEditing(({ [c.id]: _, ...rest }) => rest)} title="Annuler" className="rounded-lg p-1.5 hover:bg-accent"><X className="h-4 w-4" /></button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setEditing((s) => ({ ...s, [c.id]: { price: String(c.price ?? 0), hours: hours ? String(hours) : "" } }))}
+                          title="Modifier la durée et le prix" className="rounded-lg p-1.5 hover:bg-accent"><Pencil className="h-4 w-4" /></button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </Card>
   );
@@ -166,7 +211,8 @@ function PackForm({ initial, onClose }: { initial: Partial<Pack> & { courseIds?:
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["pricing", "packs"] }); toast.success("Pack enregistré"); onClose(); },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : "Erreur"),
   });
-  const list = courses.data ?? [];
+  // Un pack ne contient que des cours vendus (pas les cours du cursus universitaire).
+  const list = (courses.data ?? []).filter((c) => c.courseKind !== "UNIVERSITY");
   const sum = list.filter((c) => ids.includes(c.id)).reduce((s, c) => s + (c.price ?? 0), 0);
 
   return (

@@ -121,6 +121,7 @@ export const rejectCandidate = async (req, res) => {
       userId: c.userId, type: 'ADMISSION',
       title: 'Candidature non retenue',
       body: req.body.reason ?? 'Votre candidature n\'a pas été retenue cette année.',
+      link: '/classroom/candidat',
     },
   })
   res.json(c)
@@ -168,6 +169,7 @@ export const enrollStudent = async (req, res) => {
       userId: candidate.userId, type: 'ADMISSION',
       title: 'Inscription confirmée',
       body: `Bienvenue ! Votre matricule est : ${matricule}. Reconnectez-vous pour accéder à votre espace étudiant.`,
+      link: '/classroom/student',
     },
   })
 

@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { BackHomeButtons } from "@/components/nav-buttons";
 import { LogoMark, serif, useSiteTheme } from "@/components/site-layout";
 import { usePublicSettings } from "@/lib/lms-admin";
-import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/lib/notifications";
+import { useNotifications, useMarkAllNotificationsRead, useOpenNotification } from "@/lib/notifications";
 import { useOnlineUnreadCount } from "@/lib/chat";
 import { API_ORIGIN } from "@/lib/env";
 
@@ -87,7 +87,7 @@ function getNotifStyle(type: string): NotifStyle {
 function NotificationBell() {
   const { data } = useNotifications();
   const markAll = useMarkAllNotificationsRead();
-  const markOne = useMarkNotificationRead();
+  const openNotif = useOpenNotification();
   const [open, setOpen] = useState(false);
   const unread = data?.unreadCount ?? 0;
 
@@ -135,7 +135,7 @@ function NotificationBell() {
                   return (
                     <button
                       key={n.id}
-                      onClick={() => { if (isUnread) markOne.mutate(n.id); }}
+                      onClick={() => openNotif(n, () => setOpen(false))}
                       className={`flex w-full gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors ${isUnread ? "bg-online/5" : ""}`}
                     >
                       <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${style.bg}`}>

@@ -60,7 +60,9 @@ export function CoursePacks({ courseId }: { courseId: string }) {
 function BuyPackModal({ pack, onClose }: { pack: Pack; onClose: () => void }) {
   const qc = useQueryClient();
   const settings = useMobileMoneySettings();
-  const [method, setMethod] = useState<(typeof METHODS)[number]["v"]>("MVOLA");
+  const [method, setMethod] = useState<(typeof METHODS)[number]["v"] | "CASH">("MVOLA");
+  const cash = settings.data?.cash;
+  const isCash = method === "CASH";
   const [senderNumber, setSender] = useState("");
   const [transactionRef, setRef] = useState("");
   const buy = useMutation({
@@ -68,13 +70,15 @@ function BuyPackModal({ pack, onClose }: { pack: Pack; onClose: () => void }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: pqk.mine() });
       qc.invalidateQueries({ queryKey: ["online"] });
-      toast.success("Paiement du pack envoyé : accès immédiat, validation par l'administration.");
+      toast.success(isCash
+        ? "Paiement en espèces enregistré : présentez-vous à la caisse. Les cours s'ouvrent à la validation."
+        : "Paiement du pack envoyé : accès immédiat, validation par l'administration.");
       onClose();
     },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : "Achat impossible"),
   });
-  const m = METHODS.find((x) => x.v === method)!;
-  const dest = settings.data?.[m.key];
+  const m = METHODS.find((x) => x.v === method);
+  const dest = m ? settings.data?.[m.key] : undefined;
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
@@ -85,18 +89,25 @@ function BuyPackModal({ pack, onClose }: { pack: Pack; onClose: () => void }) {
         </div>
         <div className="rounded-xl bg-online/5 p-3 text-sm">
           Montant à envoyer : <b>{fmt(pack.price, pack.currency)}</b> pour {pack.courses.length} cours
-          {dest?.numero && <p className="mt-1 text-xs text-muted-foreground">Destinataire {m.l} : <b>{dest.numero}</b>{dest.nom ? ` (${dest.nom})` : ""}</p>}
+          {m && dest?.numero && <p className="mt-1 text-xs text-muted-foreground">Destinataire {m.l} : <b>{dest.numero}</b>{dest.nom ? ` (${dest.nom})` : ""}</p>}
+          {isCash && <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">{cash?.instructions || "Présentez-vous à la caisse de l'université."}</p>}
         </div>
         <div className="grid grid-cols-3 gap-2">
           {METHODS.map((x) => (
             <button key={x.v} type="button" onClick={() => setMethod(x.v)}
               className={`rounded-lg border px-2 py-2 text-xs font-medium ${method === x.v ? "border-online bg-online/10 text-online" : "hover:bg-accent"}`}>{x.l}</button>
           ))}
+          {cash?.enabled && (
+            <button type="button" onClick={() => setMethod("CASH")}
+              className={`rounded-lg border px-2 py-2 text-xs font-medium ${isCash ? "border-online bg-online/10 text-online" : "hover:bg-accent"}`}>Espèces</button>
+          )}
         </div>
-        <input required value={senderNumber} onChange={(e) => setSender(e.target.value)} placeholder="Votre numéro (expéditeur)"
-          className="h-10 w-full rounded-xl border bg-background px-3 text-sm outline-none" />
-        <input required value={transactionRef} onChange={(e) => setRef(e.target.value)} placeholder="Référence de la transaction"
-          className="h-10 w-full rounded-xl border bg-background px-3 text-sm outline-none" />
+        {!isCash && (<>
+          <input required value={senderNumber} onChange={(e) => setSender(e.target.value)} placeholder="Votre numéro (expéditeur)"
+            className="h-10 w-full rounded-xl border bg-background px-3 text-sm outline-none" />
+          <input required value={transactionRef} onChange={(e) => setRef(e.target.value)} placeholder="Référence de la transaction"
+            className="h-10 w-full rounded-xl border bg-background px-3 text-sm outline-none" />
+        </>)}
         <button type="submit" disabled={buy.isPending}
           className="flex w-full items-center justify-center gap-2 rounded-xl grad-online py-3 text-sm font-bold text-white disabled:opacity-60">
           {buy.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Confirmer l'achat du pack

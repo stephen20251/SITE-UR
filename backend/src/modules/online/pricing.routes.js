@@ -31,6 +31,11 @@ r.patch('/courses/:id/price', requireSuperAdmin, asyncHandler(async (req, res) =
   res.json(await svc.setCoursePrice(req.params.id, req.body.price));
 }));
 
+// Durée et prix ensemble
+r.patch('/courses/:id', requireSuperAdmin, asyncHandler(async (req, res) => {
+  res.json(await svc.setCourseSettings(req.params.id, req.body ?? {}));
+}));
+
 r.post('/packs', requireSuperAdmin, asyncHandler(async (req, res) => {
   res.status(201).json(await svc.createPack(req.body));
 }));

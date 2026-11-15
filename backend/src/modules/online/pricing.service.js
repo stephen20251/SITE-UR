@@ -5,6 +5,7 @@
 // référence de transaction : ils sont validés ou refusés ensemble.
 import { prisma } from '../../database/prisma.js';
 import { HttpError } from '../../utils/asyncHandler.js';
+import { normalizePaymentMethod } from './payment.service.js';
 
 const PACK_INCLUDE = {
   courses: {
@@ -18,18 +19,49 @@ function withTotals(pack) {
   return { ...pack, individualTotal: individual, saving: Math.max(0, individual - pack.price) };
 }
 
-// ── Prix unitaires ──────────────────────────────────────────────────────────
+// ── Prix unitaires et durée ─────────────────────────────────────────────────
+// Tous les cours (hors archivés) : le Super Admin y règle la durée ; le prix
+// ne concerne que les cours vendus (certifiants ou « les deux »).
 export async function listSellableCourses({ q } = {}) {
   return prisma.onlineCourse.findMany({
     where: {
-      courseKind: { in: ['CERTIFYING', 'BOTH'] },
+      status: { not: 'ARCHIVED' },
       ...(q && { title: { contains: q } }),
     },
     select: {
       id: true, title: true, price: true, status: true, courseKind: true, thumbnail: true,
+      estimatedHours: true, totalHours: true,
       teacher: { select: { firstName: true, lastName: true } },
     },
     orderBy: { title: 'asc' },
+  });
+}
+
+// Durée (heures) et prix d'un cours, modifiables ensemble par le Super Admin.
+export async function setCourseSettings(courseId, { price, estimatedHours } = {}) {
+  const course = await prisma.onlineCourse.findUnique({ where: { id: courseId }, select: { courseKind: true } });
+  if (!course) throw new HttpError(404, 'Cours introuvable');
+  const data = {};
+  if (estimatedHours !== undefined) {
+    if (estimatedHours === null || estimatedHours === '') data.estimatedHours = null;
+    else {
+      const h = Number(estimatedHours);
+      if (!Number.isFinite(h) || h <= 0 || h > 1000) throw new HttpError(400, 'Durée invalide : indiquez un nombre d\'heures entre 0,5 et 1000');
+      data.estimatedHours = h;
+    }
+  }
+  if (price !== undefined) {
+    const value = Number(price);
+    if (!Number.isFinite(value) || value < 0) throw new HttpError(400, 'Prix invalide');
+    if (course.courseKind === 'UNIVERSITY' && value > 0) {
+      throw new HttpError(400, "Un cours du cursus universitaire est couvert par l'écolage : il n'a pas de prix de vente. Passez-le en « Universitaire + certifiant » pour le vendre.");
+    }
+    data.price = value;
+  }
+  if (!Object.keys(data).length) throw new HttpError(400, 'Rien à enregistrer');
+  return prisma.onlineCourse.update({
+    where: { id: courseId }, data,
+    select: { id: true, title: true, price: true, estimatedHours: true, totalHours: true, courseKind: true },
   });
 }
 
@@ -112,8 +144,10 @@ async function makeReference(i) {
   return `PACK-${new Date().getFullYear()}-${String(count + 1 + i).padStart(6, '0')}-${rand}`;
 }
 
-export async function purchasePack(studentId, packId, { method, senderNumber, transactionRef, remark, screenshotUrl }) {
-  if (!method || !senderNumber || !transactionRef) throw new HttpError(400, 'Mode de paiement, numéro et référence requis');
+export async function purchasePack(studentId, packId, { method: rawMethod, senderNumber: rawSender, transactionRef: rawRef, remark, screenshotUrl }) {
+  const { method, senderNumber, transactionRef: ref } = await normalizePaymentMethod({ method: rawMethod, senderNumber: rawSender, transactionRef: rawRef });
+  // En espèces, une même référence relie les paiements du pack (validés ensemble à la caisse).
+  const transactionRef = ref || `ESPECES-${Date.now().toString(36).toUpperCase()}`;
   const pack = await prisma.coursePack.findUnique({ where: { id: packId }, include: PACK_INCLUDE });
   if (!pack || !pack.isActive) throw new HttpError(404, 'Pack indisponible');
 
@@ -152,7 +186,9 @@ export async function purchasePack(studentId, packId, { method, senderNumber, tr
         reference: await makeReference(i), status: 'PENDING',
       },
     }));
-    // Accès immédiat, retiré si le paiement est refusé (même règle qu'un achat unitaire)
+    // Accès immédiat, retiré si le paiement est refusé (même règle qu'un achat unitaire).
+    // En espèces, l'accès s'ouvre à la validation par la caisse.
+    if (method === 'CASH') continue;
     await prisma.enrollment.upsert({
       where: { studentId_courseId: { studentId, courseId } },
       create: { studentId, courseId },

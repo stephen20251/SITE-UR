@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Loader2, Upload, CheckCircle2, Clock, AlertCircle, Copy, Check, Tag } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -18,6 +18,7 @@ const METHOD_CONFIG: Record<PaymentMethod, { label: string; color: string; bg: s
   ORANGE_MONEY: { label: "Orange Money", color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
   AIRTEL_MONEY: { label: "Airtel Money", color: "text-red-500",    bg: "bg-red-50 border-red-200" },
   CARD:         { label: "Carte bancaire", color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
+  CASH:         { label: "Payer en espèces", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
 };
 
 interface Props {
@@ -71,6 +72,16 @@ export function PaymentModal({ courseId, courseTitle, price, currency = "MGA", o
       { method: "AIRTEL_MONEY" as const, label: "Airtel Money", numero: momo?.airtelMoney.numero ?? "", nom: momo?.airtelMoney.nom ?? "" },
     ] as const
   ).filter((o) => o.numero) as { method: PaymentMethod; label: string; numero: string; nom: string }[];
+  // « Payer en espèces » : proposé quand le Super Admin l'a activé.
+  const cashEnabled = Boolean(momo?.cash?.enabled);
+  const options = cashEnabled
+    ? [...momoOptions, { method: "CASH" as const, label: "Payer en espèces", numero: "", nom: "" }]
+    : momoOptions;
+  const isCash = method === "CASH";
+  // Méthode par défaut : la première disponible.
+  const firstMethod = options[0]?.method;
+  const methodAvailable = options.some((o) => o.method === method);
+  useEffect(() => { if (firstMethod && !methodAvailable) setMethod(firstMethod); }, [firstMethod, methodAvailable]);
 
   const selectedMomo = momoOptions.find((o) => o.method === method);
   const cfg = METHOD_CONFIG[method];
@@ -99,8 +110,8 @@ export function PaymentModal({ courseId, courseTitle, price, currency = "MGA", o
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!senderNumber.trim()) { toast.error("Numéro expéditeur requis"); return; }
-    if (!transactionRef.trim()) { toast.error("Référence de transaction requise"); return; }
+    if (!isCash && !senderNumber.trim()) { toast.error("Numéro expéditeur requis"); return; }
+    if (!isCash && !transactionRef.trim()) { toast.error("Référence de transaction requise"); return; }
 
     try {
       const result = await createPayment.mutateAsync({
@@ -135,15 +146,20 @@ export function PaymentModal({ courseId, courseTitle, price, currency = "MGA", o
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
               <Clock className="h-8 w-8 text-amber-600" />
             </div>
-            <h3 className="text-lg font-bold">Paiement soumis !</h3>
+            <h3 className="text-lg font-bold">{submitted.method === "CASH" ? "Paiement en espèces enregistré" : "Paiement soumis !"}</h3>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              Votre demande de paiement est en attente de validation par l'équipe UR Online.
-              Une fois validée, vous serez automatiquement inscrit(e) au cours.
+              {submitted.method === "CASH"
+                ? <>Rendez-vous à la caisse avec la référence ci-dessous et le montant de <b>{submitted.amount.toLocaleString("fr-FR")} {submitted.currency}</b>. Le cours s'ouvre dès que la caisse a validé votre paiement.</>
+                : <>Votre demande de paiement est en attente de validation par l'équipe UR Online.
+                  Une fois validée, vous serez automatiquement inscrit(e) au cours.</>}
             </p>
             <div className="mt-4 rounded-xl border bg-amber-50 dark:bg-amber-950/20 p-4 text-left">
-              <div className="text-xs text-muted-foreground">Référence</div>
+              <div className="text-xs text-muted-foreground">Référence{submitted.method === "CASH" ? " à présenter à la caisse" : ""}</div>
               <div className="font-mono text-sm font-bold">{submitted.reference}</div>
             </div>
+            {submitted.method === "CASH" && momo?.cash?.instructions && (
+              <p className="mt-3 whitespace-pre-wrap text-left text-xs text-muted-foreground">{momo.cash.instructions}</p>
+            )}
             <button
               onClick={onClose}
               className="mt-6 inline-flex items-center gap-2 rounded-xl grad-online px-6 py-3 text-sm font-semibold text-white"
@@ -212,7 +228,7 @@ export function PaymentModal({ courseId, courseTitle, price, currency = "MGA", o
             <div className="px-6 py-5 space-y-3">
               <div className="text-sm font-semibold">Mode de paiement</div>
               <div className="grid gap-2">
-                {momoOptions.map((opt) => (
+                {options.map((opt) => (
                   <button
                     key={opt.method}
                     type="button"
@@ -227,7 +243,7 @@ export function PaymentModal({ courseId, courseTitle, price, currency = "MGA", o
                     {method === opt.method && <CheckCircle2 className="h-4 w-4" />}
                   </button>
                 ))}
-                {momoOptions.length === 0 && (
+                {options.length === 0 && (
                   <div className="rounded-xl border border-dashed p-4 text-center text-sm space-y-1">
                     <div className="font-medium text-destructive">Paiement non disponible</div>
                     <div className="text-xs text-muted-foreground">
@@ -274,9 +290,24 @@ export function PaymentModal({ courseId, courseTitle, price, currency = "MGA", o
               </div>
             )}
 
+            {/* Espèces : consignes de la caisse */}
+            {isCash && (
+              <div className={`mx-6 mt-5 rounded-xl border px-4 py-4 ${cfg.bg} space-y-2`}>
+                <div className={`text-sm font-bold ${cfg.color}`}>Payer en espèces à la caisse</div>
+                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                  {momo?.cash?.instructions || "Présentez-vous à la caisse de l'université avec votre référence de paiement."}
+                </p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Montant à payer</span>
+                  <span className="font-bold text-online">{effectivePrice.toLocaleString("fr-FR")} {currency}</span>
+                </div>
+              </div>
+            )}
+
             {/* Form fields */}
             <div className="px-6 py-5 space-y-4">
               <div className="text-sm font-semibold">Confirmer votre paiement</div>
+              {!isCash && (<>
 
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">Numéro expéditeur *</label>
@@ -310,7 +341,10 @@ export function PaymentModal({ courseId, courseTitle, price, currency = "MGA", o
                 />
               </div>
 
+              </>)}
+
               {/* Screenshot upload */}
+              {!isCash && (<>
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">Capture d'écran (optionnel)</label>
                 <input
@@ -344,13 +378,22 @@ export function PaymentModal({ courseId, courseTitle, price, currency = "MGA", o
                 )}
               </div>
 
+              </>)}
+
               {/* Warning */}
               <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3 text-xs text-amber-800 dark:text-amber-400">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>
-                  Votre inscription sera activée <strong>après validation manuelle</strong> par notre équipe,
-                  généralement dans les 24h ouvrées.
-                </span>
+                {isCash ? (
+                  <span>
+                    Vous recevez une <strong>référence de paiement</strong>. Le cours s'ouvre quand la caisse
+                    a encaissé le montant et validé le paiement.
+                  </span>
+                ) : (
+                  <span>
+                    Votre inscription sera activée <strong>après validation manuelle</strong> par notre équipe,
+                    généralement dans les 24h ouvrées.
+                  </span>
+                )}
               </div>
             </div>
 
@@ -358,11 +401,11 @@ export function PaymentModal({ courseId, courseTitle, price, currency = "MGA", o
             <div className="px-6 py-4">
               <button
                 type="submit"
-                disabled={createPayment.isPending || momoOptions.length === 0}
+                disabled={createPayment.isPending || options.length === 0}
                 className="flex w-full items-center justify-center gap-2 rounded-xl grad-online py-3 text-sm font-bold text-white disabled:opacity-60"
               >
                 {createPayment.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                Soumettre le paiement
+                {isCash ? "Obtenir ma référence de paiement" : "Soumettre le paiement"}
               </button>
             </div>
           </form>

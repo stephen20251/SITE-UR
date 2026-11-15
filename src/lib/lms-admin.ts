@@ -35,6 +35,8 @@ export interface LmsSettings {
   orangeMoneyNumero: string;
   airtelMoneyNom: string;
   airtelMoneyNumero: string;
+  cashEnabled?: string;
+  cashInstructions?: string;
 }
 
 export interface NavItem {

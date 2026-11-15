@@ -4,7 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import {
-  useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead,
+  useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead, useOpenNotification, notificationLink,
   type AppNotification,
 } from "@/lib/notifications";
 
@@ -29,7 +29,8 @@ function getMeta(type: string) {
 
 function NotificationRow({ n, onRead }: { n: AppNotification; onRead: (id: string) => void }) {
   const meta = getMeta(n.type);
-  const link = typeof n.data?.link === "string" ? n.data.link : null;
+  const open = useOpenNotification();
+  const link = notificationLink(n);
 
   const content = (
     <div
@@ -61,6 +62,7 @@ function NotificationRow({ n, onRead }: { n: AppNotification; onRead: (id: strin
           </div>
         </div>
         {n.body && <p className="mt-0.5 text-sm text-muted-foreground">{n.body}</p>}
+        {link && <p className="mt-1 text-xs font-medium text-classroom">Ouvrir la page concernée →</p>}
         <p className="mt-1.5 text-[11px] text-muted-foreground/70">
           {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: fr })}
         </p>
@@ -70,9 +72,10 @@ function NotificationRow({ n, onRead }: { n: AppNotification; onRead: (id: strin
 
   if (link) {
     return (
-      <a href={link} className="block hover:no-underline" onClick={() => { if (!n.readAt) onRead(n.id); }}>
+      <div role="button" tabIndex={0} className="block cursor-pointer" onClick={() => open(n)}
+        onKeyDown={(e) => { if (e.key === "Enter") open(n); }}>
         {content}
-      </a>
+      </div>
     );
   }
   return <div onClick={() => { if (!n.readAt) onRead(n.id); }} className="cursor-default">{content}</div>;

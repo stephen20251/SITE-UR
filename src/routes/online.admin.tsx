@@ -414,6 +414,13 @@ function SettingsTab() {
         { key: "airtelMoneyNumero",   label: "Airtel Money — Numéro" },
       ],
     },
+    {
+      title: "Paiement en espèces",
+      fields: [
+        { key: "cashEnabled",      label: "Proposer « Payer en espèces » aux étudiants", type: "toggle" },
+        { key: "cashInstructions", label: "Consignes affichées à l'étudiant (lieu, horaires de la caisse…)", type: "textarea" },
+      ],
+    },
   ];
 
   return (
@@ -527,7 +534,17 @@ function SettingsTab() {
             {fields.map(({ key, label, type }) => (
               <div key={key}>
                 <label className="mb-1 block text-xs text-muted-foreground">{label}</label>
-                {type === "color" ? (
+                {type === "toggle" ? (
+                  <button type="button" onClick={() => set(key, merged[key] === "false" ? "true" : "false")}
+                    className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted">
+                    {merged[key] === "false"
+                      ? <><ToggleLeft className="h-5 w-5 text-muted-foreground" /> Désactivé</>
+                      : <><ToggleRight className="h-5 w-5 text-online" /> Activé</>}
+                  </button>
+                ) : type === "textarea" ? (
+                  <textarea rows={3} value={merged[key] || ""} onChange={(e) => set(key, e.target.value)}
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                ) : type === "color" ? (
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
@@ -2137,7 +2154,7 @@ function PaymentRow({
   refunding: boolean;
 }) {
   const METHOD_LABEL: Record<string, string> = {
-    MVOLA: "MVola", ORANGE_MONEY: "Orange Money", AIRTEL_MONEY: "Airtel Money", CARD: "Carte",
+    MVOLA: "MVola", ORANGE_MONEY: "Orange Money", AIRTEL_MONEY: "Airtel Money", CARD: "Carte", CASH: "Espèces (caisse)",
   };
   return (
     <tr className="hover:bg-muted/20">

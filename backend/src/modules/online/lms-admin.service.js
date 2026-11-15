@@ -40,6 +40,9 @@ const DEFAULT_SETTINGS = {
   orangeMoneyNumero: '',
   airtelMoneyNom: '',
   airtelMoneyNumero: '',
+  // Paiement en espèces à la caisse de l'université (activable par le Super Admin).
+  cashEnabled: 'true',
+  cashInstructions: "Présentez-vous à la caisse de l'Université Références avec votre référence de paiement. Le cours s'ouvre dès que la caisse a encaissé le montant.",
 };
 
 export async function getSettings() {

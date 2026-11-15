@@ -9,6 +9,7 @@ import {
   type CashierStudent, type CursusMonth, type CursusOverview,
 } from "@/lib/cursus";
 import { ApiError } from "@/lib/api";
+import { useMobileMoneySettings } from "@/lib/payments";
 import { semesterLabel } from "@/lib/cursus";
 
 // Paiement en espèces au guichet : validé immédiatement, reçu émis.
@@ -86,11 +87,15 @@ export function CashDesk() {
 export function PayDialog({ month, amount, currency, onClose }: { month: CursusMonth; amount: number | null; currency: string; onClose: () => void }) {
   const declare = useDeclareTuition();
   const [method, setMethod] = useState<string>("MVOLA");
+  const momo = useMobileMoneySettings();
+  const cashEnabled = Boolean(momo.data?.cash?.enabled);
+  const isCash = method === "CASH";
   const [senderNumber, setSender] = useState("");
   const [transactionRef, setRef] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (isCash) { onClose(); return; }
     try {
       await declare.mutateAsync({ month: month.month, method, senderNumber, transactionRef });
       toast.success("Paiement déclaré : la comptabilité va le vérifier et débloquer le mois.");
@@ -114,22 +119,38 @@ export function PayDialog({ month, amount, currency, onClose }: { month: CursusM
             Vous pouvez aussi payer en espèces au guichet de la comptabilité.
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid gap-2 ${cashEnabled ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
           {PAY_METHODS.map((p) => (
             <button key={p.v} type="button" onClick={() => setMethod(p.v)}
               className={`rounded-lg border px-2 py-2 text-xs font-medium ${method === p.v ? "border-classroom bg-classroom/10 text-classroom" : "hover:bg-accent"}`}>
               {p.l}
             </button>
           ))}
+          {cashEnabled && (
+            <button type="button" onClick={() => setMethod("CASH")}
+              className={`rounded-lg border px-2 py-2 text-xs font-medium ${isCash ? "border-classroom bg-classroom/10 text-classroom" : "hover:bg-accent"}`}>
+              Espèces
+            </button>
+          )}
         </div>
-        <label className="block text-xs text-muted-foreground">Numéro expéditeur
-          <input className={`${inputCls} mt-1 w-full`} value={senderNumber} onChange={(e) => setSender(e.target.value)} placeholder="034 00 000 00" required />
-        </label>
-        <label className="block text-xs text-muted-foreground">Référence de la transaction
-          <input className={`${inputCls} mt-1 w-full`} value={transactionRef} onChange={(e) => setRef(e.target.value)} placeholder="Ex : MP2410.1234.A5678" required />
-        </label>
-        <button type="submit" disabled={declare.isPending || !amount} className={`${btnPrimary} w-full justify-center`}>
-          {declare.isPending ? "Envoi…" : "Déclarer le paiement"}
+        {isCash ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
+            <p className="font-semibold">Payer en espèces au guichet écolage</p>
+            <p className="mt-1 text-xs">
+              Présentez-vous au guichet de la comptabilité avec <b>{fmtMGA(amount, currency)}</b> (mois {month.month}).
+              Le guichet enregistre votre paiement, vous remet un reçu, et le mois se débloque aussitôt.
+            </p>
+          </div>
+        ) : (<>
+          <label className="block text-xs text-muted-foreground">Numéro expéditeur
+            <input className={`${inputCls} mt-1 w-full`} value={senderNumber} onChange={(e) => setSender(e.target.value)} placeholder="034 00 000 00" required />
+          </label>
+          <label className="block text-xs text-muted-foreground">Référence de la transaction
+            <input className={`${inputCls} mt-1 w-full`} value={transactionRef} onChange={(e) => setRef(e.target.value)} placeholder="Ex : MP2410.1234.A5678" required />
+          </label>
+        </>)}
+        <button type="submit" disabled={declare.isPending || (!isCash && !amount)} className={`${btnPrimary} w-full justify-center`}>
+          {isCash ? "J'ai compris" : declare.isPending ? "Envoi…" : "Déclarer le paiement"}
         </button>
         {!amount && <p className="text-xs text-amber-600">Le montant de l'écolage n'est pas encore configuré pour votre niveau.</p>}
       </form>

@@ -18,8 +18,9 @@ export async function create(user, input) {
 
   notifyUser(input.studentId, {
     type: 'RESULTS_READY',
-    title: 'New grade posted',
-    body: `${input.subject} · ${input.assessment}: ${input.score}/${input.maxScore}`,
+    title: 'Nouvelle note publiée',
+    body: `${input.subject} · ${input.assessment} : ${input.score}/${input.maxScore}`,
+    link: '/classroom/notes',
     data: { classId: input.classId, gradeId: grade.id },
   }).catch(() => {});
 

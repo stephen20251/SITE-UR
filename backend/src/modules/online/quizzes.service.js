@@ -38,7 +38,7 @@ export async function createQuiz(courseId, teacherId, input) {
   const enrolled = await prisma.enrollment.findMany({ where: { courseId }, select: { studentId: true } });
   notifyUsers(
     enrolled.map((e) => e.studentId),
-    { type: 'ANNOUNCEMENT', title: 'New quiz available', body: input.title, data: { courseId, quizId: quiz.id } },
+    { type: 'ANNOUNCEMENT', title: 'Nouveau quiz disponible', body: input.title, link: `/online/course/${courseId}`, data: { courseId, quizId: quiz.id } },
   ).catch(() => {});
 
   return quiz;
@@ -305,8 +305,9 @@ export async function submitQuiz(quizId, studentId, answers) {
 
   notifyUser(studentId, {
     type: 'SUCCESS',
-    title: 'Quiz results ready',
-    body: `${quiz.title}: ${percentage}%`,
+    title: 'Résultat du quiz',
+    body: `${quiz.title} : ${percentage} %`,
+    link: `/online/course/${quiz.courseId}`,
     data: { quizId, attemptId: attempt.id, passed },
   }).catch(() => {});
 

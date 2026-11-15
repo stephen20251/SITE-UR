@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { api } from "./api";
 
 export type AppNotification = {
@@ -6,6 +7,7 @@ export type AppNotification = {
   type: string;
   title: string;
   body: string | null;
+  link?: string | null;
   data: Record<string, unknown> | null;
   readAt: string | null;
   createdAt: string;
@@ -43,4 +45,22 @@ export function useMarkAllNotificationsRead() {
     mutationFn: () => api(`/notifications/read-all`, { method: "POST" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: notifKey }),
   });
+}
+
+/** Page vers laquelle mène une notification (l'action à effectuer), ou null. */
+export function notificationLink(n: AppNotification): string | null {
+  const link = n.link ?? (typeof n.data?.link === "string" ? n.data.link : null);
+  return link && link.startsWith("/") ? link : null;
+}
+
+/** Clic sur une notification : la marque comme lue puis ouvre la page concernée. */
+export function useOpenNotification() {
+  const markRead = useMarkNotificationRead();
+  const navigate = useNavigate();
+  return (n: AppNotification, after?: () => void) => {
+    if (!n.readAt) markRead.mutate(n.id);
+    after?.();
+    const link = notificationLink(n);
+    if (link) navigate({ href: link });
+  };
 }
