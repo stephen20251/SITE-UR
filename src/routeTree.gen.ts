@@ -110,6 +110,7 @@ import { Route as ClassroomDocumentsTemplateIdRouteImport } from './routes/class
 import { Route as ClassroomConfigUtilisateursRouteImport } from './routes/classroom.config.utilisateurs'
 import { Route as ClassroomConfigUniversiteRouteImport } from './routes/classroom.config.universite'
 import { Route as ClassroomConfigStructureRouteImport } from './routes/classroom.config.structure'
+import { Route as ClassroomConfigSemestresRouteImport } from './routes/classroom.config.semestres'
 import { Route as ClassroomConfigSallesRouteImport } from './routes/classroom.config.salles'
 import { Route as ClassroomConfigMatieresRouteImport } from './routes/classroom.config.matieres'
 import { Route as ClassroomConfigBrandingRouteImport } from './routes/classroom.config.branding'
@@ -630,6 +631,12 @@ const ClassroomConfigStructureRoute =
     path: '/structure',
     getParentRoute: () => ClassroomConfigRoute,
   } as any)
+const ClassroomConfigSemestresRoute =
+  ClassroomConfigSemestresRouteImport.update({
+    id: '/semestres',
+    path: '/semestres',
+    getParentRoute: () => ClassroomConfigRoute,
+  } as any)
 const ClassroomConfigSallesRoute = ClassroomConfigSallesRouteImport.update({
   id: '/salles',
   path: '/salles',
@@ -745,6 +752,7 @@ export interface FileRoutesByFullPath {
   '/classroom/config/branding': typeof ClassroomConfigBrandingRoute
   '/classroom/config/matieres': typeof ClassroomConfigMatieresRoute
   '/classroom/config/salles': typeof ClassroomConfigSallesRoute
+  '/classroom/config/semestres': typeof ClassroomConfigSemestresRoute
   '/classroom/config/structure': typeof ClassroomConfigStructureRoute
   '/classroom/config/universite': typeof ClassroomConfigUniversiteRoute
   '/classroom/config/utilisateurs': typeof ClassroomConfigUtilisateursRoute
@@ -845,6 +853,7 @@ export interface FileRoutesByTo {
   '/classroom/config/branding': typeof ClassroomConfigBrandingRoute
   '/classroom/config/matieres': typeof ClassroomConfigMatieresRoute
   '/classroom/config/salles': typeof ClassroomConfigSallesRoute
+  '/classroom/config/semestres': typeof ClassroomConfigSemestresRoute
   '/classroom/config/structure': typeof ClassroomConfigStructureRoute
   '/classroom/config/universite': typeof ClassroomConfigUniversiteRoute
   '/classroom/config/utilisateurs': typeof ClassroomConfigUtilisateursRoute
@@ -955,6 +964,7 @@ export interface FileRoutesById {
   '/classroom/config/branding': typeof ClassroomConfigBrandingRoute
   '/classroom/config/matieres': typeof ClassroomConfigMatieresRoute
   '/classroom/config/salles': typeof ClassroomConfigSallesRoute
+  '/classroom/config/semestres': typeof ClassroomConfigSemestresRoute
   '/classroom/config/structure': typeof ClassroomConfigStructureRoute
   '/classroom/config/universite': typeof ClassroomConfigUniversiteRoute
   '/classroom/config/utilisateurs': typeof ClassroomConfigUtilisateursRoute
@@ -1066,6 +1076,7 @@ export interface FileRouteTypes {
     | '/classroom/config/branding'
     | '/classroom/config/matieres'
     | '/classroom/config/salles'
+    | '/classroom/config/semestres'
     | '/classroom/config/structure'
     | '/classroom/config/universite'
     | '/classroom/config/utilisateurs'
@@ -1166,6 +1177,7 @@ export interface FileRouteTypes {
     | '/classroom/config/branding'
     | '/classroom/config/matieres'
     | '/classroom/config/salles'
+    | '/classroom/config/semestres'
     | '/classroom/config/structure'
     | '/classroom/config/universite'
     | '/classroom/config/utilisateurs'
@@ -1275,6 +1287,7 @@ export interface FileRouteTypes {
     | '/classroom/config/branding'
     | '/classroom/config/matieres'
     | '/classroom/config/salles'
+    | '/classroom/config/semestres'
     | '/classroom/config/structure'
     | '/classroom/config/universite'
     | '/classroom/config/utilisateurs'
@@ -2024,6 +2037,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClassroomConfigStructureRouteImport
       parentRoute: typeof ClassroomConfigRoute
     }
+    '/classroom/config/semestres': {
+      id: '/classroom/config/semestres'
+      path: '/semestres'
+      fullPath: '/classroom/config/semestres'
+      preLoaderRoute: typeof ClassroomConfigSemestresRouteImport
+      parentRoute: typeof ClassroomConfigRoute
+    }
     '/classroom/config/salles': {
       id: '/classroom/config/salles'
       path: '/salles'
@@ -2087,6 +2107,7 @@ interface ClassroomConfigRouteChildren {
   ClassroomConfigBrandingRoute: typeof ClassroomConfigBrandingRoute
   ClassroomConfigMatieresRoute: typeof ClassroomConfigMatieresRoute
   ClassroomConfigSallesRoute: typeof ClassroomConfigSallesRoute
+  ClassroomConfigSemestresRoute: typeof ClassroomConfigSemestresRoute
   ClassroomConfigStructureRoute: typeof ClassroomConfigStructureRoute
   ClassroomConfigUniversiteRoute: typeof ClassroomConfigUniversiteRoute
   ClassroomConfigUtilisateursRoute: typeof ClassroomConfigUtilisateursRoute
@@ -2097,6 +2118,7 @@ const ClassroomConfigRouteChildren: ClassroomConfigRouteChildren = {
   ClassroomConfigBrandingRoute: ClassroomConfigBrandingRoute,
   ClassroomConfigMatieresRoute: ClassroomConfigMatieresRoute,
   ClassroomConfigSallesRoute: ClassroomConfigSallesRoute,
+  ClassroomConfigSemestresRoute: ClassroomConfigSemestresRoute,
   ClassroomConfigStructureRoute: ClassroomConfigStructureRoute,
   ClassroomConfigUniversiteRoute: ClassroomConfigUniversiteRoute,
   ClassroomConfigUtilisateursRoute: ClassroomConfigUtilisateursRoute,

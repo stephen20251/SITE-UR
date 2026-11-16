@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, X, BookOpen, Layers, ChevronDown, Loader2 } from "lucide-react";
+import { Plus, X, BookOpen, Layers, ChevronDown, Loader2, Trash2, CalendarRange } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useRequireClassroom } from "@/components/classroom/shared";
-import { useMentions, useSemesters, useSubjects, useTeachingUnits, useCreateSubject, useUpdateSubject, useCreateTeachingUnit } from "@/lib/academic";
+import {
+  useMentions, useSubjects, useTeachingUnits, useCreateSubject, useUpdateSubject, useCreateTeachingUnit,
+  useUpdateTeachingUnit, useDeleteTeachingUnit, useMentionSemesters, useInitMentionSemesters, semesterOptions,
+} from "@/lib/academic";
 import type { Subject, TeachingUnit } from "@/lib/academic";
 
 export const Route = createFileRoute("/classroom/config/matieres")({ component: MatieresPage });
@@ -86,7 +90,7 @@ function CreateSubjectModal({
                 onChange={(e) => setForm((f) => ({ ...f, teachingUnitId: e.target.value }))}>
                 <option value="">— Aucune —</option>
                 {teachingUnits.map((u) => (
-                  <option key={u.id} value={u.id}>{u.code} – {u.name}</option>
+                  <option key={u.id} value={u.id}>{u.code} – {u.name}{u.cursusSemester ? ` (${u.cursusSemester.level} · ${u.cursusSemester.name})` : ""}</option>
                 ))}
               </select>
             </div>
@@ -110,15 +114,16 @@ function CreateSubjectModal({
 // ─── Create UE Modal ──────────────────────────────────────────────────────────
 function CreateUEModal({
   mentionId,
-  semesters,
   onClose,
 }: {
   mentionId: string;
-  semesters: { id: string; name: string; number: number }[];
   onClose: () => void;
 }) {
   const create = useCreateTeachingUnit();
-  const [form, setForm] = useState({ semesterId: "", code: "", name: "", credits: 6 });
+  const mentionSemesters = useMentionSemesters(mentionId);
+  const initSemesters = useInitMentionSemesters();
+  const semesters = semesterOptions(mentionSemesters.data);
+  const [form, setForm] = useState({ cursusSemesterId: "", code: "", name: "", credits: 6 });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -142,14 +147,23 @@ function CreateUEModal({
         </div>
         <form onSubmit={submit} className="space-y-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Semestre</label>
-            <select className={sel} value={form.semesterId}
-              onChange={(e) => setForm((f) => ({ ...f, semesterId: e.target.value }))} required>
-              <option value="">Choisir un semestre</option>
-              {semesters.map((s) => (
-                <option key={s.id} value={s.id}>S{s.number} — {s.name}</option>
-              ))}
-            </select>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Semestre de la mention ({mentionSemesters.data?.mention.name ?? "…"})</label>
+            {mentionSemesters.isLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : semesters.length === 0 ? (
+              <div className="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+                Cette mention n'a pas encore ses semestres.
+                <button type="button" disabled={initSemesters.isPending}
+                  onClick={() => initSemesters.mutateAsync(mentionId).then(() => toast.success("Semestres S1 à S10 créés")).catch((e) => toast.error(e instanceof Error ? e.message : "Échec"))}
+                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border px-3 py-2 font-semibold text-foreground hover:bg-accent">
+                  <CalendarRange size={13} /> Créer les semestres S1 à S10
+                </button>
+              </div>
+            ) : (
+              <select className={sel} value={form.cursusSemesterId}
+                onChange={(e) => setForm((f) => ({ ...f, cursusSemesterId: e.target.value }))} required>
+                <option value="">Choisir un semestre</option>
+                {semesters.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -203,7 +217,10 @@ function SubjectRow({ s }: { s: Subject }) {
         <div className="font-medium">{s.name}</div>
         {s.mention && <div className="text-xs text-muted-foreground">{s.mention.name}</div>}
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">{s.teachingUnit?.name ?? "—"}</td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
+        {s.teachingUnit?.name ?? "—"}
+        {s.teachingUnit?.cursusSemester && <div className="text-[11px]">{s.teachingUnit.cursusSemester.level} · {s.teachingUnit.cursusSemester.name}</div>}
+      </td>
       <td className="px-4 py-3 text-sm text-center tabular-nums">{s.credits} cr.</td>
       <td className="px-4 py-3 text-sm text-center tabular-nums">{s.weeklyHours}h</td>
       <td className="px-4 py-3">
@@ -233,13 +250,16 @@ function MatieresPage() {
   const [showCreateUE, setShowCreateUE] = useState(false);
 
   const mentions = useMentions();
-  const semesters = useSemesters();
+  const mentionSemesters = useMentionSemesters(mentionId || undefined);
   const subjects = useSubjects(mentionId || undefined);
   const teachingUnits = useTeachingUnits(mentionId || undefined, semesterId || undefined);
+  const updateUE = useUpdateTeachingUnit();
+  const deleteUE = useDeleteTeachingUnit();
 
   if (!ready || !user) return null;
 
-  const allSemesters = semesters.data ?? [];
+  // Semestres propres à la mention choisie (S1 à S10, noms de la mention)
+  const allSemesters = mentionId ? semesterOptions(mentionSemesters.data) : [];
   const allMentions = mentions.data ?? [];
   const allSubjects = subjects.data ?? [];
   const allUEs = teachingUnits.data ?? [];
@@ -280,7 +300,7 @@ function MatieresPage() {
           <select
             className="h-9 rounded-xl border bg-background pl-3 pr-8 text-sm outline-none focus:ring-2 focus:ring-classroom/30 transition appearance-none"
             value={mentionId}
-            onChange={(e) => setMentionId(e.target.value)}
+            onChange={(e) => { setMentionId(e.target.value); setSemesterId(""); }}
           >
             <option value="">Toutes les mentions</option>
             {allMentions.map((m) => (
@@ -289,7 +309,7 @@ function MatieresPage() {
           </select>
           <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
         </div>
-        {tab === "ue" && (
+        {tab === "ue" && mentionId && (
           <div className="relative">
             <select
               className="h-9 rounded-xl border bg-background pl-3 pr-8 text-sm outline-none focus:ring-2 focus:ring-classroom/30 transition appearance-none"
@@ -298,12 +318,15 @@ function MatieresPage() {
             >
               <option value="">Tous les semestres</option>
               {allSemesters.map((s) => (
-                <option key={s.id} value={s.id}>S{s.number} — {s.name}</option>
+                <option key={s.id} value={s.id}>{s.label}</option>
               ))}
             </select>
             <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           </div>
         )}
+        <Link to="/classroom/config/semestres" className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-sm hover:bg-accent">
+          <CalendarRange size={13} /> Gérer les semestres
+        </Link>
       </div>
 
       {/* ── Matières table ── */}
@@ -387,8 +410,10 @@ function MatieresPage() {
                   <tr className="text-left">
                     <th className="px-4 py-3">Code</th>
                     <th className="px-4 py-3">Intitulé</th>
+                    <th className="px-4 py-3">Semestre</th>
                     <th className="px-4 py-3 text-center">Crédits</th>
                     <th className="px-4 py-3 text-center">Matières</th>
+                    <th className="w-10" />
                   </tr>
                 </thead>
                 <tbody>
@@ -400,9 +425,27 @@ function MatieresPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 font-medium">{u.name}</td>
+                      <td className="px-4 py-3">
+                        {mentionId && allSemesters.length ? (
+                          <select className="h-8 rounded-lg border bg-background px-2 text-xs" value={u.cursusSemesterId ?? ""}
+                            onChange={(e) => e.target.value && updateUE.mutateAsync({ id: u.id, cursusSemesterId: e.target.value })
+                              .then(() => toast.success("UE déplacée")).catch((err) => toast.error(err instanceof Error ? err.message : "Échec"))}>
+                            {!u.cursusSemesterId && <option value="">— À choisir —</option>}
+                            {allSemesters.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                          </select>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{u.cursusSemester ? `${u.cursusSemester.level} · ${u.cursusSemester.name}` : "—"}</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-center text-muted-foreground tabular-nums">{u.credits} cr.</td>
                       <td className="px-4 py-3 text-center text-muted-foreground tabular-nums">
                         {u.subjects?.length ?? 0}
+                      </td>
+                      <td className="px-2 py-3">
+                        <button title="Supprimer l'UE (les matières sont conservées)" className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                          onClick={() => { if (confirm(`Supprimer l'UE « ${u.name} » ? Ses matières sont conservées.`)) deleteUE.mutateAsync(u.id).then(() => toast.success("UE supprimée")).catch((err) => toast.error(err instanceof Error ? err.message : "Échec")); }}>
+                          <Trash2 size={14} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -436,7 +479,6 @@ function MatieresPage() {
       {showCreateUE && mentionId && (
         <CreateUEModal
           mentionId={mentionId}
-          semesters={allSemesters}
           onClose={() => setShowCreateUE(false)}
         />
       )}

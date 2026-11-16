@@ -103,6 +103,7 @@ function ConfigIndex() {
         <div className="grid gap-3 sm:grid-cols-3">
           {[
             { icon: <Building2 size={18} />, label: "Gérer la structure", sub: "Facultés, Depts, Mentions, Parcours", to: "/classroom/config/structure" },
+            { icon: <BookOpen size={18} />,  label: "Gérer les semestres", sub: "S1 à S10 par mention, UE",          to: "/classroom/config/semestres" },
             { icon: <DoorOpen size={18} />,  label: "Gérer les salles",   sub: "Salles, Amphithéâtres, Labos",      to: "/classroom/config/salles" },
             { icon: <Users size={18} />,     label: "Gérer les utilisateurs", sub: "Comptes, rôles, permissions",   to: "/classroom/config/utilisateurs" },
           ].map((a, i) => (

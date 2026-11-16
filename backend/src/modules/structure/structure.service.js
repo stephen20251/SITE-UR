@@ -363,10 +363,15 @@ export const listSubjects = async (req, res) => {
   const where = {
     ...(req.query.mentionId && { mentionId: req.query.mentionId }),
     ...(req.query.all !== '1' && { isActive: true }),
+    // Matières d'un semestre de la mention (au travers de leur UE)
+    ...(req.query.cursusSemesterId && { teachingUnit: { cursusSemesterId: req.query.cursusSemesterId } }),
   }
   const data = await prisma.subject.findMany({
     where,
-    include: { mention: { select: { id: true, name: true } }, teachingUnit: { select: { id: true, name: true } } },
+    include: {
+      mention: { select: { id: true, name: true } },
+      teachingUnit: { select: { id: true, name: true, code: true, cursusSemester: { select: { id: true, name: true, level: true } } } },
+    },
     orderBy: { name: 'asc' },
   })
   res.json(data)
@@ -395,14 +400,57 @@ export const updateSubject = async (req, res) => {
 }
 
 // ── Teaching Units ────────────────────────────────────────────────
+// Une UE appartient à une mention et se range dans un semestre DE CETTE MENTION
+// (page « Semestres » : S1 à S10, L1 → M2, noms propres à chaque mention).
+const UE_INCLUDE = {
+  subjects: true,
+  cursusSemester: { select: { id: true, name: true, level: true, startMonth: true, endMonth: true } },
+  semester: { select: { id: true, name: true, number: true } },
+}
+
 export const listTeachingUnits = async (req, res) => {
+  const scope = req.user?.systemRole === 'STAFF' ? await staffMentionScope(req) : null
   const where = {}
   if (req.query.semesterId) where.semesterId = req.query.semesterId
+  if (req.query.cursusSemesterId) where.cursusSemesterId = req.query.cursusSemesterId
   if (req.query.mentionId) where.mentionId = req.query.mentionId
-  const data = await prisma.teachingUnit.findMany({ where, include: { subjects: true }, orderBy: { name: 'asc' } })
+  else if (scope) where.mentionId = { in: scope }
+  const data = await prisma.teachingUnit.findMany({ where, include: UE_INCLUDE, orderBy: [{ code: 'asc' }, { name: 'asc' }] })
   res.json(data)
 }
+
+async function cleanUE(b, current = {}) {
+  const mentionId = b.mentionId ?? current.mentionId
+  const code = String(b.code ?? current.code ?? '').trim().toUpperCase()
+  const name = String(b.name ?? current.name ?? '').trim()
+  const cursusSemesterId = b.cursusSemesterId !== undefined ? (b.cursusSemesterId || null) : (current.cursusSemesterId ?? null)
+  if (!mentionId || !code || !name) throw new HttpError(400, 'Mention, code et intitulé de l\'UE obligatoires')
+  if (!cursusSemesterId) throw new HttpError(400, 'Choisissez le semestre de l\'UE (semestres de la mention)')
+  const sem = await prisma.cursusSemester.findUnique({ where: { id: cursusSemesterId }, select: { mentionId: true } })
+  if (!sem || sem.mentionId !== mentionId) throw new HttpError(400, 'Ce semestre n\'appartient pas à la mention de l\'UE')
+  const credits = Number(b.credits ?? current.credits)
+  return { mentionId, code, name, cursusSemesterId, credits: credits > 0 ? Math.round(credits) : 3 }
+}
+
 export const createTeachingUnit = async (req, res) => {
-  const u = await prisma.teachingUnit.create({ data: req.body })
+  const data = await cleanUE(req.body ?? {})
+  const u = await prisma.teachingUnit.create({ data, include: UE_INCLUDE })
   res.status(201).json(u)
+}
+
+export const updateTeachingUnit = async (req, res) => {
+  const current = await prisma.teachingUnit.findUnique({ where: { id: req.params.id } })
+  if (!current) throw new HttpError(404, 'UE introuvable')
+  const data = await cleanUE({ ...req.body, mentionId: current.mentionId }, current)
+  const u = await prisma.teachingUnit.update({ where: { id: req.params.id }, data, include: UE_INCLUDE })
+  res.json(u)
+}
+
+export const deleteTeachingUnit = async (req, res) => {
+  const current = await prisma.teachingUnit.findUnique({ where: { id: req.params.id } })
+  if (!current) throw new HttpError(404, 'UE introuvable')
+  // Les matières restent : elles ne sont simplement plus rattachées à cette UE.
+  await prisma.subject.updateMany({ where: { teachingUnitId: current.id }, data: { teachingUnitId: null } })
+  await prisma.teachingUnit.delete({ where: { id: current.id } })
+  res.json({ ok: true })
 }

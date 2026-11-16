@@ -113,5 +113,7 @@ r.put('/subjects/:id',               requirePermission('CREATE_SUBJECT'), asyncH
 // Teaching Units
 r.get('/teaching-units',             asyncHandler(svc.listTeachingUnits))
 r.post('/teaching-units',            requirePermission('CREATE_SUBJECT'), asyncHandler(svc.createTeachingUnit))
+r.put('/teaching-units/:id',         requirePermission('CREATE_SUBJECT'), asyncHandler(svc.updateTeachingUnit))
+r.delete('/teaching-units/:id',      requirePermission('CREATE_SUBJECT'), asyncHandler(svc.deleteTeachingUnit))
 
 export default r

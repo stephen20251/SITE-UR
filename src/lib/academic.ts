@@ -328,7 +328,10 @@ export function useParcours() {
 
 export type TeachingUnit = {
   id: string;
-  semesterId: string;
+  semesterId: string | null;
+  /** Semestre propre à la mention (page « Semestres » : S1 à S10, L1 → M2) */
+  cursusSemesterId?: string | null;
+  cursusSemester?: { id: string; name: string; level: string } | null;
   mentionId: string;
   code: string;
   name: string;
@@ -348,7 +351,7 @@ export type Subject = {
   isActive: boolean;
   createdAt: string;
   mention?: { id: string; name: string };
-  teachingUnit?: { id: string; name: string } | null;
+  teachingUnit?: { id: string; name: string; code?: string; cursusSemester?: { id: string; name: string; level: string } | null } | null;
 };
 
 export type Group = {
@@ -370,13 +373,14 @@ export const progKeys = {
     ["programme", "groups", promotionId] as const,
 };
 
+// `semesterId` = semestre de la mention (CursusSemester)
 export function useTeachingUnits(mentionId?: string, semesterId?: string) {
   return useQuery({
     queryKey: progKeys.teachingUnits(mentionId, semesterId),
     queryFn: () => {
       const p = new URLSearchParams();
       if (mentionId) p.set("mentionId", mentionId);
-      if (semesterId) p.set("semesterId", semesterId);
+      if (semesterId) p.set("cursusSemesterId", semesterId);
       return api<TeachingUnit[]>(`/structure/teaching-units?${p}`);
     },
     staleTime: 60_000,
@@ -386,10 +390,51 @@ export function useTeachingUnits(mentionId?: string, semesterId?: string) {
 export function useCreateTeachingUnit() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { semesterId: string; mentionId: string; code: string; name: string; credits?: number }) =>
+    mutationFn: (data: { cursusSemesterId: string; mentionId: string; code: string; name: string; credits?: number }) =>
       api<TeachingUnit>("/structure/teaching-units", { method: "POST", body: data }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["programme", "teaching-units"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["programme"] }),
   });
+}
+
+export function useUpdateTeachingUnit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string; cursusSemesterId?: string; code?: string; name?: string; credits?: number }) =>
+      api<TeachingUnit>(`/structure/teaching-units/${id}`, { method: "PUT", body: data }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["programme"] }),
+  });
+}
+
+export function useDeleteTeachingUnit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api(`/structure/teaching-units/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["programme"] }),
+  });
+}
+
+// Semestres d'une mention, niveau par niveau (S1 à S10). Même clé que la page « Semestres ».
+export type MentionSemesters = {
+  mention: { id: string; name: string; code: string };
+  levels: { level: string; semesters: { id: string | null; name: string; startMonth: number; endMonth: number; isDefault?: boolean }[] }[];
+};
+export function useMentionSemesters(mentionId?: string) {
+  return useQuery({
+    queryKey: ["cursus", "semesters-all", mentionId ?? ""],
+    queryFn: () => api<MentionSemesters>(`/cursus/semesters/all?mentionId=${mentionId}`),
+    enabled: !!mentionId,
+  });
+}
+export function useInitMentionSemesters() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (mentionId: string) => api<MentionSemesters>("/cursus/semesters/init-all", { method: "POST", body: { mentionId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cursus"] }),
+  });
+}
+/** Semestres créés d'une mention, à plat : « L2 · Semestre 3 » */
+export function semesterOptions(data?: MentionSemesters) {
+  return (data?.levels ?? []).flatMap((l) => l.semesters.filter((s) => s.id).map((s) => ({ id: s.id as string, label: `${l.level} · ${s.name}` })));
 }
 
 export function useSubjects(mentionId?: string) {

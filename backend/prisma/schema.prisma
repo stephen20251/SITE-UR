@@ -382,16 +382,20 @@ model Semester {
 }
 
 model TeachingUnit {
-  id         String   @id @default(uuid())
-  semesterId String
-  mentionId  String   @db.Text
-  code       String   @db.Text
-  name       String   @db.Text
-  credits    Int      @default(3)
-  createdAt  DateTime @default(now())
+  id               String   @id @default(uuid())
+  // Ancien semestre général de l'année (facultatif) ; on utilise désormais le
+  // semestre propre à la mention (cursusSemesterId).
+  semesterId       String?
+  cursusSemesterId String?
+  mentionId        String   @db.Text
+  code             String   @db.Text
+  name             String   @db.Text
+  credits          Int      @default(3)
+  createdAt        DateTime @default(now())
 
-  semester Semester  @relation(fields: [semesterId], references: [id])
-  subjects Subject[]
+  semester       Semester?       @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  cursusSemester CursusSemester? @relation(fields: [cursusSemesterId], references: [id], onDelete: SetNull)
+  subjects       Subject[]
 }
 
 model Subject {
@@ -2613,7 +2617,8 @@ model CursusSemester {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  mention Mention @relation(fields: [mentionId], references: [id], onDelete: Cascade)
+  mention       Mention        @relation(fields: [mentionId], references: [id], onDelete: Cascade)
+  teachingUnits TeachingUnit[]
 
   @@index([mentionId, level])
 }
