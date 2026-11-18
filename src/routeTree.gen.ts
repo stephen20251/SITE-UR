@@ -54,6 +54,7 @@ import { Route as ClassroomSecretaireRouteImport } from './routes/classroom.secr
 import { Route as ClassroomSalairesRouteImport } from './routes/classroom.salaires'
 import { Route as ClassroomRhRouteImport } from './routes/classroom.rh'
 import { Route as ClassroomRespPedaRouteImport } from './routes/classroom.resp-peda'
+import { Route as ClassroomQcmRouteImport } from './routes/classroom.qcm'
 import { Route as ClassroomProfileRouteImport } from './routes/classroom.profile'
 import { Route as ClassroomPresencesRouteImport } from './routes/classroom.presences'
 import { Route as ClassroomPlanningRouteImport } from './routes/classroom.planning'
@@ -112,6 +113,7 @@ import { Route as ClassroomConfigUniversiteRouteImport } from './routes/classroo
 import { Route as ClassroomConfigStructureRouteImport } from './routes/classroom.config.structure'
 import { Route as ClassroomConfigSemestresRouteImport } from './routes/classroom.config.semestres'
 import { Route as ClassroomConfigSallesRouteImport } from './routes/classroom.config.salles'
+import { Route as ClassroomConfigProgressionRouteImport } from './routes/classroom.config.progression'
 import { Route as ClassroomConfigMatieresRouteImport } from './routes/classroom.config.matieres'
 import { Route as ClassroomConfigBrandingRouteImport } from './routes/classroom.config.branding'
 import { Route as ClassroomAnneesIdRouteImport } from './routes/classroom.annees.$id'
@@ -342,6 +344,11 @@ const ClassroomRhRoute = ClassroomRhRouteImport.update({
 const ClassroomRespPedaRoute = ClassroomRespPedaRouteImport.update({
   id: '/resp-peda',
   path: '/resp-peda',
+  getParentRoute: () => ClassroomRoute,
+} as any)
+const ClassroomQcmRoute = ClassroomQcmRouteImport.update({
+  id: '/qcm',
+  path: '/qcm',
   getParentRoute: () => ClassroomRoute,
 } as any)
 const ClassroomProfileRoute = ClassroomProfileRouteImport.update({
@@ -642,6 +649,12 @@ const ClassroomConfigSallesRoute = ClassroomConfigSallesRouteImport.update({
   path: '/salles',
   getParentRoute: () => ClassroomConfigRoute,
 } as any)
+const ClassroomConfigProgressionRoute =
+  ClassroomConfigProgressionRouteImport.update({
+    id: '/progression',
+    path: '/progression',
+    getParentRoute: () => ClassroomConfigRoute,
+  } as any)
 const ClassroomConfigMatieresRoute = ClassroomConfigMatieresRouteImport.update({
   id: '/matieres',
   path: '/matieres',
@@ -711,6 +724,7 @@ export interface FileRoutesByFullPath {
   '/classroom/planning': typeof ClassroomPlanningRouteWithChildren
   '/classroom/presences': typeof ClassroomPresencesRoute
   '/classroom/profile': typeof ClassroomProfileRoute
+  '/classroom/qcm': typeof ClassroomQcmRoute
   '/classroom/resp-peda': typeof ClassroomRespPedaRoute
   '/classroom/rh': typeof ClassroomRhRoute
   '/classroom/salaires': typeof ClassroomSalairesRoute
@@ -751,6 +765,7 @@ export interface FileRoutesByFullPath {
   '/classroom/annees/$id': typeof ClassroomAnneesIdRoute
   '/classroom/config/branding': typeof ClassroomConfigBrandingRoute
   '/classroom/config/matieres': typeof ClassroomConfigMatieresRoute
+  '/classroom/config/progression': typeof ClassroomConfigProgressionRoute
   '/classroom/config/salles': typeof ClassroomConfigSallesRoute
   '/classroom/config/semestres': typeof ClassroomConfigSemestresRoute
   '/classroom/config/structure': typeof ClassroomConfigStructureRoute
@@ -815,6 +830,7 @@ export interface FileRoutesByTo {
   '/classroom/parent': typeof ClassroomParentRoute
   '/classroom/presences': typeof ClassroomPresencesRoute
   '/classroom/profile': typeof ClassroomProfileRoute
+  '/classroom/qcm': typeof ClassroomQcmRoute
   '/classroom/resp-peda': typeof ClassroomRespPedaRoute
   '/classroom/rh': typeof ClassroomRhRoute
   '/classroom/salaires': typeof ClassroomSalairesRoute
@@ -852,6 +868,7 @@ export interface FileRoutesByTo {
   '/classroom/annees/$id': typeof ClassroomAnneesIdRoute
   '/classroom/config/branding': typeof ClassroomConfigBrandingRoute
   '/classroom/config/matieres': typeof ClassroomConfigMatieresRoute
+  '/classroom/config/progression': typeof ClassroomConfigProgressionRoute
   '/classroom/config/salles': typeof ClassroomConfigSallesRoute
   '/classroom/config/semestres': typeof ClassroomConfigSemestresRoute
   '/classroom/config/structure': typeof ClassroomConfigStructureRoute
@@ -923,6 +940,7 @@ export interface FileRoutesById {
   '/classroom/planning': typeof ClassroomPlanningRouteWithChildren
   '/classroom/presences': typeof ClassroomPresencesRoute
   '/classroom/profile': typeof ClassroomProfileRoute
+  '/classroom/qcm': typeof ClassroomQcmRoute
   '/classroom/resp-peda': typeof ClassroomRespPedaRoute
   '/classroom/rh': typeof ClassroomRhRoute
   '/classroom/salaires': typeof ClassroomSalairesRoute
@@ -963,6 +981,7 @@ export interface FileRoutesById {
   '/classroom/annees/$id': typeof ClassroomAnneesIdRoute
   '/classroom/config/branding': typeof ClassroomConfigBrandingRoute
   '/classroom/config/matieres': typeof ClassroomConfigMatieresRoute
+  '/classroom/config/progression': typeof ClassroomConfigProgressionRoute
   '/classroom/config/salles': typeof ClassroomConfigSallesRoute
   '/classroom/config/semestres': typeof ClassroomConfigSemestresRoute
   '/classroom/config/structure': typeof ClassroomConfigStructureRoute
@@ -1035,6 +1054,7 @@ export interface FileRouteTypes {
     | '/classroom/planning'
     | '/classroom/presences'
     | '/classroom/profile'
+    | '/classroom/qcm'
     | '/classroom/resp-peda'
     | '/classroom/rh'
     | '/classroom/salaires'
@@ -1075,6 +1095,7 @@ export interface FileRouteTypes {
     | '/classroom/annees/$id'
     | '/classroom/config/branding'
     | '/classroom/config/matieres'
+    | '/classroom/config/progression'
     | '/classroom/config/salles'
     | '/classroom/config/semestres'
     | '/classroom/config/structure'
@@ -1139,6 +1160,7 @@ export interface FileRouteTypes {
     | '/classroom/parent'
     | '/classroom/presences'
     | '/classroom/profile'
+    | '/classroom/qcm'
     | '/classroom/resp-peda'
     | '/classroom/rh'
     | '/classroom/salaires'
@@ -1176,6 +1198,7 @@ export interface FileRouteTypes {
     | '/classroom/annees/$id'
     | '/classroom/config/branding'
     | '/classroom/config/matieres'
+    | '/classroom/config/progression'
     | '/classroom/config/salles'
     | '/classroom/config/semestres'
     | '/classroom/config/structure'
@@ -1246,6 +1269,7 @@ export interface FileRouteTypes {
     | '/classroom/planning'
     | '/classroom/presences'
     | '/classroom/profile'
+    | '/classroom/qcm'
     | '/classroom/resp-peda'
     | '/classroom/rh'
     | '/classroom/salaires'
@@ -1286,6 +1310,7 @@ export interface FileRouteTypes {
     | '/classroom/annees/$id'
     | '/classroom/config/branding'
     | '/classroom/config/matieres'
+    | '/classroom/config/progression'
     | '/classroom/config/salles'
     | '/classroom/config/semestres'
     | '/classroom/config/structure'
@@ -1643,6 +1668,13 @@ declare module '@tanstack/react-router' {
       path: '/resp-peda'
       fullPath: '/classroom/resp-peda'
       preLoaderRoute: typeof ClassroomRespPedaRouteImport
+      parentRoute: typeof ClassroomRoute
+    }
+    '/classroom/qcm': {
+      id: '/classroom/qcm'
+      path: '/qcm'
+      fullPath: '/classroom/qcm'
+      preLoaderRoute: typeof ClassroomQcmRouteImport
       parentRoute: typeof ClassroomRoute
     }
     '/classroom/profile': {
@@ -2051,6 +2083,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClassroomConfigSallesRouteImport
       parentRoute: typeof ClassroomConfigRoute
     }
+    '/classroom/config/progression': {
+      id: '/classroom/config/progression'
+      path: '/progression'
+      fullPath: '/classroom/config/progression'
+      preLoaderRoute: typeof ClassroomConfigProgressionRouteImport
+      parentRoute: typeof ClassroomConfigRoute
+    }
     '/classroom/config/matieres': {
       id: '/classroom/config/matieres'
       path: '/matieres'
@@ -2106,6 +2145,7 @@ const ClassroomAnneesRouteWithChildren = ClassroomAnneesRoute._addFileChildren(
 interface ClassroomConfigRouteChildren {
   ClassroomConfigBrandingRoute: typeof ClassroomConfigBrandingRoute
   ClassroomConfigMatieresRoute: typeof ClassroomConfigMatieresRoute
+  ClassroomConfigProgressionRoute: typeof ClassroomConfigProgressionRoute
   ClassroomConfigSallesRoute: typeof ClassroomConfigSallesRoute
   ClassroomConfigSemestresRoute: typeof ClassroomConfigSemestresRoute
   ClassroomConfigStructureRoute: typeof ClassroomConfigStructureRoute
@@ -2117,6 +2157,7 @@ interface ClassroomConfigRouteChildren {
 const ClassroomConfigRouteChildren: ClassroomConfigRouteChildren = {
   ClassroomConfigBrandingRoute: ClassroomConfigBrandingRoute,
   ClassroomConfigMatieresRoute: ClassroomConfigMatieresRoute,
+  ClassroomConfigProgressionRoute: ClassroomConfigProgressionRoute,
   ClassroomConfigSallesRoute: ClassroomConfigSallesRoute,
   ClassroomConfigSemestresRoute: ClassroomConfigSemestresRoute,
   ClassroomConfigStructureRoute: ClassroomConfigStructureRoute,
@@ -2190,6 +2231,7 @@ interface ClassroomRouteChildren {
   ClassroomPlanningRoute: typeof ClassroomPlanningRouteWithChildren
   ClassroomPresencesRoute: typeof ClassroomPresencesRoute
   ClassroomProfileRoute: typeof ClassroomProfileRoute
+  ClassroomQcmRoute: typeof ClassroomQcmRoute
   ClassroomRespPedaRoute: typeof ClassroomRespPedaRoute
   ClassroomRhRoute: typeof ClassroomRhRoute
   ClassroomSalairesRoute: typeof ClassroomSalairesRoute
@@ -2238,6 +2280,7 @@ const ClassroomRouteChildren: ClassroomRouteChildren = {
   ClassroomPlanningRoute: ClassroomPlanningRouteWithChildren,
   ClassroomPresencesRoute: ClassroomPresencesRoute,
   ClassroomProfileRoute: ClassroomProfileRoute,
+  ClassroomQcmRoute: ClassroomQcmRoute,
   ClassroomRespPedaRoute: ClassroomRespPedaRoute,
   ClassroomRhRoute: ClassroomRhRoute,
   ClassroomSalairesRoute: ClassroomSalairesRoute,

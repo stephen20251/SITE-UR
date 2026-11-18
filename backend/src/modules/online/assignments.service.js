@@ -3,7 +3,7 @@ import { isOnlineTeacher } from '../../middlewares/auth.js';
 import { HttpError } from '../../utils/asyncHandler.js';
 import { getCourseOwned, getEnrollmentOrThrow, isSuperAdmin } from './online.guards.js';
 import { notifyUser, notifyUsers } from '../../utils/notify.js';
-import { logActivity, tryIssueCertificate } from './enrollment.service.js';
+import { logActivity, tryIssueCertificate, courseCompletion } from './enrollment.service.js';
 
 // ─── Fichiers joints (énoncés, exercices) ───
 async function getAssignmentOwned(assignmentId, teacherId) {
@@ -118,7 +118,7 @@ export async function listForCourse(courseId, user) {
   if (!isOwner) {
     const submissions = await prisma.onlineSubmission.findMany({
       where: { studentId: user.sub, assignmentId: { in: assignments.map((a) => a.id) } },
-      select: { assignmentId: true, status: true, score: true, submittedAt: true },
+      select: { assignmentId: true, status: true, score: true, submittedAt: true, content: true, fileUrl: true, feedback: true, gradedAt: true },
     });
     const subMap = new Map(submissions.map((s) => [s.assignmentId, s]));
     return assignments.map((a) => ({ ...a, submission: subMap.get(a.id) ?? null }));
@@ -165,8 +165,17 @@ export async function submitAssignment(assignmentId, studentId, input) {
     select: { id: true, courseId: true, status: true, dueDate: true, course: { select: { teacherId: true } } },
   });
   if (!asgn) throw new HttpError(404, 'Assignment not found');
-  if (asgn.status === 'CLOSED') throw new HttpError(422, 'Assignment is closed');
+  if (asgn.status === 'CLOSED') throw new HttpError(422, 'Ce devoir est clos : il ne reçoit plus de réponses.');
   await getEnrollmentOrThrow(studentId, asgn.courseId);
+  const completion = await courseCompletion(studentId, asgn.courseId);
+  if (completion?.activitiesLocked) throw new HttpError(403, "Terminez d'abord les leçons du cours : le devoir s'ouvrira ensuite.");
+  const content = String(input.content ?? '').trim();
+  const fileUrl = input.fileUrl ? String(input.fileUrl) : null;
+  if (!content && !fileUrl) throw new HttpError(400, 'Écrivez votre réponse ou joignez un fichier.');
+  // Un devoir corrigé ne se modifie plus.
+  const previous = await prisma.onlineSubmission.findUnique({ where: { assignmentId_studentId: { assignmentId, studentId } }, select: { status: true } });
+  if (previous?.status === 'GRADED') throw new HttpError(409, 'Ce devoir a déjà été corrigé : il ne peut plus être modifié.');
+  input = { ...input, content: content || null, fileUrl };
 
   const submission = await prisma.onlineSubmission.upsert({
     where: { assignmentId_studentId: { assignmentId, studentId } },

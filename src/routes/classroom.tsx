@@ -74,6 +74,7 @@ function buildNav(systemRole: string, roleName: string): NavItem[] {
     { label: "Cursus universitaire",  path: "cursus-plan",    Icon: GraduationCap },
     { label: "Semestres",             path: "semestres",      Icon: CalendarDays },
     { label: "Validation des cours",  path: "validation-cours", Icon: CheckSquare },
+    { label: "QCM",                   path: "qcm",            Icon: ListChecks },
     { label: "Suivi des cours",       path: "suivi-cours",    Icon: ListChecks },
     { label: "Présences",             path: "appel",          Icon: ClipboardCheck },
     { label: "Écolage",               path: "ecolage",        Icon: Wallet },

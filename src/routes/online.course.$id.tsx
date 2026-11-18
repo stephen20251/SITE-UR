@@ -4,7 +4,7 @@ import {
   Play, FileText, CheckCircle2, Lock, ArrowLeft, Loader2, FileQuestion,
   Circle, GraduationCap, MessageSquare, Calendar, ClipboardList, Send,
   ExternalLink, Volume2, Image, Archive, FileDown, ChevronDown, ChevronRight,
-  ChevronLeft, Film, BookOpen, Folder, Crown,
+  ChevronLeft, Film, BookOpen, Folder, Crown, Paperclip, Trophy, ArrowRight, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -15,7 +15,7 @@ import {
   type OnlineAssignment, type LiveSession,
 } from "@/lib/online";
 import { useOpenCourseRoom } from "@/lib/chat";
-import { ApiError } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { Modal, ProgressBar, OnlineNavbar, isHybridUser } from "@/components/online/shared";
 import { useAuth } from "@/lib/auth";
 import { BackHomeButtons } from "@/components/nav-buttons";
@@ -201,6 +201,54 @@ function CourseView({ course }: { course: CourseDetail }) {
   const [activeQuiz, setActiveQuiz] = useState<{ id: string; title: string } | null>(null);
   const [activeAssignment, setActiveAssignment] = useState<OnlineAssignment | null>(null);
   const [submitContent, setSubmitContent] = useState("");
+  const [submitFile, setSubmitFile] = useState<{ url: string; name: string } | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
+  // Fin des leçons : on propose aussitôt l'activité prévue (quiz, puis devoir).
+  const completion = course.completion ?? null;
+  const next = completion?.nextActivity ?? null;
+  const lastProposed = useRef<string | null>(null);
+  const firstLoad = useRef(true);
+  function openActivity(a: { type: "QUIZ" | "ASSIGNMENT"; id: string; title: string }) {
+    if (a.type === "QUIZ") setActiveQuiz({ id: a.id, title: a.title });
+    else {
+      const found = (assignments.data as OnlineAssignment[] | undefined)?.find((x) => x.id === a.id);
+      if (found) openAssignment(found);
+      else toast.message(`Devoir « ${a.title} » : ouvrez-le dans la liste des devoirs.`);
+    }
+  }
+  function openAssignment(a: OnlineAssignment) {
+    setActiveAssignment(a);
+    setSubmitContent(a.submission?.content ?? "");
+    setSubmitFile(a.submission?.fileUrl ? { url: a.submission.fileUrl, name: a.submission.fileUrl.split("/").pop() ?? "fichier" } : null);
+  }
+  useEffect(() => {
+    const key = next ? `${next.type}:${next.id}` : null;
+    if (firstLoad.current) { firstLoad.current = false; lastProposed.current = key; return; }
+    if (key && key !== lastProposed.current) {
+      lastProposed.current = key;
+      toast.success(next!.type === "QUIZ" ? "Leçons terminées ! Place au quiz." : "Étape suivante : le devoir.", {
+        description: `« ${next!.title} »`,
+        action: { label: next!.type === "QUIZ" ? "Passer le quiz" : "Ouvrir le devoir", onClick: () => openActivity(next!) },
+        duration: 10000,
+      });
+    } else if (!key) lastProposed.current = null;
+  }, [next?.type, next?.id]);
+
+  async function uploadSubmissionFile(file: File) {
+    if (!activeAssignment) return;
+    if (file.size > 50 * 1024 * 1024) { toast.error("Fichier trop lourd (50 Mo maximum)"); return; }
+    setUploadingFile(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await api<{ url: string; name: string }>(`/online/assignments/${activeAssignment.id}/submission-file`, { method: "POST", body: fd, raw: true });
+      setSubmitFile({ url: r.url, name: r.name });
+      toast.success("Fichier ajouté");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Échec de l'envoi du fichier");
+    } finally { setUploadingFile(false); }
+  }
 
   const isPaid = (course.price ?? 0) > 0;
   const hasPendingPayment = myPayments.data?.some(
@@ -351,6 +399,30 @@ function CourseView({ course }: { course: CourseDetail }) {
         </div>
       )}
 
+      {/* ── Prochaine étape / cours terminé ── */}
+      {course.enrolled && completion && completion.status === "COMPLETED" && (
+        <div className="flex items-center gap-2 border-b bg-emerald-500/10 px-5 py-2.5 text-sm text-emerald-800 dark:text-emerald-300">
+          <Trophy className="h-4 w-4 shrink-0" /> Cours terminé : leçons{completion.quizzes.length ? ", quiz" : ""}{completion.assignments.length ? " et devoirs" : ""} validés.
+        </div>
+      )}
+      {course.enrolled && next && (
+        <div className="flex flex-wrap items-center gap-3 border-b bg-amber-500/10 px-5 py-2.5 text-sm text-amber-900 dark:text-amber-200">
+          {next.type === "QUIZ" ? <FileQuestion className="h-4 w-4 shrink-0" /> : <ClipboardList className="h-4 w-4 shrink-0" />}
+          <span className="flex-1">
+            <b>Leçons terminées.</b> Prochaine étape : {next.type === "QUIZ" ? "passer le quiz" : "rendre le devoir"} « {next.title} »
+            {next.type === "QUIZ" && completion?.assignments.some((a) => !a.submitted) ? ", puis le devoir" : ""}.
+          </span>
+          <button onClick={() => openActivity(next)} className="inline-flex items-center gap-1.5 rounded-lg grad-online px-3 py-1.5 text-xs font-semibold text-white">
+            {next.type === "QUIZ" ? "Passer le quiz" : "Ouvrir le devoir"} <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+      {course.enrolled && completion?.activitiesLocked && (course.quizzes.length > 0 || completion.assignments.length > 0) && (
+        <div className="flex items-center gap-2 border-b bg-muted/40 px-5 py-2 text-xs text-muted-foreground">
+          <Lock className="h-3.5 w-3.5 shrink-0" /> Le quiz et les devoirs s'ouvrent une fois les leçons terminées ({Math.round(completion.lessonsProgress)} % / {completion.lessonThreshold} %).
+        </div>
+      )}
+
       {/* ── Body: content + sidebar ── */}
       <div className="mx-auto grid w-full max-w-screen-xl flex-1 md:grid-cols-[1fr_390px]">
 
@@ -470,16 +542,22 @@ function CourseView({ course }: { course: CourseDetail }) {
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium text-sm">{quiz.title}</div>
                       <div className="text-xs text-muted-foreground">
-                        {quiz.questionCount} questions · réussite {quiz.passingScore}%
+                        {quiz.questionCount} question{quiz.questionCount > 1 ? "s" : ""} · réussite {quiz.passingScore} %
+                        {quiz.timeLimit ? ` · ${quiz.timeLimit} min` : ""}
                       </div>
+                      {course.enrolled && quiz.attempted && (
+                        <div className={`mt-0.5 text-[11px] font-semibold ${quiz.passed ? "text-success" : "text-amber-600"}`}>
+                          {quiz.passed ? "✓ Réussi" : "Pas encore réussi"}{quiz.bestScore != null ? ` · meilleur score ${Math.round(quiz.bestScore)} %` : ""}
+                        </div>
+                      )}
                     </div>
                     <button
-                      disabled={!course.enrolled}
+                      disabled={!course.enrolled || !!completion?.activitiesLocked}
                       onClick={() => setActiveQuiz({ id: quiz.id, title: quiz.title })}
                       className="shrink-0 rounded-lg grad-online px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                      title={course.enrolled ? undefined : "Inscrivez-vous pour accéder aux quiz"}
+                      title={!course.enrolled ? "Inscrivez-vous pour accéder aux quiz" : completion?.activitiesLocked ? "Terminez d'abord les leçons" : undefined}
                     >
-                      Passer
+                      {completion?.activitiesLocked ? <Lock className="h-3.5 w-3.5" /> : quiz.passed ? "Refaire" : quiz.attempted ? "Réessayer" : "Passer"}
                     </button>
                   </div>
                 ))}
@@ -496,7 +574,8 @@ function CourseView({ course }: { course: CourseDetail }) {
           {course.enrolled && (
             <AssignmentsCard
               assignments={assignments}
-              onSubmit={(a) => { setActiveAssignment(a); setSubmitContent(""); }}
+              locked={!!completion?.activitiesLocked}
+              onSubmit={openAssignment}
             />
           )}
         </aside>
@@ -529,39 +608,77 @@ function CourseView({ course }: { course: CourseDetail }) {
                 ))}
               </div>
             )}
-            <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              Rendu avant : {new Date(activeAssignment.dueDate).toLocaleString("fr-FR")} · {activeAssignment.maxScore} pts max
+            <div className={`rounded-lg px-3 py-2 text-xs ${new Date(activeAssignment.dueDate) < new Date() && !activeAssignment.submission ? "bg-destructive/10 text-destructive" : "bg-muted/40 text-muted-foreground"}`}>
+              À rendre avant le {new Date(activeAssignment.dueDate).toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" })} · noté sur {activeAssignment.maxScore}
+              {new Date(activeAssignment.dueDate) < new Date() && !activeAssignment.submission && " — en retard, rendez-le dès que possible"}
             </div>
-            <textarea
-              rows={5}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
-              placeholder="Écrivez votre réponse ou collez un lien vers votre travail…"
-              value={submitContent}
-              onChange={(e) => setSubmitContent(e.target.value)}
-            />
-            <button
-              disabled={!submitContent.trim() || submitAssignment.isPending}
-              onClick={async () => {
-                try {
-                  const res = await submitAssignment.mutateAsync({
-                    assignmentId: activeAssignment.id,
-                    content: submitContent.trim(),
-                  });
-                  if ((res as { certificate?: unknown }).certificate) {
-                    toast.success("🎓 Cours terminé — certificat débloqué !");
-                  } else {
-                    toast.success("Devoir rendu !");
-                  }
-                  setActiveAssignment(null);
-                } catch (err) {
-                  toast.error(err instanceof ApiError ? err.message : "Échec de la soumission");
-                }
-              }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl grad-online px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
-            >
-              {submitAssignment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Rendre le devoir
-            </button>
+
+            {activeAssignment.submission?.status === "GRADED" ? (
+              <div className="space-y-2 rounded-xl border border-success/40 bg-success/5 p-3 text-sm">
+                <div className="font-semibold text-success">Corrigé : {activeAssignment.submission.score ?? "—"} / {activeAssignment.maxScore}</div>
+                {activeAssignment.submission.feedback && <p className="whitespace-pre-wrap text-muted-foreground"><b>Commentaire :</b> {activeAssignment.submission.feedback}</p>}
+                {activeAssignment.submission.content && <p className="whitespace-pre-wrap rounded-lg bg-background p-2 text-xs">{activeAssignment.submission.content}</p>}
+                {activeAssignment.submission.fileUrl && (
+                  <a href={mediaUrl(activeAssignment.submission.fileUrl)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs text-online hover:underline">
+                    <Paperclip className="h-3.5 w-3.5" /> Votre fichier rendu
+                  </a>
+                )}
+              </div>
+            ) : (
+              <>
+                {activeAssignment.submission && (
+                  <p className="rounded-lg bg-online/10 px-3 py-2 text-xs text-online">
+                    Déjà rendu le {new Date(activeAssignment.submission.submittedAt).toLocaleString("fr-FR")} — vous pouvez le modifier jusqu'à la correction.
+                  </p>
+                )}
+                <label className="block text-xs font-medium text-muted-foreground">Votre réponse
+                  <textarea
+                    rows={6}
+                    className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-y"
+                    placeholder="Écrivez votre réponse, ou expliquez le fichier joint…"
+                    value={submitContent}
+                    onChange={(e) => setSubmitContent(e.target.value)}
+                  />
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium hover:bg-accent ${uploadingFile ? "pointer-events-none opacity-60" : ""}`}>
+                    {uploadingFile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}
+                    {submitFile ? "Remplacer le fichier" : "Joindre un fichier (PDF, Word, image, ZIP…)"}
+                    <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadSubmissionFile(f); e.target.value = ""; }} />
+                  </label>
+                  {submitFile && (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1.5 text-xs">
+                      <FileDown className="h-3.5 w-3.5" /> {submitFile.name}
+                      <button onClick={() => setSubmitFile(null)} className="text-muted-foreground hover:text-destructive" title="Retirer"><X className="h-3 w-3" /></button>
+                    </span>
+                  )}
+                </div>
+                <button
+                  disabled={(!submitContent.trim() && !submitFile) || submitAssignment.isPending || uploadingFile}
+                  onClick={async () => {
+                    try {
+                      const res = await submitAssignment.mutateAsync({
+                        assignmentId: activeAssignment.id,
+                        content: submitContent.trim(),
+                        ...(submitFile && { fileUrl: submitFile.url }),
+                      });
+                      if ((res as { certificate?: unknown }).certificate) {
+                        toast.success("🎓 Cours terminé — certificat débloqué !");
+                      } else {
+                        toast.success(activeAssignment.submission ? "Devoir mis à jour" : "Devoir rendu !");
+                      }
+                      setActiveAssignment(null);
+                    } catch (err) {
+                      toast.error(err instanceof ApiError ? err.message : "Échec de l'envoi du devoir");
+                    }
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl grad-online px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+                >
+                  {submitAssignment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {activeAssignment.submission ? "Mettre à jour mon devoir" : "Rendre le devoir"}
+                </button>
+              </>
+            )}
           </div>
         )}
       </Modal>
@@ -1002,10 +1119,11 @@ function LiveSessionsCard({ liveSessions }: { liveSessions: ReturnType<typeof us
 // ─── Assignments card ─────────────────────────────────────────────────────────
 
 function AssignmentsCard({
-  assignments, onSubmit,
+  assignments, onSubmit, locked = false,
 }: {
   assignments: ReturnType<typeof useCourseAssignments>;
   onSubmit: (a: OnlineAssignment) => void;
+  locked?: boolean;
 }) {
   const list = (assignments.data as OnlineAssignment[] | undefined) ?? [];
   return (
@@ -1051,19 +1169,23 @@ function AssignmentsCard({
                   </a>
                 ))}
               </div>
-              {!submitted ? (
+              {locked && !submitted ? (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-muted px-2 py-1 text-[10px] text-muted-foreground" title="Terminez d'abord les leçons">
+                  <Lock className="h-3 w-3" /> Après les leçons
+                </span>
+              ) : !submitted ? (
                 <button
                   onClick={() => onSubmit(a)}
                   className="inline-flex shrink-0 items-center gap-1 rounded-lg grad-online px-2.5 py-1.5 text-xs font-medium text-white"
                 >
-                  <Send className="h-3 w-3" /> Rendre
+                  <Send className="h-3 w-3" /> Ouvrir
                 </button>
               ) : (
-                <span className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-medium ${
+                <button onClick={() => onSubmit(a)} className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-medium hover:opacity-80 ${
                   graded ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                }`}>
-                  {graded ? "✓ Noté" : "Rendu"}
-                </span>
+                }`} title={graded ? "Voir la correction" : "Voir ou modifier mon rendu"}>
+                  {graded ? "✓ Noté" : "Rendu · modifier"}
+                </button>
               )}
             </div>
           );
@@ -1663,7 +1785,8 @@ function LessonMedia({ lesson, allowDownload = true, tall = false }: { lesson: C
 
   if (effectiveType === "PDF" || effectiveType === "DOCUMENT") {
     if (!url) return <Placeholder icon={<FileText className="h-10 w-10 opacity-60" />} label="Aucun document" />;
-    const isPdf = effectiveType === "PDF" || primaryFile?.mimeType === "application/pdf" || /\.pdf($|\?)/i.test(effectiveUrl ?? "");
+    const isPdf = effectiveType === "PDF" || primaryFile?.mimeType === "application/pdf"
+      || /\.pdf($|\?)/i.test(effectiveUrl ?? "") || /\.pdf$/i.test(primaryFile?.name ?? "");
     if (protectedMode && isPdf) return <ProtectedPdf url={url} height={tall ? 720 : undefined} />;
     if (protectedMode && !allowDownload) return <UnviewableDocument name={primaryFile?.name ?? lesson.title} />;
     // Word, PowerPoint & co : le navigateur ne sait pas les afficher, on propose le fichier

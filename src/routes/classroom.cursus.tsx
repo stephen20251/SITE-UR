@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Award, Building2, CheckCircle2, GraduationCap, History, Lock, MonitorPlay, PlayCircle, Wallet } from "lucide-react";
+import { Award, Building2, CheckCircle2, ClipboardList, FileQuestion, GraduationCap, History, Lock, MonitorPlay, PlayCircle, Wallet } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
 import { PayDialog } from "@/components/classroom/tuition";
 import { useMyEnrollments } from "@/lib/online";
@@ -124,7 +124,13 @@ function CursusView({ data, onPay }: { data: NonNullable<ReturnType<typeof useMy
         <Card><div className="text-xs text-muted-foreground">Niveau</div><div className="mt-1 text-xl font-semibold">{data.student.level ?? "—"}</div><div className="text-xs text-muted-foreground">{data.student.mention?.name}</div></Card>
         <Card><div className="text-xs text-muted-foreground">Écolage mensuel</div><div className="mt-1 text-xl font-semibold">{fmtMGA(data.monthlyAmount, data.currency)}</div><div className="text-xs text-muted-foreground">8 mois par an</div></Card>
         <Card><div className="text-xs text-muted-foreground">Mois payés</div><div className="mt-1 text-xl font-semibold">{data.paidCount} / 8</div><Bar value={(data.paidCount / 8) * 100} className="mt-2" /></Card>
-        {!presentiel && <Card><div className="text-xs text-muted-foreground">Mois terminés à 100 %</div><div className="mt-1 text-xl font-semibold">{data.completedCount} / 8</div><Bar value={(data.completedCount / 8) * 100} className="mt-2" /></Card>}
+        {!presentiel && (
+          <Card>
+            <div className="text-xs text-muted-foreground">Cours terminés</div>
+            <div className="mt-1 text-xl font-semibold">{data.coursesCompleted ?? 0} / {data.coursesTotal ?? totalCourses}</div>
+            <Bar value={(data.coursesTotal ?? totalCourses) ? ((data.coursesCompleted ?? 0) / (data.coursesTotal ?? totalCourses)) * 100 : 0} className="mt-2" />
+          </Card>
+        )}
       </div>
 
       {data.eligibleForPassage && (
@@ -146,7 +152,8 @@ function CursusView({ data, onPay }: { data: NonNullable<ReturnType<typeof useMy
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{g.name} · {monthsRange(g.first, g.last)}</h2>
           <div className="grid gap-3 lg:grid-cols-2">
             {g.months.map((m) => (
-              <MonthCard key={m.month} m={m} current={data.currentMonth === m.month} onPay={() => onPay(m)} />
+              <MonthCard key={m.month} m={m} current={data.currentMonth === m.month} onPay={() => onPay(m)}
+                showLocked={data.display?.showLockedCourses ?? true} showProgress={data.display?.showCourseProgress ?? true} />
             ))}
           </div>
         </div>
@@ -155,9 +162,19 @@ function CursusView({ data, onPay }: { data: NonNullable<ReturnType<typeof useMy
   );
 }
 
-function MonthCard({ m, current, onPay }: { m: CursusMonth; current: boolean; onPay: () => void }) {
+// Statut lisible d'un cours pour l'étudiant
+const COURSE_STATUS: Record<string, { label: string; cls: string }> = {
+  NOT_STARTED: { label: "À commencer", cls: "bg-muted text-muted-foreground" },
+  IN_PROGRESS: { label: "En cours", cls: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300" },
+  QUIZ_PENDING: { label: "Quiz à passer", cls: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
+  ASSIGNMENT_PENDING: { label: "Devoir à rendre", cls: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
+  COMPLETED: { label: "Terminé", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+};
+
+function MonthCard({ m, current, onPay, showLocked = true, showProgress = true }: { m: CursusMonth; current: boolean; onPay: () => void; showLocked?: boolean; showProgress?: boolean }) {
   const unlocked = m.status === "PAID";
   const done = m.courses.filter((c) => c.completed).length;
+  const hideCourses = !unlocked && !showLocked;
   return (
     <Card className={current ? "ring-2 ring-classroom/30" : ""}>
       <div className="flex items-start justify-between gap-2">
@@ -168,7 +185,7 @@ function MonthCard({ m, current, onPay }: { m: CursusMonth; current: boolean; on
             {current && <span className="text-[11px] font-medium text-classroom">mois en cours</span>}
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {m.courses.length} cours · {done}/{m.courses.length} terminés
+            {m.courses.length === 0 ? "Aucun cours publié" : `${m.courses.length} cours · ${done}/${m.courses.length} terminé${done > 1 ? "s" : ""}`}
             {m.payment?.receiptNumber && ` · reçu ${m.payment.receiptNumber}`}
             {m.payment && m.status === "PENDING" && ` · ${methodLabel(m.payment.method)} en cours de vérification`}
           </p>
@@ -185,29 +202,51 @@ function MonthCard({ m, current, onPay }: { m: CursusMonth; current: boolean; on
 
       <div className="mt-3 space-y-2">
         {m.courses.length === 0 && <p className="text-xs italic text-muted-foreground">Cours pas encore publiés.</p>}
-        {m.courses.map((c) => (
-          <div key={c.id} className="rounded-xl border p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <div className="truncate text-sm font-medium">{c.title}</div>
-                <div className="text-xs text-muted-foreground">
-                  {c.teacher ? `${c.teacher.firstName} ${c.teacher.lastName}` : "—"}
-                  {c.relatedCourseIds.length > 0 && " · lié à d'autres cours"}
+        {hideCourses && m.courses.length > 0 && (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3 w-3" /> {m.courses.length} cours disponibles après le paiement de ce mois.</p>
+        )}
+        {!hideCourses && m.courses.map((c) => {
+          const status = c.completed ? "COMPLETED" : c.myStatus ?? (c.myProgress > 0 ? "IN_PROGRESS" : "NOT_STARTED");
+          const st = COURSE_STATUS[status] ?? COURSE_STATUS.IN_PROGRESS;
+          return (
+            <div key={c.id} className="rounded-xl border p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">{c.title}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {c.teacher ? `${c.teacher.firstName} ${c.teacher.lastName}` : "—"}
+                    {c.relatedCourseIds.length > 0 && " · lié à d'autres cours"}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {unlocked && <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${st.cls}`}>{st.label}</span>}
+                  {c.completed ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                  ) : unlocked ? (
+                    <Link to="/online/course/$id" params={{ id: c.id }} className="inline-flex items-center gap-1 text-xs font-medium text-classroom hover:underline">
+                      <PlayCircle className="h-4 w-4" /> {c.myProgress > 0 ? "Continuer" : "Commencer"}
+                    </Link>
+                  ) : (
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </div>
               </div>
-              {c.completed ? (
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
-              ) : unlocked ? (
-                <Link to="/online/course/$id" params={{ id: c.id }} className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-classroom hover:underline">
-                  <PlayCircle className="h-4 w-4" /> {c.myProgress > 0 ? "Continuer" : "Commencer"}
+              {unlocked && c.nextActivity && (
+                <Link to="/online/course/$id" params={{ id: c.id }}
+                  className="mt-2 flex items-center gap-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-200">
+                  {c.nextActivity.type === "QUIZ" ? <FileQuestion className="h-3.5 w-3.5" /> : <ClipboardList className="h-3.5 w-3.5" />}
+                  Leçons terminées — {c.nextActivity.type === "QUIZ" ? "passez le quiz" : "rendez le devoir"} « {c.nextActivity.title} »
                 </Link>
-              ) : (
-                <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )}
+              {unlocked && showProgress && (
+                <div className="mt-2 flex items-center gap-2">
+                  <Bar value={c.completed ? 100 : c.myProgress} className="flex-1" />
+                  <span className="w-9 text-right text-[11px] text-muted-foreground">{Math.round(c.completed ? 100 : c.myProgress)}%</span>
+                </div>
               )}
             </div>
-            {unlocked && <div className="mt-2 flex items-center gap-2"><Bar value={c.myProgress} className="flex-1" /><span className="w-9 text-right text-[11px] text-muted-foreground">{Math.round(c.myProgress)}%</span></div>}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );

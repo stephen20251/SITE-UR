@@ -5,6 +5,8 @@ import fs from 'fs';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { authenticate } from '../../middlewares/auth.js';
 import * as svc from './lms-admin.service.js';
+import { getProgressRules, setProgressRules } from './progress-rules.js';
+import { recomputeAllProgress } from './enrollment.service.js';
 import { uploadsPath } from '../../config/paths.js';
 
 const router = Router();
@@ -32,7 +34,20 @@ function requireSuperAdmin(req, res, next) {
   next();
 }
 
+// Règles de progression : lisibles par tout utilisateur connecté (affichage de l'espace étudiant)
+router.get('/progress-rules', asyncHandler(async (req, res) => {
+  res.json(await getProgressRules());
+}));
+
 router.use(requireSuperAdmin);
+
+router.put('/progress-rules', asyncHandler(async (req, res) => {
+  res.json(await setProgressRules(req.body ?? {}));
+}));
+// Recalcule la progression de toutes les inscriptions avec les règles en vigueur
+router.post('/progress-rules/recompute', asyncHandler(async (req, res) => {
+  res.json(await recomputeAllProgress());
+}));
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 router.get('/settings', asyncHandler(async (req, res) => {

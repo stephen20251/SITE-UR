@@ -6,6 +6,7 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { authenticate, requireRole } from '../../middlewares/auth.js';
 import * as svc from './studio.service.js';
 import { uploadsPath } from '../../config/paths.js';
+import { fileMeta } from '../../utils/upload-meta.js';
 
 const lessonMediaDir = uploadsPath('lessons');
 if (!fs.existsSync(lessonMediaDir)) fs.mkdirSync(lessonMediaDir, { recursive: true });
@@ -64,10 +65,11 @@ router.get('/lessons/:lessonId/files', asyncHandler(async (req, res) => {
 router.post('/lessons/:lessonId/files/upload', teacherOnly, upload.single('file'), asyncHandler(async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
   const url = `/uploads/lessons/${req.file.filename}`;
+  const meta = fileMeta(req.file, req.body.name);
   const file = await svc.addLessonFile(req.params.lessonId, req.user.sub, {
-    name: req.body.name ?? req.file.originalname,
+    name: meta.name,
     url,
-    mimeType: req.file.mimetype,
+    mimeType: meta.mimeType,
     size: req.file.size,
     allowDownload: req.body.allowDownload !== 'false',
   });

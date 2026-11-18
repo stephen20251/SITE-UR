@@ -9,18 +9,37 @@ import { prisma } from '../../database/prisma.js';
 
 const router = Router();
 
+const tooMany = (what) => ({ error: `Trop de tentatives de ${what} en peu de temps. Patientez quelques minutes puis réessayez.` });
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  message: tooMany('connexion'),
+});
+// Inscription : un établissement peut inscrire beaucoup d'élèves depuis le même réseau.
+const signupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: tooMany('création de compte'),
+});
+// Connexion : compté par adresse e-mail (et non par réseau partagé).
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `${req.ip}|${String(req.body?.email ?? '').toLowerCase().trim()}`,
+  message: tooMany('connexion'),
 });
 
-router.post('/register', authLimiter, validate({ body: registerSchema }), asyncHandler(async (req, res) => {
+router.post('/register', signupLimiter, validate({ body: registerSchema }), asyncHandler(async (req, res) => {
   res.status(201).json(await svc.register(req.body));
 }));
 
-router.post('/register-candidate', authLimiter, validate({ body: registerCandidateSchema }), asyncHandler(async (req, res) => {
+router.post('/register-candidate', signupLimiter, validate({ body: registerCandidateSchema }), asyncHandler(async (req, res) => {
   res.status(201).json(await svc.registerCandidate(req.body));
 }));
 
@@ -29,7 +48,7 @@ router.get('/mentions', asyncHandler(async (req, res) => {
   res.json(await prisma.mention.findMany({ where: { isActive: true }, select: { id: true, name: true, code: true, level: true }, orderBy: { name: 'asc' } }));
 }));
 
-router.post('/login', authLimiter, validate({ body: loginSchema }), asyncHandler(async (req, res) => {
+router.post('/login', loginLimiter, validate({ body: loginSchema }), asyncHandler(async (req, res) => {
   res.json(await svc.login(req.body));
 }));
 

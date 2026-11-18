@@ -11,6 +11,7 @@ import { startTuitionReminderJob } from './jobs/tuition-reminders.js';
 import { startCleanupJob } from './jobs/cleanup.js';
 import { syncCurriculumSubjects } from './modules/structure/subject-sync.js';
 import { syncMentionLinks } from './modules/structure/mention-sync.js';
+import { syncLessonContent } from './modules/online/content-sync.js';
 
 const app = createApp();
 const server = http.createServer(app);
@@ -50,4 +51,5 @@ startCleanupJob();
 // Rattache aux matières les cours du cursus créés avant la liaison cursus ↔ matières.
 syncCurriculumSubjects()
   .then(() => syncMentionLinks())
+  .then(() => syncLessonContent())
   .catch((err) => console.error('Liaison cursus ↔ matières / mentions :', err.message));

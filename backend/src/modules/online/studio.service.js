@@ -11,6 +11,7 @@ import { isProtectedCourse, signMediaUrl } from '../cursus/cursus.access.js';
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function mimeToLessonType(mime) {
+  mime = String(mime ?? '');
   if (mime.startsWith('video/')) return 'VIDEO';
   if (mime === 'application/pdf') return 'PDF';
   if (mime.startsWith('audio/')) return 'AUDIO';
@@ -152,7 +153,7 @@ export async function listLessonFiles(lessonId, userId) {
 export async function addLessonFile(lessonId, userId, { name, url, mimeType, size, allowDownload }) {
   const lesson = await prisma.onlineLesson.findUnique({
     where: { id: lessonId },
-    include: { module: { include: { course: { select: { teacherId: true } } } } },
+    include: { module: { include: { course: { select: { teacherId: true, courseKind: true } } } } },
   });
   if (!lesson) throw new HttpError(404, 'Lesson not found');
   if (!await isAllowed(lesson.module.course.teacherId, userId)) throw new HttpError(403, 'Forbidden');
@@ -171,7 +172,10 @@ export async function addLessonFile(lessonId, userId, { name, url, mimeType, siz
     });
   }
 
-  return file;
+  // Aperçu immédiat dans le studio : un fichier protégé (cursus / non téléchargeable)
+  // n'est lisible que par une URL signée — l'adresse brute répondrait 403.
+  const protectedFile = isProtectedCourse(lesson.module.course) || file.allowDownload === false;
+  return protectedFile ? { ...file, url: signMediaUrl(userId, 'f', file.id) } : file;
 }
 
 export async function deleteLessonFile(fileId, userId) {

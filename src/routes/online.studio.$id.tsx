@@ -19,6 +19,7 @@ import {
 } from "@/lib/online";
 import { usePublicCategories } from "@/lib/lms-admin";
 import { QuizBuilder } from "@/components/online/quiz-builder";
+import { QuizEditor } from "@/components/online/quiz-editor";
 import { useRequireOnline } from "@/components/online/shared";
 import { ModuleTree } from "@/components/online/studio/module-tree";
 import { VersionHistory } from "@/components/online/studio/version-history";
@@ -762,9 +763,34 @@ function TextBody({ lesson, courseId }: { lesson: CourseLesson; courseId: string
 // ── Quiz ─────────────────────────────────────────────────────────────────────
 
 function QuizTab({ course }: { course: CourseDetail }) {
+  // QCM existants : modifiables question par question (les résultats sont conservés)
+  const [editing, setEditing] = useState<string | null>(null);
   return (
-    <div className="max-w-3xl">
-      <QuizBuilder courseId={course.id} onDone={() => {}} />
+    <div className="max-w-3xl space-y-6">
+      {course.quizzes.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">QCM du cours</h3>
+          {course.quizzes.map((q) => (
+            <div key={q.id} className="rounded-xl border">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{q.title}</div>
+                  <div className="text-xs text-muted-foreground">{q.questionCount} question{q.questionCount > 1 ? "s" : ""} · réussite {q.passingScore} %{q.timeLimit ? ` · ${q.timeLimit} min` : ""}</div>
+                </div>
+                <button onClick={() => setEditing(editing === q.id ? null : q.id)}
+                  className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                  {editing === q.id ? "Fermer" : "Modifier"}
+                </button>
+              </div>
+              {editing === q.id && <div className="border-t p-4"><QuizEditor quizId={q.id} courseId={course.id} /></div>}
+            </div>
+          ))}
+        </div>
+      )}
+      <div>
+        <h3 className="mb-2 text-sm font-semibold">Nouveau QCM</h3>
+        <QuizBuilder courseId={course.id} onDone={() => {}} />
+      </div>
     </div>
   );
 }

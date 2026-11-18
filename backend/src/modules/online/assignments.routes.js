@@ -6,6 +6,7 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { requireSystem } from '../../middlewares/auth.js';
 import * as svc from './assignments.service.js';
 import { uploadsPath } from '../../config/paths.js';
+import { fileMeta } from '../../utils/upload-meta.js';
 
 // Fichiers d'exercices joints aux devoirs (énoncés, données…)
 const attachDir = uploadsPath('assignments');
@@ -16,6 +17,17 @@ const attachUpload = multer({
     filename: (req, file, cb) => cb(null, `asg-${req.params.assignmentId}-${Date.now()}${path.extname(file.originalname)}`),
   }),
   limits: { fileSize: 100 * 1024 * 1024 },
+});
+
+// Fichier rendu par l'étudiant (copie, rapport, archive…)
+const subDir = uploadsPath('submissions');
+if (!fs.existsSync(subDir)) fs.mkdirSync(subDir, { recursive: true });
+const subUpload = multer({
+  storage: multer.diskStorage({
+    destination: subDir,
+    filename: (req, file, cb) => cb(null, `rendu-${req.params.assignmentId}-${req.user.sub.slice(0, 8)}-${Date.now()}${path.extname(file.originalname).toLowerCase()}`),
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 },
 });
 
 const r = Router();
@@ -69,6 +81,18 @@ r.get('/assignments/:assignmentId/submissions', requireSystem('ONLINE'), asyncHa
 // Teacher: grade a submission
 r.patch('/submissions/:submissionId/grade', requireSystem('ONLINE'), asyncHandler(async (req, res) => {
   res.json(await svc.gradeSubmission(req.params.submissionId, req.user.sub, req.body));
+}));
+
+// Student: déposer le fichier de son devoir (avant « Rendre »)
+r.post('/assignments/:assignmentId/submission-file', requireSystem('ONLINE'), (req, res, next) => {
+  subUpload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Fichier trop lourd (50 Mo maximum)' : err.message });
+    next();
+  });
+}, asyncHandler(async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' });
+  const meta = fileMeta(req.file);
+  res.status(201).json({ url: `/uploads/submissions/${req.file.filename}`, name: meta.name, mimeType: meta.mimeType, size: req.file.size });
 }));
 
 // Student: submit assignment

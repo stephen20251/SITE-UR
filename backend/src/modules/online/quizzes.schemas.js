@@ -10,6 +10,30 @@ const optionSchema = z.object({
   isCorrect: z.boolean().default(false),
 });
 
+// Option d'une question modifiée : `id` présent = option existante (conservée).
+const editOptionSchema = optionSchema.extend({ id: z.string().uuid().optional() });
+
+// Ajout / modification d'une question d'un QCM existant (sans recréer le quiz).
+export const questionIdParam = z.object({ questionId: z.string().uuid() });
+export const questionBody = z
+  .object({
+    text: z.string().trim().min(1).max(1000),
+    type: z.enum(QUESTION_TYPES),
+    points: z.coerce.number().min(0.5).max(100).default(1),
+    explanation: z.string().trim().max(2000).nullable().optional(),
+    order: z.coerce.number().int().min(0).optional(),
+    options: z.array(editOptionSchema).min(2).max(8),
+  })
+  .strict()
+  .superRefine((q, ctx) => {
+    const correct = q.options.filter((o) => o.isCorrect).length;
+    if (correct === 0) ctx.addIssue({ code: 'custom', path: ['options'], message: 'Cochez au moins une bonne réponse' });
+    if ((q.type === 'MCQ_SINGLE' || q.type === 'TRUE_FALSE') && correct > 1) {
+      ctx.addIssue({ code: 'custom', path: ['options'], message: 'Une seule bonne réponse pour ce type de question' });
+    }
+    if (q.type === 'TRUE_FALSE' && q.options.length !== 2) ctx.addIssue({ code: 'custom', path: ['options'], message: 'Vrai / Faux : exactement 2 réponses' });
+  });
+
 const questionSchema = z
   .object({
     text: z.string().trim().min(1).max(1000),

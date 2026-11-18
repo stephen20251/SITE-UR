@@ -4,11 +4,20 @@ import { isCursusEnrollment, quizAudiences } from '../cursus/cursus.access.js';
 import { HttpError } from '../../utils/asyncHandler.js';
 import { notifyUser, notifyUsers } from '../../utils/notify.js';
 import { getCourseOwned, getQuizOwned, getEnrollmentOrThrow } from './online.guards.js';
-import { logActivity, tryIssueCertificate } from './enrollment.service.js';
+import { logActivity, tryIssueCertificate, courseCompletion } from './enrollment.service.js';
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
 // ─── Teacher: author a quiz ───
+// Règle du Super Admin « quiz et devoirs après les leçons »
+export async function assertActivitiesOpen(studentId, courseId) {
+  if (!courseId) return;
+  const c = await courseCompletion(studentId, courseId);
+  if (c?.activitiesLocked) {
+    throw new HttpError(403, `Terminez d'abord les leçons du cours (${Math.round(c.lessonsProgress)} % / ${c.lessonThreshold} %) : le quiz s'ouvrira ensuite.`);
+  }
+}
+
 export async function createQuiz(courseId, teacherId, input) {
   await getCourseOwned(courseId, teacherId);
 
@@ -28,7 +37,7 @@ export async function createQuiz(courseId, teacherId, input) {
           type: q.type,
           points: q.points,
           order: q.order ?? i,
-          options: { create: q.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })) },
+          options: { create: q.options.map((o, j) => ({ text: o.text, isCorrect: o.isCorrect, order: j })) },
         })),
       },
     },
@@ -59,6 +68,90 @@ export async function updateQuiz(quizId, teacherId, patch) {
       ...(audience !== undefined && { audience }),
     },
   });
+}
+
+// ─── Modification d'un QCM existant, question par question ───────────────────
+// Les résultats déjà enregistrés sont conservés : chaque tentative garde ses réponses
+// et sa note (elles ne dépendent pas des questions). Les options existantes sont
+// mises à jour sur place (même identifiant), les nouvelles ajoutées.
+async function questionOwned(questionId, userId) {
+  const q = await prisma.quizQuestion.findUnique({ where: { id: questionId }, include: { options: true } });
+  if (!q) throw new HttpError(404, 'Question introuvable');
+  await getQuizOwned(q.quizId, userId);
+  return q;
+}
+
+async function writeOptions(questionId, options, existing = []) {
+  const keep = new Set(options.filter((o) => o.id).map((o) => o.id));
+  const known = new Set(existing.map((o) => o.id));
+  // Options retirées
+  const removed = existing.filter((o) => !keep.has(o.id)).map((o) => o.id);
+  if (removed.length) await prisma.quizOption.deleteMany({ where: { id: { in: removed } } });
+  for (const [i, o] of options.entries()) {
+    if (o.id && known.has(o.id)) {
+      await prisma.quizOption.update({ where: { id: o.id }, data: { text: o.text, isCorrect: o.isCorrect, order: i } });
+    } else {
+      await prisma.quizOption.create({ data: { questionId, text: o.text, isCorrect: o.isCorrect, order: i } });
+    }
+  }
+}
+
+export async function addQuestion(quizId, userId, input) {
+  await getQuizOwned(quizId, userId);
+  const last = await prisma.quizQuestion.findFirst({ where: { quizId }, orderBy: { order: 'desc' }, select: { order: true } });
+  const q = await prisma.quizQuestion.create({
+    data: {
+      quizId, text: input.text, type: input.type, points: input.points ?? 1,
+      explanation: input.explanation ?? null, order: input.order ?? (last?.order ?? -1) + 1,
+    },
+  });
+  await writeOptions(q.id, input.options);
+  return prisma.quizQuestion.findUnique({ where: { id: q.id }, include: { options: { orderBy: { order: 'asc' } } } });
+}
+
+export async function updateQuestion(questionId, userId, input) {
+  const current = await questionOwned(questionId, userId);
+  await prisma.quizQuestion.update({
+    where: { id: questionId },
+    data: {
+      text: input.text, type: input.type, points: input.points ?? current.points,
+      ...(input.explanation !== undefined && { explanation: input.explanation }),
+      ...(input.order !== undefined && { order: input.order }),
+    },
+  });
+  await writeOptions(questionId, input.options, current.options);
+  return prisma.quizQuestion.findUnique({ where: { id: questionId }, include: { options: { orderBy: { order: 'asc' } } } });
+}
+
+export async function deleteQuestion(questionId, userId) {
+  const q = await questionOwned(questionId, userId);
+  const count = await prisma.quizQuestion.count({ where: { quizId: q.quizId } });
+  if (count <= 1) throw new HttpError(400, 'Un QCM doit garder au moins une question');
+  await prisma.quizQuestion.delete({ where: { id: questionId } });
+  return { ok: true };
+}
+
+// Super Admin : tous les QCM de la plateforme, avec cours, enseignant et résultats.
+export async function listAllQuizzes({ q } = {}) {
+  const s = String(q ?? '').trim();
+  const quizzes = await prisma.quiz.findMany({
+    where: {
+      courseId: { not: null },
+      ...(s && { OR: [{ title: { contains: s } }, { onlineCourse: { title: { contains: s } } }] }),
+    },
+    orderBy: { updatedAt: 'desc' },
+    select: {
+      id: true, title: true, passingScore: true, timeLimit: true, audience: true, updatedAt: true, createdAt: true,
+      onlineCourse: { select: { id: true, title: true, courseKind: true, teacher: { select: { firstName: true, lastName: true } } } },
+      _count: { select: { questions: true, onlineAttempts: true } },
+    },
+    take: 300,
+  });
+  return quizzes.map((x) => ({
+    id: x.id, title: x.title, passingScore: x.passingScore, timeLimit: x.timeLimit, audience: x.audience,
+    updatedAt: x.updatedAt, createdAt: x.createdAt,
+    course: x.onlineCourse, questionCount: x._count.questions, attemptCount: x._count.onlineAttempts,
+  }));
 }
 
 export async function deleteQuiz(quizId, teacherId) {
@@ -201,6 +294,7 @@ export async function getQuiz(quizId, user) {
   const isOwner = (isOnlineTeacher(user) && quiz.onlineCourse?.teacherId === user.sub)
     || user.role === 'SUPER_ADMIN' || user.systemRole === 'SUPER_ADMIN';
   if (!isOwner) await getEnrollmentOrThrow(user.sub, quiz.courseId);
+  if (!isOwner) await assertActivitiesOpen(user.sub, quiz.courseId);
 
   await logActivity(user.sub, quiz.courseId, null, quizId, 'quiz_start');
 
@@ -228,7 +322,8 @@ export async function getQuiz(quizId, user) {
       type: q.type,
       points: q.points,
       order: q.order,
-      options: q.options.map((o) => ({
+      ...(isOwner && { explanation: q.explanation ?? null }),
+      options: [...q.options].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((o) => ({
         id: o.id,
         text: o.text,
         ...(isOwner && { isCorrect: o.isCorrect }),
@@ -245,6 +340,7 @@ export async function submitQuiz(quizId, studentId, answers) {
   });
   if (!quiz) throw new HttpError(404, 'Quiz not found');
   await getEnrollmentOrThrow(studentId, quiz.courseId);
+  await assertActivitiesOpen(studentId, quiz.courseId);
 
   const selectedByQuestion = new Map(answers.map((a) => [a.questionId, new Set(a.selectedOptionIds)]));
 

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle, ChevronDown, ChevronUp, Clock, Download, GraduationCap, Loader2, LogIn, Save, Send, XCircle } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
@@ -12,6 +12,41 @@ import {
 import { ApiError } from "@/lib/api";
 
 export const Route = createFileRoute("/classroom/candidat")({ component: CandidatDash });
+
+// Enregistrement automatique d'un formulaire (1,5 s après la dernière frappe) :
+// rien n'est perdu si la page se ferme ou si la connexion coupe.
+type AutoState = "idle" | "saving" | "saved" | "error";
+function useAutoSaveDraft(deps: unknown[], save: () => Promise<unknown>, enabled: boolean) {
+  const [state, setState] = useState<AutoState>("idle");
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  const key = JSON.stringify(deps);
+  // Valeur déjà enregistrée : seules les vraies modifications déclenchent un enregistrement
+  const savedKey = useRef(key);
+  useEffect(() => {
+    if (!enabled || key === savedKey.current) return;
+    const t = setTimeout(() => {
+      setState("saving");
+      saveRef.current().then(() => { savedKey.current = key; setState("saved"); }).catch(() => setState("error"));
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [key, enabled]);
+  // Fermeture de l'onglet pendant une saisie non enregistrée : avertissement du navigateur
+  useEffect(() => {
+    if (state !== "saving") return;
+    const onUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, [state]);
+  return state;
+}
+
+function AutoSaveHint({ state }: { state: AutoState }) {
+  if (state === "idle") return <span className="mr-auto self-center text-xs text-muted-foreground">Enregistrement automatique activé</span>;
+  if (state === "saving") return <span className="mr-auto inline-flex items-center gap-1 self-center text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Enregistrement…</span>;
+  if (state === "saved") return <span className="mr-auto inline-flex items-center gap-1 self-center text-xs text-emerald-600"><CheckCircle className="h-3 w-3" /> Brouillon enregistré</span>;
+  return <span className="mr-auto self-center text-xs text-red-600">Enregistrement automatique impossible : vérifiez votre connexion, puis « Enregistrer ».</span>;
+}
 
 // Parcours pour devenir étudiant de l'UR
 const STEPS = [
@@ -140,8 +175,8 @@ function PreInscription({ c }: { c: Candidate }) {
   const submit = useSubmitMyCandidature();
   const editable = c.status === "DRAFT" || c.status === "REJECTED";
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ mentionId: "", level: "L1", phone: "" });
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [f, setF] = useState({ mentionId: c.mention?.id ?? "", level: c.level ?? "L1", phone: c.user.phone ?? "" });
+  const [answers, setAnswers] = useState<Record<string, string>>(c.motivation ?? {});
 
   useEffect(() => {
     setF({ mentionId: c.mention?.id ?? "", level: c.level ?? "L1", phone: c.user.phone ?? "" });
@@ -149,6 +184,7 @@ function PreInscription({ c }: { c: Candidate }) {
   }, [c.id, c.status]);
 
   const preTypes = Object.entries(meta.docTypes).filter(([, v]) => v.stage === "PRE_INSCRIPTION");
+  const auto = useAutoSaveDraft([f, answers], () => saveAll(), editable);
 
   async function saveAll() {
     await update.mutateAsync({ mentionId: f.mentionId, level: f.level, phone: f.phone });
@@ -241,13 +277,15 @@ function PreInscription({ c }: { c: Candidate }) {
       </div>
 
       {editable && (
-        <div className="mt-5 flex justify-end gap-2">
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <AutoSaveHint state={auto} />
           <button onClick={save} disabled={update.isPending || saveMotivation.isPending} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm hover:bg-accent">
             <Save className="h-4 w-4" /> Enregistrer
           </button>
           <button onClick={send} disabled={submit.isPending || update.isPending || !f.mentionId}
+            title={!f.mentionId ? "Choisissez d'abord la mention" : undefined}
             className="inline-flex items-center gap-2 rounded-lg grad-classroom px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-            <Send className="h-4 w-4" /> Soumettre ma candidature
+            {submit.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Soumettre ma candidature
           </button>
         </div>
       )}
@@ -263,9 +301,9 @@ function Inscription({ c }: { c: Candidate }) {
   const save = useSaveInscription();
   const submit = useSubmitInscription();
   const editable = c.status === "ACCEPTED" && !c.inscriptionSubmittedAt;
-  const [form, setForm] = useState<InscriptionForm>({});
-  const [paymentReference, setRef] = useState("");
-  const [fromOtherSchool, setOther] = useState(false);
+  const [form, setForm] = useState<InscriptionForm>(c.inscriptionForm ?? { lastName: c.user.lastName.toUpperCase(), firstNames: c.user.firstName, nationality: "Malagasy" });
+  const [paymentReference, setRef] = useState(c.paymentReference ?? "");
+  const [fromOtherSchool, setOther] = useState(c.fromOtherSchool);
 
   useEffect(() => {
     setForm(c.inscriptionForm ?? { lastName: c.user.lastName.toUpperCase(), firstNames: c.user.firstName, nationality: "Malagasy" });
@@ -294,6 +332,7 @@ function Inscription({ c }: { c: Candidate }) {
   }
 
   const insTypes = Object.entries(meta.docTypes).filter(([, v]) => v.stage === "INSCRIPTION" && (!v.otherSchool || fromOtherSchool));
+  const auto = useAutoSaveDraft([form, paymentReference, fromOtherSchool], () => doSave(true), editable);
   const templates: Record<string, { href: string; label: string }> = {
     ENGAGEMENT_PARENTAL: { href: "/modeles/lettre-engagement-parental.docx", label: "Télécharger un modèle" },
     DEMANDE_ADMISSION: { href: "/modeles/demande-admission.pdf", label: "Télécharger un modèle" },
@@ -414,14 +453,15 @@ function Inscription({ c }: { c: Candidate }) {
       </div>
 
       {editable && (
-        <div className="mt-5 flex justify-end gap-2">
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <AutoSaveHint state={auto} />
           <button onClick={() => doSave().catch((e) => toast.error(e instanceof ApiError ? e.message : "Erreur"))} disabled={save.isPending}
             className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm hover:bg-accent">
             <Save className="h-4 w-4" /> Enregistrer
           </button>
           <button onClick={send} disabled={submit.isPending || save.isPending}
             className="inline-flex items-center gap-2 rounded-lg grad-classroom px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-            <GraduationCap className="h-4 w-4" /> Envoyer mon dossier d'inscription
+            {submit.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <GraduationCap className="h-4 w-4" />} Envoyer mon dossier d'inscription
           </button>
         </div>
       )}

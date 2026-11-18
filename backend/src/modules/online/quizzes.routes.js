@@ -8,6 +8,8 @@ import {
   createQuizBody,
   updateQuizBody,
   submitQuizBody,
+  questionIdParam,
+  questionBody,
 } from './quizzes.schemas.js';
 import * as svc from './quizzes.service.js';
 
@@ -16,6 +18,41 @@ const router = Router();
 
 const teacherOnly = requireRole('TEACHER_ONLINE');
 const studentOnly = requireRole('STUDENT_ONLINE');
+
+// Super Admin : tous les QCM de la plateforme (consultation et modification)
+router.get(
+  '/quizzes/all',
+  requireRole('SUPER_ADMIN'),
+  asyncHandler(async (req, res) => {
+    res.json(await svc.listAllQuizzes({ q: req.query.q }));
+  }),
+);
+
+// ─── Questions d'un QCM existant (enseignant propriétaire ou Super Admin) ───
+router.post(
+  '/quizzes/:quizId/questions',
+  teacherOnly,
+  validate({ params: quizIdParam, body: questionBody }),
+  asyncHandler(async (req, res) => {
+    res.status(201).json(await svc.addQuestion(req.params.quizId, req.user.sub, req.body));
+  }),
+);
+router.put(
+  '/quiz-questions/:questionId',
+  teacherOnly,
+  validate({ params: questionIdParam, body: questionBody }),
+  asyncHandler(async (req, res) => {
+    res.json(await svc.updateQuestion(req.params.questionId, req.user.sub, req.body));
+  }),
+);
+router.delete(
+  '/quiz-questions/:questionId',
+  teacherOnly,
+  validate({ params: questionIdParam }),
+  asyncHandler(async (req, res) => {
+    res.json(await svc.deleteQuestion(req.params.questionId, req.user.sub));
+  }),
+);
 
 // Student: pending quizzes across all enrolled courses
 router.get(

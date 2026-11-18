@@ -26,11 +26,13 @@ export const registerSchema = z.object({
 
 // Candidature à l'université (compte CANDIDATE + dossier en brouillon)
 export const registerCandidateSchema = z.object({
-  email: z.string().email().toLowerCase().trim(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(8).max(128),
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
-  phone: z.string().trim().max(40).optional(),
+  phone: z.string().trim().max(40)
+    .refine((v) => !v || /^[+\d][\d\s.-]{6,}$/.test(v), { message: 'Téléphone : numéro invalide (exemple : 034 12 345 67)' })
+    .optional(),
   mentionId: z.string().uuid().optional(),
   level: z.enum(['L1', 'L2', 'L3', 'M1', 'M2']).optional(),
 });

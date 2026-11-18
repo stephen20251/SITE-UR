@@ -62,7 +62,10 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true }));
   if (env.NODE_ENV !== 'test') app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-  app.use(rateLimit({ windowMs: 60_000, max: 500, standardHeaders: true, legacyHeaders: false }));
+  app.use(rateLimit({
+    windowMs: 60_000, max: 500, standardHeaders: true, legacyHeaders: false,
+    message: { error: 'Trop de requêtes en peu de temps : patientez une minute puis réessayez.' },
+  }));
 
   app.get('/health', (req, res) => res.json({ ok: true, ts: Date.now(), version: 'ERP v2.0' }));
 

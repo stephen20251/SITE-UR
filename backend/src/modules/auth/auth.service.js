@@ -123,11 +123,12 @@ export async function me(userId) {
 // Inscription libre : uniquement les comptes UR Online. Les comptes de l'université
 // sont créés par l'administration ; une candidature passe par registerCandidate.
 const SELF_REGISTER_ROLES = ['STUDENT_ONLINE', 'TEACHER_ONLINE'];
+const DUPLICATE_EMAIL = 'Un compte existe déjà avec cette adresse e-mail : connectez-vous, ou utilisez « Mot de passe oublié ».';
 
 export async function register(input) {
   if (!SELF_REGISTER_ROLES.includes(input.role)) throw new HttpError(403, 'Ce type de compte est créé par l\'administration');
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) throw new HttpError(409, 'Email déjà utilisé');
+  if (existing) throw new HttpError(409, DUPLICATE_EMAIL);
 
   const user = await prisma.user.create({
     data: {
@@ -147,8 +148,12 @@ export async function register(input) {
 }
 
 export async function registerCandidate(input) {
+  // Mention choisie : elle doit exister (sinon le dossier serait bloqué plus tard)
+  if (input.mentionId && !(await prisma.mention.findFirst({ where: { id: input.mentionId, isActive: true }, select: { id: true } }))) {
+    throw new HttpError(400, 'Mention : choix invalide, sélectionnez-la dans la liste');
+  }
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) throw new HttpError(409, 'Email déjà utilisé');
+  if (existing) throw new HttpError(409, DUPLICATE_EMAIL);
 
   const user = await prisma.user.create({
     data: {

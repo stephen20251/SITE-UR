@@ -5,6 +5,7 @@ import { notifyUser } from '../../utils/notify.js';
 import { sendEmail, renderEmail } from '../../utils/mailer.js';
 import { getEnrollmentOrThrow } from './online.guards.js';
 import { cursusAccess, isCursusEnrollment, isReservedVideoLesson, quizAudiences } from '../cursus/cursus.access.js';
+import { getProgressRules } from './progress-rules.js';
 
 const CURSUS_LOCK_MSG = {
   tuition_unpaid: "Ce cours est débloqué par le paiement de l'écolage du mois correspondant.",
@@ -149,9 +150,10 @@ async function recomputeProgress(enrollment, courseId) {
     where: { id: courseId },
     select: { id: true, courseKind: true, cursusLevel: true, mentionId: true },
   });
-  // Cursus universitaire : il faut 100 % des leçons ; cours certifiant : 80 %.
+  // Seuil des leçons (Super Admin) : cursus universitaire 100 %, cours certifiant 80 % par défaut.
   const inCursus = await isCursusEnrollment(enrollment.studentId, course);
-  const threshold = inCursus ? 100 : 80;
+  const rules = await getProgressRules();
+  const threshold = inCursus ? rules.cursusLessonThreshold : rules.certifyingLessonThreshold;
   // Présentiel : les vidéos qui lui sont fermées ne comptent pas dans l'avancement.
   const presentiel = inCursus && (await prisma.studentProfile.findUnique({
     where: { userId: enrollment.studentId }, select: { studyMode: true },
@@ -204,38 +206,13 @@ export async function tryIssueCertificate(studentId, enrollmentId, courseId) {
     select: { id: true, title: true, courseKind: true, cursusLevel: true, cursusMonth: true, mentionId: true },
   });
   const cursus = await isCursusEnrollment(studentId, course);
-  if (enrollment.progress < (cursus ? 100 : 80)) return null; // lessons not done
+  const rules = await getProgressRules();
+  if (enrollment.progress < (cursus ? rules.cursusLessonThreshold : rules.certifyingLessonThreshold)) return null; // leçons pas terminées
 
-  // Every quiz of the student's "test space" (cursus students / others) must be passed
-  const courseQuizzes = await prisma.quiz.findMany({
-    where: {
-      courseId,
-      audience: { in: quizAudiences(cursus, (await prisma.quiz.findMany({ where: { courseId }, select: { audience: true } })).map((q) => q.audience)) },
-    },
-    select: { id: true },
-  });
-  if (courseQuizzes.length > 0) {
-    for (const quiz of courseQuizzes) {
-      const passed = await prisma.onlineQuizAttempt.findFirst({
-        where: { quizId: quiz.id, studentId, passed: true },
-      });
-      if (!passed) return null;
-    }
-  }
-
-  // All open assignments must be submitted
-  const openAssignments = await prisma.onlineAssignment.findMany({
-    where: { courseId, status: 'OPEN' },
-    select: { id: true },
-  });
-  if (openAssignments.length > 0) {
-    for (const a of openAssignments) {
-      const sub = await prisma.onlineSubmission.findUnique({
-        where: { assignmentId_studentId: { assignmentId: a.id, studentId } },
-      });
-      if (!sub) return null;
-    }
-  }
+  // Quiz et devoirs exigés (règles du Super Admin)
+  const activities = await courseActivities(studentId, course, cursus);
+  if (rules.requireQuizzes && activities.quizzes.some((q) => !q.passed)) return null;
+  if (rules.requireAssignments && activities.assignments.some((a) => !a.submitted)) return null;
 
   // All conditions met — mark completed
   await prisma.enrollment.update({ where: { id: enrollmentId }, data: { completedAt: new Date() } });
@@ -253,6 +230,100 @@ export async function tryIssueCertificate(studentId, enrollmentId, courseId) {
     return null;
   }
   return issueCertificate(studentId, enrollmentId, courseId);
+}
+
+// Quiz (de l'espace test de l'étudiant) et devoirs ouverts d'un cours, avec leur état.
+export async function courseActivities(studentId, course, cursus) {
+  const all = await prisma.quiz.findMany({ where: { courseId: course.id }, select: { id: true, title: true, audience: true, passingScore: true, createdAt: true }, orderBy: { createdAt: 'asc' } });
+  const audiences = quizAudiences(cursus, all.map((q) => q.audience));
+  const quizzes = all.filter((q) => audiences.includes(q.audience ?? 'ALL'));
+  const attempts = quizzes.length
+    ? await prisma.onlineQuizAttempt.findMany({ where: { studentId, quizId: { in: quizzes.map((q) => q.id) } }, select: { quizId: true, passed: true, score: true, maxScore: true } })
+    : [];
+  const assignments = await prisma.onlineAssignment.findMany({ where: { courseId: course.id, status: 'OPEN' }, select: { id: true, title: true, dueDate: true }, orderBy: { dueDate: 'asc' } });
+  const subs = assignments.length
+    ? await prisma.onlineSubmission.findMany({ where: { studentId, assignmentId: { in: assignments.map((a) => a.id) } }, select: { assignmentId: true, status: true } })
+    : [];
+  return {
+    quizzes: quizzes.map((q) => {
+      const mine = attempts.filter((a) => a.quizId === q.id);
+      const best = mine.reduce((b, a) => Math.max(b, a.maxScore ? (a.score / a.maxScore) * 100 : 0), 0);
+      return { id: q.id, title: q.title, passingScore: q.passingScore, attempted: mine.length > 0, passed: mine.some((a) => a.passed), bestScore: mine.length ? round2(best) : null };
+    }),
+    assignments: assignments.map((a) => {
+      const s = subs.find((x) => x.assignmentId === a.id);
+      return { id: a.id, title: a.title, dueDate: a.dueDate, submitted: Boolean(s), graded: s?.status === 'GRADED' };
+    }),
+  };
+}
+
+// État d'un cours pour un étudiant : leçons, quiz, devoirs, statut et prochaine activité.
+// Remet aussi le cours « terminé » quand toutes les conditions sont réunies (règles changées,
+// quiz retiré…), pour que l'affichage reste cohérent.
+export async function courseCompletion(studentId, courseId) {
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { studentId_courseId: { studentId, courseId } },
+    select: { id: true, progress: true, completedAt: true },
+  });
+  const course = await prisma.onlineCourse.findUnique({
+    where: { id: courseId },
+    select: { id: true, courseKind: true, cursusLevel: true, cursusMonth: true, mentionId: true },
+  });
+  if (!course) return null;
+  const rules = await getProgressRules();
+  const cursus = await isCursusEnrollment(studentId, course);
+  const threshold = cursus ? rules.cursusLessonThreshold : rules.certifyingLessonThreshold;
+  const progress = enrollment?.progress ?? 0;
+  const lessonsDone = progress >= threshold;
+  const activities = await courseActivities(studentId, course, cursus);
+  let completedAt = enrollment?.completedAt ?? null;
+  if (enrollment && !completedAt && lessonsDone) {
+    await tryIssueCertificate(studentId, enrollment.id, courseId).catch(() => null);
+    completedAt = (await prisma.enrollment.findUnique({ where: { id: enrollment.id }, select: { completedAt: true } }))?.completedAt ?? null;
+  }
+  const pendingQuiz = activities.quizzes.find((q) => !q.passed);
+  const pendingAssignment = activities.assignments.find((a) => !a.submitted);
+  const nextActivity = completedAt ? null
+    : !lessonsDone ? null
+    : pendingQuiz ? { type: 'QUIZ', id: pendingQuiz.id, title: pendingQuiz.title }
+    : pendingAssignment ? { type: 'ASSIGNMENT', id: pendingAssignment.id, title: pendingAssignment.title }
+    : null;
+  const status = completedAt ? 'COMPLETED'
+    : !enrollment || progress === 0 ? 'NOT_STARTED'
+    : !lessonsDone ? 'IN_PROGRESS'
+    : pendingQuiz && rules.requireQuizzes ? 'QUIZ_PENDING'
+    : pendingAssignment && rules.requireAssignments ? 'ASSIGNMENT_PENDING'
+    : 'IN_PROGRESS';
+  return {
+    status,
+    completed: Boolean(completedAt),
+    completedAt,
+    progress: completedAt ? Math.max(progress, threshold) : progress,
+    lessonsProgress: progress,
+    lessonThreshold: threshold,
+    lessonsDone,
+    quizzes: activities.quizzes,
+    assignments: activities.assignments,
+    nextActivity,
+    activitiesLocked: rules.activitiesAfterLessons && !lessonsDone && !completedAt,
+    rules: { requireQuizzes: rules.requireQuizzes, requireAssignments: rules.requireAssignments, activitiesAfterLessons: rules.activitiesAfterLessons },
+  };
+}
+
+// Recalcule la progression de toutes les inscriptions (après un changement de règles).
+export async function recomputeAllProgress() {
+  const enrollments = await prisma.enrollment.findMany({ select: { id: true, studentId: true, courseId: true, completedAt: true } });
+  let completed = 0;
+  for (const e of enrollments) {
+    const before = e.completedAt;
+    await recomputeProgress(e, e.courseId).catch(() => null);
+    if (!before) {
+      const after = await prisma.enrollment.findUnique({ where: { id: e.id }, select: { completedAt: true, progress: true } });
+      if (!after?.completedAt) await tryIssueCertificate(e.studentId, e.id, e.courseId).catch(() => null);
+      if ((await prisma.enrollment.findUnique({ where: { id: e.id }, select: { completedAt: true } }))?.completedAt) completed += 1;
+    }
+  }
+  return { enrollments: enrollments.length, newlyCompleted: completed };
 }
 
 // ─── Certificates ───

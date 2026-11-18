@@ -7,6 +7,7 @@ import { ratingsForCourses, ratingSummary } from './reviews.service.js';
 import { hasActiveSubscription } from './subscription.service.js';
 import { isOnlineStudent, isOnlineTeacher } from '../../middlewares/auth.js';
 import { canReviewCourse, courseMentionId } from './course-review.service.js';
+import { courseCompletion } from './enrollment.service.js';
 import {
   cursusAccess, isProtectedCourse, isReservedVideoLesson, isVideoFile, isVideoLesson, quizAudiences, signMediaUrl, CURSUS_KINDS, CERTIFYING_KINDS,
 } from '../cursus/cursus.access.js';
@@ -397,6 +398,10 @@ export async function getCourseDetail(courseId, user, { asReviewer = false } = {
     };
   });
 
+  // État de l'étudiant inscrit : statut, quiz et devoirs, prochaine activité à faire.
+  const completion = !isOwner && accessible && enrollment ? await courseCompletion(user.sub, courseId).catch(() => null) : null;
+  const quizState = new Map((completion?.quizzes ?? []).map((q) => [q.id, q]));
+
   return {
     id: course.id,
     title: course.title,
@@ -444,7 +449,8 @@ export async function getCourseDetail(courseId, user, { asReviewer = false } = {
     enrolled: !isOwner && accessible,
     subscribed,
     progress: enrollment?.progress ?? 0,
-    completedAt: enrollment?.completedAt ?? null,
+    completedAt: completion?.completedAt ?? enrollment?.completedAt ?? null,
+    completion,
     lastVisitedLessonId: enrollment?.lastVisitedLessonId ?? null,
     certificate: enrollment?.certificate ?? null,
     modules,
@@ -458,6 +464,9 @@ export async function getCourseDetail(courseId, user, { asReviewer = false } = {
       passingScore: q.passingScore,
       timeLimit: q.timeLimit,
       questionCount: q._count.questions,
+      attempted: quizState.get(q.id)?.attempted ?? false,
+      passed: quizState.get(q.id)?.passed ?? false,
+      bestScore: quizState.get(q.id)?.bestScore ?? null,
     })),
   };
 }

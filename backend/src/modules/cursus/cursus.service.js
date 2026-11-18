@@ -9,6 +9,8 @@ import { HttpError } from '../../utils/asyncHandler.js';
 import { notifyUser, notifyUsers } from '../../utils/notify.js';
 import { loadStaffContext, staffMentionScope, assertStaffMention } from '../../middlewares/rbac.js';
 import { semestersFor, semesterOfMonthIn } from './semesters.service.js';
+import { courseCompletion } from '../online/enrollment.service.js';
+import { getProgressRules } from '../online/progress-rules.js';
 import { ensureSubjectFor, syncTeacherAssignment } from '../structure/subject-sync.js';
 import { getTeacherSharePercent, shareInfo } from '../finance/revenue-share.js';
 import {
@@ -146,6 +148,11 @@ async function buildStudentOverview(profile) {
     : [];
   const enr = new Map(enrollments.map((e) => [e.courseId, e]));
   const curMonth = await currentCursusMonth();
+  const rules = await getProgressRules();
+  // État réel de chaque cours commencé : leçons, quiz, devoirs, prochaine activité
+  const completions = new Map(await Promise.all(
+    courses.filter((c) => enr.has(c.id)).map(async (c) => [c.id, await courseCompletion(profile.userId, c.id).catch(() => null)]),
+  ));
 
   const months = [];
   for (const month of MONTHS) {
@@ -155,10 +162,13 @@ async function buildStudentOverview(profile) {
     const latest = validated ?? pending ?? monthPayments[0] ?? null;
     const monthCourses = courses.filter((c) => c.cursusMonth === month).map((c) => {
       const e = enr.get(c.id);
+      const comp = completions.get(c.id);
       return {
         ...courseSummary(c, curMonth),
-        myProgress: e?.progress ?? 0,
-        completed: Boolean(e?.completedAt),
+        myProgress: comp?.progress ?? e?.progress ?? 0,
+        completed: comp?.completed ?? Boolean(e?.completedAt),
+        myStatus: comp?.status ?? (e ? 'IN_PROGRESS' : 'NOT_STARTED'),
+        nextActivity: comp?.nextActivity ?? null,
         relatedCourseIds: c.relatedCourseIds,
       };
     });
@@ -171,7 +181,9 @@ async function buildStudentOverview(profile) {
       status: validated ? 'PAID' : pending ? 'PENDING' : latest?.status === 'REFUSED' ? 'REFUSED' : 'UNPAID',
       payment: latest,
       courses: monthCourses,
-      completed: monthCourses.every((c) => c.completed),
+      // Un mois sans cours publié n'est pas « terminé » (mais il ne bloque pas le suivant)
+      completed: monthCourses.length > 0 && monthCourses.every((c) => c.completed),
+      coursesCompleted: monthCourses.filter((c) => c.completed).length,
     });
   }
 
@@ -184,12 +196,16 @@ async function buildStudentOverview(profile) {
     if (!level) { m.canPay = false; m.lockReason = "Aucun niveau n'est associé à votre dossier."; continue; }
     if (!prev) { m.canPay = true; m.lockReason = null; continue; }
     if (prev.status !== 'PAID') { m.canPay = false; m.lockReason = `Payez d'abord le mois ${prev.month}.`; continue; }
-    if (!presentiel && !prev.completed) { m.canPay = false; m.lockReason = `Terminez à 100 % les cours du mois ${prev.month}.`; continue; }
+    if (!presentiel && rules.monthGate && prev.courses.length > 0 && !prev.completed) {
+      m.canPay = false; m.lockReason = `Terminez d'abord les cours du mois ${prev.month} (${prev.coursesCompleted}/${prev.courses.length} terminés).`; continue;
+    }
     m.canPay = true; m.lockReason = null;
   }
 
   const paidCount = months.filter((m) => m.status === 'PAID').length;
-  const completedCount = months.filter((m) => m.status === 'PAID' && m.completed).length;
+  // Mois terminés : payés et tous leurs cours terminés (un mois sans cours compte comme fait)
+  const completedCount = months.filter((m) => m.status === 'PAID' && (m.completed || m.courses.length === 0)).length;
+  const allCourses = months.flatMap((m) => m.courses);
   return {
     student: {
       id: profile.id, userId: profile.userId, matricule: profile.matricule,
@@ -202,7 +218,10 @@ async function buildStudentOverview(profile) {
     paidCount,
     completedCount,
     nextPayableMonth: months.find((m) => m.canPay)?.month ?? null,
-    eligibleForPassage: paidCount === MONTHS.length && (presentiel || completedCount === MONTHS.length),
+    coursesTotal: allCourses.length,
+    coursesCompleted: allCourses.filter((c) => c.completed).length,
+    display: { showLockedCourses: rules.showLockedCourses, showCourseProgress: rules.showCourseProgress },
+    eligibleForPassage: paidCount === MONTHS.length && (presentiel || !rules.monthGate || completedCount === MONTHS.length),
   };
 }
 

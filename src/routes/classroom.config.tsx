@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
-import { Building2, Users, DoorOpen, BookOpen, Settings2, Layers, Palette, GraduationCap, CalendarRange } from "lucide-react";
+import { Building2, Users, DoorOpen, BookOpen, Settings2, Layers, Palette, GraduationCap, CalendarRange, TrendingUp } from "lucide-react";
 import { useRequireClassroom } from "@/components/classroom/shared";
 
 export const Route = createFileRoute("/classroom/config")({ component: ConfigLayout });
@@ -10,6 +10,7 @@ const TABS: Tab[] = [
   { path: "/classroom/config/structure",    label: "Structure",       icon: <Building2 size={15} /> },
   { path: "/classroom/config/semestres",    label: "Semestres",       icon: <CalendarRange size={15} /> },
   { path: "/classroom/config/matieres",     label: "Matières & UE",   icon: <Layers size={15} /> },
+  { path: "/classroom/config/progression",  label: "Progression des cours", icon: <TrendingUp size={15} /> },
   { path: "/classroom/config/salles",       label: "Salles & Labos",  icon: <DoorOpen size={15} /> },
   { path: "/classroom/config/utilisateurs", label: "Utilisateurs",    icon: <Users size={15} /> },
   { path: "/classroom/config/branding",     label: "Identité visuelle",   icon: <Palette size={15} /> },

@@ -16,6 +16,9 @@ import {
 } from './curriculum.schemas.js';
 import * as svc from './curriculum.service.js';
 import { uploadsPath } from '../../config/paths.js';
+import { mimeFor } from '../../utils/upload-meta.js';
+import { prisma } from '../../database/prisma.js';
+import { isProtectedCourse, signMediaUrl } from '../cursus/cursus.access.js';
 
 // Multer for lesson content uploads
 const lessonMediaDir = uploadsPath('lessons');
@@ -32,6 +35,7 @@ const lessonUpload = multer({
 });
 
 function mimeToLessonType(mime) {
+  mime = String(mime ?? '');
   if (mime.startsWith('video/')) return 'VIDEO';
   if (mime === 'application/pdf') return 'PDF';
   if (mime.startsWith('audio/')) return 'AUDIO';
@@ -116,9 +120,13 @@ router.post(
   asyncHandler(async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file' });
     const url = `/uploads/lessons/${req.file.filename}`;
-    const type = mimeToLessonType(req.file.mimetype);
+    // Type déduit de l'extension si le navigateur envoie un type générique (téléphones)
+    const type = mimeToLessonType(mimeFor(req.file.originalname, req.file.mimetype));
     const lesson = await svc.updateLesson(req.params.lessonId, req.user.sub, { contentUrl: url, type });
-    res.json({ url, type, lesson });
+    // Cours protégé (cursus) ou leçon non téléchargeable : aperçu par URL signée
+    const course = await prisma.onlineCourse.findFirst({ where: { modules: { some: { lessons: { some: { id: lesson.id } } } } }, select: { courseKind: true } });
+    const preview = (course && isProtectedCourse(course)) || lesson.allowDownload === false ? signMediaUrl(req.user.sub, 'l', lesson.id) : url;
+    res.json({ url: preview, type, lesson: { ...lesson, contentUrl: preview } });
   }),
 );
 

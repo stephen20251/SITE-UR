@@ -116,6 +116,38 @@ export type CourseQuizSummary = {
   passingScore: number;
   timeLimit: number | null;
   questionCount: number;
+  // État de l'étudiant
+  attempted?: boolean;
+  passed?: boolean;
+  bestScore?: number | null;
+};
+
+/** État d'un cours pour l'étudiant : leçons, quiz, devoirs, prochaine activité */
+export type CourseCompletion = {
+  status: "NOT_STARTED" | "IN_PROGRESS" | "QUIZ_PENDING" | "ASSIGNMENT_PENDING" | "COMPLETED";
+  completed: boolean;
+  completedAt: string | null;
+  progress: number;
+  lessonsProgress: number;
+  lessonThreshold: number;
+  lessonsDone: boolean;
+  quizzes: { id: string; title: string; passingScore: number; attempted: boolean; passed: boolean; bestScore: number | null }[];
+  assignments: { id: string; title: string; dueDate: string; submitted: boolean; graded: boolean }[];
+  nextActivity: { type: "QUIZ" | "ASSIGNMENT"; id: string; title: string } | null;
+  activitiesLocked: boolean;
+  rules: { requireQuizzes: boolean; requireAssignments: boolean; activitiesAfterLessons: boolean };
+};
+
+/** Règles de progression réglées par le Super Admin */
+export type ProgressRules = {
+  cursusLessonThreshold: number;
+  certifyingLessonThreshold: number;
+  requireQuizzes: boolean;
+  requireAssignments: boolean;
+  activitiesAfterLessons: boolean;
+  monthGate: boolean;
+  showLockedCourses: boolean;
+  showCourseProgress: boolean;
 };
 
 export type Certificate = {
@@ -172,6 +204,7 @@ export type CourseDetail = CursusFields & {
   subscribed?: boolean;
   progress: number;
   completedAt: string | null;
+  completion?: CourseCompletion | null;
   lastVisitedLessonId: string | null;
   certificate: Certificate | null;
   modules: CourseModule[];
@@ -232,12 +265,14 @@ export type QuizQuestion = {
   type: QuestionType;
   points: number;
   order: number;
+  explanation?: string | null;
   options: QuizOption[];
 };
 export type Quiz = {
   id: string;
   courseId: string;
   title: string;
+  audience?: "ALL" | "STUDENT" | "PUBLIC";
   description: string | null;
   passingScore: number;
   timeLimit: number | null;
@@ -732,8 +767,77 @@ export function useSubmitQuiz(quizId: string, courseId?: string) {
       qc.invalidateQueries({ queryKey: qk.myAttempts(quizId) });
       qc.invalidateQueries({ queryKey: qk.pendingQuizzes() });
       qc.invalidateQueries({ queryKey: qk.activity() });
-      if (courseId) qc.invalidateQueries({ queryKey: qk.courseQuizzes(courseId) });
+      if (courseId) {
+        qc.invalidateQueries({ queryKey: qk.courseQuizzes(courseId) });
+        // Statut du cours (quiz réussi → prochaine activité, cours terminé)
+        qc.invalidateQueries({ queryKey: qk.course(courseId) });
+      }
+      qc.invalidateQueries({ queryKey: ["cursus"] });
     },
+  });
+}
+
+// ─── Modification d'un QCM existant (enseignant propriétaire / Super Admin) ───
+export type QuestionInput = {
+  text: string; type: QuestionType; points: number; explanation?: string | null;
+  options: { id?: string; text: string; isCorrect: boolean }[];
+};
+export function useQuizEditor(quizId: string, courseId?: string) {
+  const qc = useQueryClient();
+  const done = () => {
+    qc.invalidateQueries({ queryKey: qk.quiz(quizId) });
+    if (courseId) {
+      qc.invalidateQueries({ queryKey: qk.courseQuizzes(courseId) });
+      qc.invalidateQueries({ queryKey: qk.course(courseId) });
+    }
+    qc.invalidateQueries({ queryKey: ["online", "quizzes", "all"] });
+  };
+  const updateQuiz = useMutation({
+    mutationFn: (patch: { title?: string; description?: string | null; passingScore?: number; timeLimit?: number | null; audience?: "ALL" | "STUDENT" | "PUBLIC" }) =>
+      api(`/online/quizzes/${quizId}`, { method: "PATCH", body: patch }),
+    onSuccess: done,
+  });
+  const addQuestion = useMutation({
+    mutationFn: (q: QuestionInput) => api<QuizQuestion>(`/online/quizzes/${quizId}/questions`, { method: "POST", body: q }),
+    onSuccess: done,
+  });
+  const updateQuestion = useMutation({
+    mutationFn: ({ id, ...q }: QuestionInput & { id: string }) => api<QuizQuestion>(`/online/quiz-questions/${id}`, { method: "PUT", body: q }),
+    onSuccess: done,
+  });
+  const deleteQuestion = useMutation({
+    mutationFn: (id: string) => api(`/online/quiz-questions/${id}`, { method: "DELETE" }),
+    onSuccess: done,
+  });
+  return { updateQuiz, addQuestion, updateQuestion, deleteQuestion };
+}
+
+export type QuizAdminItem = {
+  id: string; title: string; passingScore: number; timeLimit: number | null; audience: string;
+  updatedAt: string; createdAt: string; questionCount: number; attemptCount: number;
+  course: { id: string; title: string; courseKind: string; teacher: { firstName: string; lastName: string } | null } | null;
+};
+export function useAllQuizzes(q: string) {
+  return useQuery({
+    queryKey: ["online", "quizzes", "all", q],
+    queryFn: () => api<QuizAdminItem[]>(`/online/quizzes/all${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+  });
+}
+
+// ─── Règles de progression (Super Admin) ──────────────────────────────────────
+export function useProgressRules() {
+  return useQuery({ queryKey: ["progress-rules"], queryFn: () => api<ProgressRules>("/lms-admin/progress-rules") });
+}
+export function useSaveProgressRules() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (r: Partial<ProgressRules>) => api<ProgressRules>("/lms-admin/progress-rules", { method: "PUT", body: r }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["progress-rules"] }); qc.invalidateQueries({ queryKey: ["cursus"] }); qc.invalidateQueries({ queryKey: ["online"] }); },
+  });
+}
+export function useRecomputeProgress() {
+  return useMutation({
+    mutationFn: () => api<{ enrollments: number; newlyCompleted: number }>("/lms-admin/progress-rules/recompute", { method: "POST" }),
   });
 }
 
@@ -836,6 +940,9 @@ export function useSubmitAssignment() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.pendingAssignments() });
       qc.invalidateQueries({ queryKey: qk.activity() });
+      // Le devoir passe à « Rendu » et le statut du cours se met à jour
+      qc.invalidateQueries({ queryKey: ["online"] });
+      qc.invalidateQueries({ queryKey: ["cursus"] });
     },
   });
 }

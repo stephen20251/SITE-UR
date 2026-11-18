@@ -85,8 +85,12 @@ export type CursusMonth = {
   month: number; semester: number; semesterId?: string | null; semesterName?: string | null;
   status: "PAID" | "PENDING" | "REFUSED" | "UNPAID";
   payment: TuitionPayment | null;
-  courses: (CursusCourse & { myProgress: number; completed: boolean; relatedCourseIds: string[] })[];
-  completed: boolean; canPay: boolean; lockReason: string | null;
+  courses: (CursusCourse & {
+    myProgress: number; completed: boolean; relatedCourseIds: string[];
+    myStatus?: "NOT_STARTED" | "IN_PROGRESS" | "QUIZ_PENDING" | "ASSIGNMENT_PENDING" | "COMPLETED";
+    nextActivity?: { type: "QUIZ" | "ASSIGNMENT"; id: string; title: string } | null;
+  })[];
+  completed: boolean; coursesCompleted?: number; canPay: boolean; lockReason: string | null;
 };
 export type CursusOverview = {
   student: {
@@ -96,6 +100,8 @@ export type CursusOverview = {
   };
   monthlyAmount: number | null; currency: string; currentMonth: number | null;
   months: CursusMonth[]; paidCount: number; completedCount: number;
+  coursesTotal?: number; coursesCompleted?: number;
+  display?: { showLockedCourses: boolean; showCourseProgress: boolean };
   nextPayableMonth: number | null; eligibleForPassage: boolean;
 };
 
